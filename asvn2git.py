@@ -15,6 +15,14 @@ import subprocess
 import sys
 import tempfile
 
+# Setup basic logging
+logger = logging.getLogger('as2g')
+hdlr = logging.StreamHandler(sys.stdout)
+frmt = logging.Formatter("%(name)s.%(funcName)s %(levelname)s %(message)s")
+hdlr.setFormatter(frmt)
+logger.addHandler(hdlr)
+logger.setLevel(logging.INFO)
+
 class svnpackagetag(object):
     def __init__(self, package_path, tag):
         self._package_path = os.path.basename(package_path)
@@ -32,6 +40,7 @@ def init_git(gitrepo):
     if not os.path.exists(gitrepo):
         os.makedirs(gitrepo)
     os.chdir(gitrepo)
+    logger.debug("Initialising git repo: {0}".format(gitrepo))
     subprocess.check_call(["git", "init"])
 
 def find_packages(svnroot, svnsubdirs):
@@ -58,7 +67,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     '''Make a temporary space, check out, copy and then git commit'''
     
     package.rstrip("/")
-    print "processing {0} tag {1} to {2} branch {3}".format(package, tag, gitrepo, branch)
+    logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
     cmd = ["svn", "co", os.path.join(svnroot, package, tag), os.path.join(tempdir, package)]
@@ -76,7 +85,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
         os.makedirs(package_root)
     except OSError:
         pass
-    print "Moving {0} to {1}".format(full_svn_path, package_root)
+    logger.info("Moving {0} to {1}".format(full_svn_path, package_root))
     shutil.move(full_svn_path, package_root)
     
     # Commit
@@ -100,11 +109,12 @@ def svn_find_packages(svnroot, svn_path):
     '''Recursively list SVN directories, looking for leaf packages, defined by having
     a branches/tags/trunk structure'''
     my_package_list = []
+    logger.debug("Searching {0}".format(svn_path))
     cmd = ["svn", "ls", os.path.join(svnroot, svn_path)]
-    print cmd
     dir_output = subprocess.check_output(cmd).split()
     if ("trunk/" in dir_output and "tags/" in dir_output and "branches/" in dir_output):
         # We are a leaf!
+        logger.debug("Found leaf package: {0}".format(svn_path))
         return [svn_path]
     for entry in dir_output:
         if entry.endswith('/'):
@@ -127,29 +137,33 @@ def main():
                         help="file containing cache of SVN information (optional) TODO")
     parser.add_argument('--svnsavecachefile', metavar='FILE',
                         help="file to save cache of SVN information to (saves a lot of SVN interaction time) [TODO]")
+    parser.add_argument('--debug', '--verbose', "-v", action="store_true",
+                        help="switch logging into DEBUG mode")
 
     args = parser.parse_args()
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
 
     # Set svnroot and git repo
     svnroot = args.svnroot
-    gitrepo = args.gitrepo 
+    gitrepo = args.gitrepo
+    logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
 
     # Decide which svn packages we will import
     svn_packages = args.svnpackages
     for subdir in args.svnsubdirs:
         svn_packages.extend(svn_find_packages(svnroot, subdir))
-    print svn_packages
     
     # First setup the git repository
     init_git(gitrepo)
 
     # Import packages
     for package in svn_packages:
+        logger.info("Importing package {0}".format(package))
         tags = get_all_package_tags(svnroot, package)
         # Special strip....
         if args.trimtags:
             tags = tags[-args.trimtags:]
-        print tags
         for tag in tags:
             svn_co_tag_and_commit(svnroot, gitrepo, package, os.path.join("tags", tag))
         svn_co_tag_and_commit(svnroot, gitrepo, package, "trunk")
