@@ -66,7 +66,7 @@ def get_all_package_tags(svnroot, package_path):
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     '''Make a temporary space, check out, copy and then git commit'''
     
-    package.rstrip("/")
+    package = package.rstrip("/")
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
@@ -95,6 +95,9 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     msg = "Git commit of {0} tag {1} to branch {2}".format(package, tag, branch)
     cmd = ["git", "commit", "-m", msg, "--allow-empty"]
     subprocess.check_call(cmd)
+    if tag != "trunk":
+        cmd = ["git", "tag", "-a", tag, "-m", ""]
+        subprocess.check_call(cmd)
     
     # Clean up
     shutil.rmtree(tempdir)
@@ -122,7 +125,7 @@ def svn_find_packages(svnroot, svn_path):
     return my_package_list
 
 def main():
-    parser = argparse.ArgumentParser(description='SVN to git migrator')
+    parser = argparse.ArgumentParser(description='SVN to git migrator, ATLAS style')
     parser.add_argument('svnroot', metavar='SVNDIR',
                         help="location of svn repository root")
     parser.add_argument('gitrepo', metavar='GITDIR',
@@ -143,6 +146,8 @@ def main():
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
+    if args.svnpackages == [] and args.svnsubdirs == []:
+        args.svnsubdirs = ["."]
 
     # Set svnroot and git repo
     svnroot = args.svnroot
@@ -153,6 +158,7 @@ def main():
     svn_packages = args.svnpackages
     for subdir in args.svnsubdirs:
         svn_packages.extend(svn_find_packages(svnroot, subdir))
+    logger.debug("Packages to import: {0}".format(svn_packages))
     
     # First setup the git repository
     init_git(gitrepo)
