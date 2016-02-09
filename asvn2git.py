@@ -10,11 +10,10 @@ import argparse
 import logging
 import os
 import os.path
+import shutil
 import subprocess
 import sys
-
-# These variable are used everywhere, so just globalise them
-svnroot = gitrepo = ""
+import tempfile
 
 class svnpackagetag(object):
     def __init__(self, package_path, tag):
@@ -29,7 +28,7 @@ class svnpackagetag(object):
     def tag(self):
         return self._package_tag
 
-def init_git():
+def init_git(gitrepo):
     if not os.path.exists(gitrepo):
         os.makedirs(gitrepo)
     os.chdir(gitrepo)
@@ -55,9 +54,35 @@ def get_all_package_tags(svnroot, package_path):
     tag_list = [ s.rstrip("/") for s in tag_output.split() ]
     return tag_list
     
-def svn_co_tag_and_commit(svnroot, package, tag, gitrepo):
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     '''Make a temporary space, check out, copy and then git commit'''
+    print "processing {0} tag {1} to {2} branch {3}".format(package, tag, gitrepo, branch)
+    tempdir = tempfile.mkdtemp()
+    cmd = ["svn", "co", os.path.join(svnroot, package, "tags", tag), os.path.join(tempdir, package)]
+    subprocess.check_call(cmd)
+    svn_dir = os.path.join(tempdir, package)
     
+    # Copy to git
+    full_path = os.path.join(gitrepo, package)
+    package_root, package_name = os.path.split(full_path)
+    try:
+        if os.path.isdir(full_path):
+            shutil.rmtree(full_path, ignore_errors=True)
+        os.makedirs(package_root)
+    except OSError:
+        pass
+    shutil.move(svn_dir, package_root)
+    shutil.rmtree(os.path.join(full_path, ".svn"))
+    
+    # Commit
+    os.chdir(gitrepo)
+    cmd = ["git", "add", "."]
+    subprocess.check_call(cmd)
+    msg = "Git commit of {0} tag {1} to branch {2}".format(package, tag, branch)
+    cmd = ["git", "commit", "-m", msg]
+    
+    # Clean up
+    shutil.rmtree(tempdir)
 
 def main():
     parser = argparse.ArgumentParser(description='SVN to git migrator')
@@ -75,12 +100,11 @@ def main():
     args = parser.parse_args()
 
     # Set svnroot and git repo
-    global snvroot, gitrepo
-    snvroot = args.svnroot
+    svnroot = args.svnroot
     gitrepo = args.gitrepo 
 
     # First setup the git repository
-    init_git()
+    init_git(gitrepo)
 
     # Now copy all the trunk tags into the master area
 #     for apackage in find_packages(args.svnroot, args.svnsubdirs):
@@ -89,14 +113,11 @@ def main():
     
     # Import package PyJobTransforms for fun...
     package = "Tools/PyJobTransforms"
-    tags = get_all_package_tags(snvroot, package)
+    tags = get_all_package_tags(svnroot, package)
     print tags
-#     for tag in tags:
-#         svn_co_tag_and_commit(svnroot, package, tag, gitrepo)
-#         
-#         import_package_from_tags(snvrepo, "Tools/PyJobTransforms")
-    
-    
+    for tag in tags:
+        svn_co_tag_and_commit(svnroot, gitrepo, package, tag)
+
 if __name__ == '__main__':
     main()
 
