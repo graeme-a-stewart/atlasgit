@@ -58,21 +58,24 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     '''Make a temporary space, check out, copy and then git commit'''
     print "processing {0} tag {1} to {2} branch {3}".format(package, tag, gitrepo, branch)
     tempdir = tempfile.mkdtemp()
-    cmd = ["svn", "co", os.path.join(svnroot, package, "tags", tag), os.path.join(tempdir, package)]
+    full_svn_path = os.path.join(tempdir, package)
+    cmd = ["svn", "co", os.path.join(svnroot, package, tag), os.path.join(tempdir, package)]
     subprocess.check_call(cmd)
     svn_dir = os.path.join(tempdir, package)
+
+    # Clean out directory of things we don't want to import
+    svn_cleanup(full_svn_path)
     
     # Copy to git
-    full_path = os.path.join(gitrepo, package)
-    package_root, package_name = os.path.split(full_path)
+    full_git_path = os.path.join(gitrepo, package)
+    package_root, package_name = os.path.split(full_git_path)
     try:
-        if os.path.isdir(full_path):
-            shutil.rmtree(full_path, ignore_errors=True)
+        if os.path.isdir(full_git_path):
+            shutil.rmtree(full_git_path, ignore_errors=True)
         os.makedirs(package_root)
     except OSError:
         pass
     shutil.move(svn_dir, package_root)
-    shutil.rmtree(os.path.join(full_path, ".svn"))
     
     # Commit
     os.chdir(gitrepo)
@@ -80,9 +83,23 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     subprocess.check_call(cmd)
     msg = "Git commit of {0} tag {1} to branch {2}".format(package, tag, branch)
     cmd = ["git", "commit", "-m", msg]
+    subprocess.check_call(cmd)
     
     # Clean up
     shutil.rmtree(tempdir)
+    
+def svn_cleanup(svn_path):
+    '''Cleanout files we do not want to import into git'''
+    shutil.rmtree(os.path.join(svn_path, ".svn"))
+    
+    # File size veto - TODO
+    
+    
+def svn_find_packages(svnroot, svn_path):
+    '''Recursively list SVN directories, looking for leaf packages, defined by having
+    a branches/tags/trunk structure'''
+    pass
+    
 
 def main():
     parser = argparse.ArgumentParser(description='SVN to git migrator')
@@ -92,6 +109,8 @@ def main():
                         help="location of git repository")
     parser.add_argument('--svnsubdirs', metavar='DIR', nargs='+', default=["."],
                         help="list of subdirectories in the SVN tree to process (default, process the whole tree)")
+    parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
+                        help="limit number of tags to import into git (by default import everything)")    
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="file containing cache of SVN information (optional) TODO")
     parser.add_argument('--svnsavecachefile', metavar='FILE',
@@ -114,9 +133,13 @@ def main():
     # Import package PyJobTransforms for fun...
     package = "Tools/PyJobTransforms"
     tags = get_all_package_tags(svnroot, package)
+    # Special strip....
+    if args.trimtags:
+        tags = tags[-args.trimtags:]
     print tags
     for tag in tags:
-        svn_co_tag_and_commit(svnroot, gitrepo, package, tag)
+        svn_co_tag_and_commit(svnroot, gitrepo, package, os.path.join("tags", tag))
+    svn_co_tag_and_commit(svnroot, gitrepo, package, "trunk")
 
 if __name__ == '__main__':
     main()
