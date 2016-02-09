@@ -90,8 +90,11 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     
     # Commit
     os.chdir(gitrepo)
-    cmd = ["git", "add", "."]
+    cmd = ["git", "add", "-A"]
     subprocess.check_call(cmd)
+    if logger.level <= logging.DEBUG:
+        cmd = ["git", "status"]
+        subprocess.check_call(cmd)
     msg = "Git commit of {0} tag {1} to branch {2}".format(package, tag, branch)
     cmd = ["git", "commit", "-m", msg, "--allow-empty"]
     subprocess.check_call(cmd)
@@ -105,8 +108,18 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
 def svn_cleanup(svn_path):
     '''Cleanout files we do not want to import into git'''
     shutil.rmtree(os.path.join(svn_path, ".svn"))
-    # File size veto - TODO
     
+    # File size veto - TODO
+    for root, dirs, files in os.walk(svn_path):
+        for name in files:
+            filename = os.path.join(root, name)
+            if os.stat(filename).st_size > 100*1024:
+                if name.endswith(".cxx") or name.endswith(".py") or name.endswith(".h"):
+                    logger.info("Source file {0} is too large, but importing anyway".format(filename))
+                else:
+                    logger.info("File {0} is too large - not importing".format(filename))
+                    os.remove(filename)
+
     
 def svn_find_packages(svnroot, svn_path):
     '''Recursively list SVN directories, looking for leaf packages, defined by having
