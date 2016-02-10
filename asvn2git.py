@@ -43,19 +43,6 @@ def init_git(gitrepo):
     logger.debug("Initialising git repo: {0}".format(gitrepo))
     subprocess.check_call(["git", "init"])
 
-def find_packages(svnroot, svnsubdirs):
-    '''This will only work with a filesystem copy - not too useful'''
-    package_paths = []
-    for svnsubdir in svnsubdirs:
-        for root, dirs, files in os.walk(os.path.join(svnroot, svnsubdir)):
-            if "trunk" in dirs:
-                package_paths.append(root.replace(svnroot + os.sep, ""))
-    return package_paths
-
-def get_svn_metadata(svnroot, package_path, tag):
-    '''Get all SVN metadata for a tag commit, to reconstruct in a git commit'''
-    pass 
-
 def get_all_package_tags(svnroot, package_path):
     '''Retrieve all tags for a package in svnroot'''
     cmd = ["svn", "ls", os.path.join(svnroot, package_path, "tags")]
@@ -173,7 +160,7 @@ def main():
         svn_packages.extend(svn_find_packages(svnroot, subdir))
     logger.debug("Packages to import: {0}".format(svn_packages))
     
-    # First setup the git repository
+    # Setup the git repository
     init_git(gitrepo)
 
     # Import packages
