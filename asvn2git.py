@@ -96,31 +96,34 @@ def svn_cleanup(svn_path):
     '''Cleanout files we do not want to import into git'''
     shutil.rmtree(os.path.join(svn_path, ".svn"))
     
-    # File size veto - TODO
+    # File size veto
     for root, dirs, files in os.walk(svn_path):
         for name in files:
             filename = os.path.join(root, name)
             if os.stat(filename).st_size > 100*1024:
-                if name.endswith(".cxx") or name.endswith(".py") or name.endswith(".h"):
+                if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c"):
                     logger.info("Source file {0} is too large, but importing anyway".format(filename))
                 else:
                     logger.info("File {0} is too large - not importing".format(filename))
                     os.remove(filename)
+            if filename.startswith("."):
+                logger.info("File {0} starts with a '.' - not importing")
+                os.remove(filename)
 
     
-def svn_find_packages(svnroot, svn_path):
+def svn_find_packages(svnroot, svn_path, pathveto = []):
     '''Recursively list SVN directories, looking for leaf packages, defined by having
     a branches/tags/trunk structure'''
     my_package_list = []
     logger.debug("Searching {0}".format(svn_path))
     cmd = ["svn", "ls", os.path.join(svnroot, svn_path)]
     dir_output = subprocess.check_output(cmd).split()
-    if ("trunk/" in dir_output and "tags/" in dir_output and "branches/" in dir_output):
+    if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is quite non-standard (FastPhysTagMon)
         # We are a leaf!
         logger.debug("Found leaf package: {0}".format(svn_path))
         return [svn_path]
     for entry in dir_output:
-        if entry.endswith('/'):
+        if entry.endswith("/") and not entry.rstrip("/") in pathveto:
             my_package_list.extend(svn_find_packages(svnroot, os.path.join(svn_path, entry)))
     return my_package_list
 
@@ -130,8 +133,10 @@ def main():
                         help="location of svn repository root")
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="location of git repository")
-    parser.add_argument('--svnsubdirs', metavar='DIR', nargs='+', default=[],
-                        help="list of subdirectories in the SVN tree to process (default, process only explicit packages)")
+    parser.add_argument('--svnpaths', metavar='PATH', nargs='+', default=[],
+                        help="list of paths in the SVN tree to process (default, process only explicit packages (if given), otherwise process everything)")
+    parser.add_argument('--svnpathveto', metavar='PATH', nargs='+', default=[],
+                        help="list of paths in the SVN tree to veto for processing (can refer to a leaf or an intermediate directory name)")
     parser.add_argument('--svnpackages', metavar='PACKAGE', nargs='+', default=[],
                         help="list of package paths in the SVN tree to process")
     parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
@@ -146,8 +151,8 @@ def main():
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    if args.svnpackages == [] and args.svnsubdirs == []:
-        args.svnsubdirs = ["."]
+    if args.svnpackages == [] and args.svnpaths == []:
+        args.svnpaths = ["."]
 
     # Set svnroot and git repo
     svnroot = args.svnroot
@@ -156,9 +161,12 @@ def main():
 
     # Decide which svn packages we will import
     svn_packages = args.svnpackages
-    for subdir in args.svnsubdirs:
-        svn_packages.extend(svn_find_packages(svnroot, subdir))
+    for path_element in args.svnpaths:
+        svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
     logger.debug("Packages to import: {0}".format(svn_packages))
+    with open(os.path.basename(gitrepo) + ".packages", "w") as pkg_dump:
+        for package in svn_packages:
+            print >>pkg_dump, package
     
     # Setup the git repository
     init_git(gitrepo)
