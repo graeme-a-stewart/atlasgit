@@ -15,7 +15,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import xml.etree.ElementTree as eltree
+from subprocess import CalledProcessError
 
 # Setup basic logging
 logger = logging.getLogger('as2g')
@@ -25,28 +27,62 @@ hdlr.setFormatter(frmt)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
-class svnpackagetag(object):
-    def __init__(self, package_path, tag):
-        self._package_path = os.path.basename(package_path)
-        self._package_tag = tag
-        
-    @property
-    def package_path(self):
-        return self._package_path
 
-    @property
-    def tag(self):
-        return self._package_tag
+def set_svn_packages_from_args(svnroot, args):
+    '''Return a list of svn packages to import, based on args settings'''
+    svn_packages = args.svnpackage
+    if args.svnpackagefile and os.path.exists(args.svnpackagefile):
+        logger.info("Reading packages to import from {0}".format(args.svnpackagefile))
+        with open(args.svnpackagefile) as pkg_file:
+            for package in pkg_file:
+                package = package.strip()
+                if package.startswith("#") or package == "":
+                    continue
+                svn_packages.append(package)
+    for path_element in args.svnpath:
+        svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
+    logger.debug("Packages to import: {0}".format(svn_packages))
+    return svn_packages
 
-def init_git(gitrepo):
-    if not os.path.exists(gitrepo):
-        os.makedirs(gitrepo)
-    if os.path.exists(os.path.join(gitrepo, ".git")):
-        logger.info("Found existing git repo, {0}".format(gitrepo))
+
+def backup_package_list(svn_packages, start_cwd, svnpackagefile, start_timestamp_string):
+    '''Backup package lists to a file'''
+    os.chdir(start_cwd)
+    if os.path.exists(svnpackagefile):
+        os.rename(svnpackagefile, svnpackagefile+".bak."+start_timestamp_string)
+    with open(svnpackagefile, "w") as pkg_dump:
+        for package in svn_packages:
+            print >>pkg_dump, package
+
+
+def initialise_svn_metadata(svncachefile):
+    '''Load existing cache file, if it exists, or return empty cache'''
+    if os.path.exists(svncachefile):
+        logger.info("Reloading SVN cache from {0}".format(svncachefile))
+        with file(svncachefile) as md_load:
+            svn_metadata_cache = json.load(md_load)
     else:
-        os.chdir(gitrepo)
-        logger.info("Initialising git repo: {0}".format(gitrepo))
-        subprocess.check_call(["git", "init"])
+        svn_metadata_cache = {}
+    return svn_metadata_cache
+
+
+def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, trimtags=None):
+    '''Scan package tags from SVN and populate metadata cache if necessary'''
+    for package in svn_packages:
+        logger.info("Preparing package {0}".format(package))
+        tags = get_all_package_tags(svnroot, package)
+        
+        if trimtags:
+            # Restrict tag list size
+            tags = tags[-trimtags:]
+
+        for tag in tags:
+            # Do we have metadata?
+            if package not in svn_metadata_cache:
+                svn_metadata_cache[package] = {}
+            if tag not in svn_metadata_cache[package]:
+                svn_metadata_cache[package][tag] = svn_get_path_metadata(svnroot, package, tag)
+
 
 def get_all_package_tags(svnroot, package_path, include_trunk=True):
     '''Retrieve all tags for a package in svnroot'''
@@ -56,17 +92,57 @@ def get_all_package_tags(svnroot, package_path, include_trunk=True):
     if include_trunk:
         tag_list.append("trunk")
     return tag_list
-    
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master"):
+
+
+def svn_cache_revision_dict_init(svn_metadata_cache):
+    svn_cache_revision_dict = {}
+    for package in svn_metadata_cache:
+        for tag in svn_metadata_cache[package]:
+            if svn_metadata_cache[package][tag]["revision"] in svn_cache_revision_dict:
+                logger.error("Found 2 package tags on same ({0}) SVN revision!".format(svn_metadata_cache[package][tag]["revision"]))
+                sys.exit(1)
+            svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]] = {"package": package, "tag": tag}
+    return svn_cache_revision_dict
+
+
+def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_timestamp_string):
+    '''Persistify SVN metadata cache (as JSON)'''
+    os.chdir(start_cwd)
+    if os.path.exists(svncachefile):
+        os.rename(svncachefile, svncachefile+".bak."+start_timestamp_string)
+    with file(svncachefile, "w") as md_dump:
+        json.dump(svn_metadata_cache, md_dump, indent=2)
+
+
+def init_git(gitrepo):
+    '''Initialise git repo, if needed'''
+    if not os.path.exists(gitrepo):
+        os.makedirs(gitrepo)
+    os.chdir(gitrepo)
+    if os.path.exists(os.path.join(gitrepo, ".git")):
+        logger.info("Found existing git repo, {0}".format(gitrepo))
+        subprocess.check_call(("git", "reset", "--hard"))
+    else:
+        logger.info("Initialising git repo: {0}".format(gitrepo))
+        subprocess.check_call(("git", "init"))
+
+
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master", delete_tag=False):
     '''Make a temporary space, check out, copy and then git commit'''
     
     # Pre-check if we have this tag already
     os.chdir(gitrepo)
-    cmd = ["git", "tag", "-l", tag]
+    git_tag = os.path.join(package, tag)
+    cmd = ["git", "tag", "-l", git_tag]
     git_tag_check = subprocess.check_output(cmd)
     if len(git_tag_check) > 0:
-        logger.info("Tag {0} exists already - skipping".format(tag))
-        return
+        if delete_tag:
+            logger.info("Deleting tag {0}".format(git_tag))
+            cmd = ["git", "tag", "-d", git_tag]
+            subprocess.check_output(cmd)
+        else:
+            logger.info("Tag {0} exists already - skipping".format(git_tag))
+            return
     
     package = package.rstrip("/") # Trailing / causes shutil.move to add an extra subdir
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
@@ -103,9 +179,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
     subprocess.check_call(cmd)
-    if tag != "trunk":
-        cmd = ["git", "tag", "-a", tag, "-m", ""]
-        subprocess.check_call(cmd)
+    cmd = ["git", "tag", "-a", git_tag, "-m", ""]
+    subprocess.check_call(cmd)
     
     # Clean up
     shutil.rmtree(tempdir)
@@ -177,11 +252,14 @@ def main():
                         help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
                         help="limit number of tags to import into git (by default import everything)")    
+    parser.add_argument('--skiptagscan', action="store_true", default=False,
+                        help="skip scanning SVN for current tags (only tags from SVN cache file are processed)")    
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="file containing cache of SVN information - default 'gitrepo.svn.metadata'")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
+    # Parse and handle initial arguments
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
@@ -192,70 +270,43 @@ def main():
     if not args.svnpackagefile:
         args.svnpackagefile = os.path.basename(args.gitrepo) + ".packages"
 
-    # Set svnroot and git repo
+    # Set svnroot and git repo, get some starting values
     svnroot = args.svnroot
     gitrepo = args.gitrepo
     start_cwd = os.getcwd()
+    start_timestamp_string = time.strftime("%Y%m%dT%H%M.%S")
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
 
+
+    ### Main actions start here
+    ## SVN interactions and reloading state    
     # Decide which svn packages we will import
-    svn_packages = args.svnpackage
-    if args.svnpackagefile and os.path.exists(args.svnpackagefile):
-        logger.info("Reading packages to import from {0}".format(args.svnpackagefile))
-        with open(args.svnpackagefile) as pkg_file:
-            for package in pkg_file:
-                package = package.strip()
-                if package.startswith("#") or package == "":
-                    continue
-                svn_packages.append(package)
-    for path_element in args.svnpath:
-        svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
-    logger.debug("Packages to import: {0}".format(svn_packages))
-    os.chdir(start_cwd)
-    with open(os.path.basename(gitrepo) + ".packages", "w") as pkg_dump:
-        for package in svn_packages:
-            print >>pkg_dump, package
+    svn_packages = set_svn_packages_from_args(svnroot, args)
     
+    # Save package list for the future 
+    backup_package_list(svn_packages, start_cwd, args.svnpackagefile, start_timestamp_string)
+    
+    # Initialise SVN metadata cache
+    svn_metadata_cache = initialise_svn_metadata(args.svncachefile)
+
+    # Prepare package import
+    if not args.skiptagscan:
+        scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, args.trimtags)
+
+    # Now presistify metadata cache
+    backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
+    
+    # Setup dictionary for keying by SVN revision number
+    svn_cache_revision_dict = svn_cache_revision_dict_init(svn_metadata_cache)
+            
+
+    ## git actions
     # Setup the git repository
     init_git(gitrepo)
 
-    svn_metadata_cache = {}
-    svn_cache_revision_dict = {}
-    
-    # Load cache file
-    if os.path.exists(args.svnpackagefile):
-        with file(args.svncachefile) as md_load:
-            svn_metadata_cache = json.load(md_load)
-
-    # Prepare package import
-    for package in svn_packages:
-        logger.info("Preparing package {0}".format(package))
-        tags = get_all_package_tags(svnroot, package)
-        # Special strip....
-        if args.trimtags:
-            tags = tags[-args.trimtags:]
-        for tag in tags:
-            # Do we have metadata?
-            if package not in svn_metadata_cache:
-                svn_metadata_cache[package] = {}
-            if tag not in svn_metadata_cache[package]:
-                svn_metadata_cache[package][tag] = svn_get_path_metadata(svnroot, package, tag)
-            if svn_metadata_cache[package][tag]["revision"] in svn_cache_revision_dict:
-                logger.error("Found 2 package tags on same SVN revision!")
-                sys.exit(1)
-            svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]] = {"package": package, "tag": tag}
-            
-    # Now presistify metadata cache
-    os.chdir(start_cwd)
-    if os.path.exists(args.svncachefile):
-        os.rename(args.svncachefile, args.svncachefile + ".bak")
-    with file(args.svncachefile, "w") as md_dump:
-        json.dump(svn_metadata_cache, md_dump, indent=2)
-
-    # Now process and git commit...
+    # Process each SVN tag in order
     ordered_revisions = svn_cache_revision_dict.keys()
     ordered_revisions.sort()
-    print ordered_revisions
     for rev in ordered_revisions:
         svn_co_tag_and_commit(svnroot, gitrepo, svn_cache_revision_dict[rev]["package"], 
                               svn_cache_revision_dict[rev]["tag"], 
