@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as eltree
 
 # Setup basic logging
 logger = logging.getLogger('as2g')
@@ -53,7 +54,7 @@ def get_all_package_tags(svnroot, package_path):
     tag_list = [ s.rstrip("/") for s in tag_output.split() ]
     return tag_list
     
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master"):
     '''Make a temporary space, check out, copy and then git commit'''
     
     # Pre-check if we have this tag already
@@ -95,6 +96,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
         subprocess.check_call(cmd)
     msg = "Git commit of {0} tag {1} to branch {2}".format(package, tag, branch)
     cmd = ["git", "commit", "-m", msg, "--allow-empty"]
+    if svn_metadata:
+        cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), "--date={0}".format(svn_metadata["date"])))
     subprocess.check_call(cmd)
     if tag != "trunk":
         cmd = ["git", "tag", "-a", tag, "-m", ""]
@@ -114,6 +117,8 @@ def svn_cleanup(svn_path):
             if os.stat(filename).st_size > 100*1024:
                 if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c"):
                     logger.info("Source file {0} is too large, but importing anyway".format(filename))
+                elif name in ("ChangeLog"):
+                    logger.info("Repo file {0} is too large, but importing anyway".format(filename))
                 else:
                     logger.warning("File {0} is too large - not importing".format(filename))
                     os.remove(filename)
@@ -137,6 +142,19 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
         if entry.endswith("/") and not entry.rstrip("/") in pathveto:
             my_package_list.extend(svn_find_packages(svnroot, os.path.join(svn_path, entry)))
     return my_package_list
+
+
+def svn_get_path_metadata(svnroot, package, package_path, revision=None):
+    '''Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision'''
+    cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
+    svn_info = subprocess.check_output(cmd)
+    tree = eltree.fromstring(svn_info)
+    return {
+            "date": tree.find(".//date").text,
+            "author": tree.find(".//author").text,
+            "revision": tree.find(".//commit").attrib['revision']
+            }
+
 
 def main():
     parser = argparse.ArgumentParser(description='SVN to git migrator, ATLAS style')
@@ -200,7 +218,8 @@ def main():
         if args.trimtags:
             tags = tags[-args.trimtags:]
         for tag in tags:
-            svn_co_tag_and_commit(svnroot, gitrepo, package, os.path.join("tags", tag))
+            svn_get_path_metadata(svnroot, package, os.path.join("tags", tag))
+            svn_co_tag_and_commit(svnroot, gitrepo, package, os.path.join("tags", tag), svn_get_path_metadata(svnroot, package, os.path.join("tags", tag)))
         svn_co_tag_and_commit(svnroot, gitrepo, package, "trunk")
 
 if __name__ == '__main__':
