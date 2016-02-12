@@ -221,6 +221,11 @@ def main():
 
     svn_metadata_cache = {}
     svn_cache_revision_dict = {}
+    
+    # Load cache file
+    if os.path.exists(args.svnpackagefile):
+        with file(args.svncachefile) as md_load:
+            svn_metadata_cache = json.load(md_load)
 
     # Prepare package import
     for package in svn_packages:
