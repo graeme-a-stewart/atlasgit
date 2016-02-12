@@ -7,6 +7,7 @@
 #
 
 import argparse
+import json
 import logging
 import os
 import os.path
@@ -47,11 +48,13 @@ def init_git(gitrepo):
         logger.info("Initialising git repo: {0}".format(gitrepo))
         subprocess.check_call(["git", "init"])
 
-def get_all_package_tags(svnroot, package_path):
+def get_all_package_tags(svnroot, package_path, include_trunk=True):
     '''Retrieve all tags for a package in svnroot'''
     cmd = ["svn", "ls", os.path.join(svnroot, package_path, "tags")]
     tag_output = subprocess.check_output(cmd)
-    tag_list = [ s.rstrip("/") for s in tag_output.split() ]
+    tag_list = [ os.path.join("tags", s.rstrip("/")) for s in tag_output.split() ]
+    if include_trunk:
+        tag_list.append("trunk")
     return tag_list
     
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master"):
@@ -94,10 +97,11 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
         subprocess.check_call(cmd)
-    msg = "Git commit of {0} tag {1} to branch {2}".format(package, tag, branch)
-    cmd = ["git", "commit", "-m", msg, "--allow-empty"]
+    cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
-        cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), "--date={0}".format(svn_metadata["date"])))
+        cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), 
+                    "--date={0}".format(svn_metadata["date"]),
+                    "-m", "SVN r{0}".format(svn_metadata['revision'])))
     subprocess.check_call(cmd)
     if tag != "trunk":
         cmd = ["git", "tag", "-a", tag, "-m", ""]
@@ -136,7 +140,7 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
     dir_output = subprocess.check_output(cmd).split()
     if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is a bit non-standard (FastPhysTagMon)
         # We are a leaf!
-        logger.debug("Found leaf package: {0}".format(svn_path))
+        logger.info("Found leaf package: {0}".format(svn_path))
         return [svn_path]
     for entry in dir_output:
         if entry.endswith("/") and not entry.rstrip("/") in pathveto:
@@ -146,13 +150,14 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
 
 def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     '''Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision'''
+    logger.debug("Querying SVN metadeta for {0}".format(os.path.join(package, package_path)))
     cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
     svn_info = subprocess.check_output(cmd)
     tree = eltree.fromstring(svn_info)
     return {
             "date": tree.find(".//date").text,
             "author": tree.find(".//author").text,
-            "revision": tree.find(".//commit").attrib['revision']
+            "revision": int(tree.find(".//commit").attrib['revision']),
             }
 
 
@@ -162,47 +167,51 @@ def main():
                         help="location of svn repository root")
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="location of git repository")
-    parser.add_argument('--svnpaths', metavar='PATH', nargs='+', default=[],
-                        help="list of paths in the SVN tree to process (default, process only explicit packages (if given), otherwise process everything)")
+    parser.add_argument('--svnpath', metavar='PATH', nargs='+', default=[],
+                        help="list of paths in the SVN tree to process (use '.' to process entire SVN repo)")
     parser.add_argument('--svnpathveto', metavar='PATH', nargs='+', default=[],
                         help="list of paths in the SVN tree to veto for processing (can refer to a leaf or an intermediate directory name)")
-    parser.add_argument('--svnpackages', metavar='PACKAGE', nargs='+', default=[],
+    parser.add_argument('--svnpackage', metavar='PACKAGE', nargs='+', default=[],
                         help="list of package paths in the SVN tree to process")
-    parser.add_argument('--svnpackagesfile', metavar='FILE', 
-                        help="file containing list of package paths in the SVN tree to process")
+    parser.add_argument('--svnpackagefile', metavar='FILE', 
+                        help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
                         help="limit number of tags to import into git (by default import everything)")    
     parser.add_argument('--svncachefile', metavar='FILE',
-                        help="file containing cache of SVN information (optional) TODO")
-    parser.add_argument('--svnsavecachefile', metavar='FILE',
-                        help="file to save cache of SVN information to (saves a lot of SVN interaction time) [TODO]")
+                        help="file containing cache of SVN information - default 'gitrepo.svn.metadata'")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    if args.svnpackages == [] and args.svnpaths == [] and args.svnpackagesfile == None:
-        args.svnpaths = ["."]
+        
+    # Massage default values
+    if not args.svncachefile:
+        args.svncachefile = os.path.basename(args.gitrepo) + ".svn.metadata"
+    if not args.svnpackagefile:
+        args.svnpackagefile = os.path.basename(args.gitrepo) + ".packages"
 
     # Set svnroot and git repo
     svnroot = args.svnroot
     gitrepo = args.gitrepo
+    start_cwd = os.getcwd()
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
 
     # Decide which svn packages we will import
-    svn_packages = args.svnpackages
-    if args.svnpackagesfile:
-        logger.info("Reading packages to import from {0}".format(args.svnpackagesfile))
-        with open(args.svnpackagesfile) as pkg_file:
+    svn_packages = args.svnpackage
+    if args.svnpackagefile and os.path.exists(args.svnpackagefile):
+        logger.info("Reading packages to import from {0}".format(args.svnpackagefile))
+        with open(args.svnpackagefile) as pkg_file:
             for package in pkg_file:
                 package = package.strip()
                 if package.startswith("#") or package == "":
                     continue
                 svn_packages.append(package)
-    for path_element in args.svnpaths:
+    for path_element in args.svnpath:
         svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
     logger.debug("Packages to import: {0}".format(svn_packages))
+    os.chdir(start_cwd)
     with open(os.path.basename(gitrepo) + ".packages", "w") as pkg_dump:
         for package in svn_packages:
             print >>pkg_dump, package
@@ -210,17 +219,42 @@ def main():
     # Setup the git repository
     init_git(gitrepo)
 
-    # Import packages
+    svn_metadata_cache = {}
+    svn_cache_revision_dict = {}
+
+    # Prepare package import
     for package in svn_packages:
-        logger.info("Importing package {0}".format(package))
+        logger.info("Preparing package {0}".format(package))
         tags = get_all_package_tags(svnroot, package)
         # Special strip....
         if args.trimtags:
             tags = tags[-args.trimtags:]
         for tag in tags:
-            svn_get_path_metadata(svnroot, package, os.path.join("tags", tag))
-            svn_co_tag_and_commit(svnroot, gitrepo, package, os.path.join("tags", tag), svn_get_path_metadata(svnroot, package, os.path.join("tags", tag)))
-        svn_co_tag_and_commit(svnroot, gitrepo, package, "trunk")
+            # Do we have metadata?
+            if package not in svn_metadata_cache:
+                svn_metadata_cache[package] = {}
+            if tag not in svn_metadata_cache[package]:
+                svn_metadata_cache[package][tag] = svn_get_path_metadata(svnroot, package, tag)
+            if svn_metadata_cache[package][tag]["revision"] in svn_cache_revision_dict:
+                logger.error("Found 2 package tags on same SVN revision!")
+                sys.exit(1)
+            svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]] = {"package": package, "tag": tag}
+            
+    # Now presistify metadata cache
+    os.chdir(start_cwd)
+    if os.path.exists(args.svncachefile):
+        os.rename(args.svncachefile, args.svncachefile + ".bak")
+    with file(args.svncachefile, "w") as md_dump:
+        json.dump(svn_metadata_cache, md_dump, indent=2)
+
+    # Now process and git commit...
+    ordered_revisions = svn_cache_revision_dict.keys()
+    ordered_revisions.sort()
+    print ordered_revisions
+    for rev in ordered_revisions:
+        svn_co_tag_and_commit(svnroot, gitrepo, svn_cache_revision_dict[rev]["package"], 
+                              svn_cache_revision_dict[rev]["tag"], 
+                              svn_metadata_cache[svn_cache_revision_dict[rev]["package"]][svn_cache_revision_dict[rev]["tag"]])
 
 if __name__ == '__main__':
     main()
