@@ -39,9 +39,12 @@ class svnpackagetag(object):
 def init_git(gitrepo):
     if not os.path.exists(gitrepo):
         os.makedirs(gitrepo)
-    os.chdir(gitrepo)
-    logger.debug("Initialising git repo: {0}".format(gitrepo))
-    subprocess.check_call(["git", "init"])
+    if os.path.exists(os.path.join(gitrepo, ".git")):
+        logger.info("Found existing git repo, {0}".format(gitrepo))
+    else:
+        os.chdir(gitrepo)
+        logger.info("Initialising git repo: {0}".format(gitrepo))
+        subprocess.check_call(["git", "init"])
 
 def get_all_package_tags(svnroot, package_path):
     '''Retrieve all tags for a package in svnroot'''
@@ -53,7 +56,15 @@ def get_all_package_tags(svnroot, package_path):
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, branch="master"):
     '''Make a temporary space, check out, copy and then git commit'''
     
-    package = package.rstrip("/")
+    # Pre-check if we have this tag already
+    os.chdir(gitrepo)
+    cmd = ["git", "tag", "-l", tag]
+    git_tag_check = subprocess.check_output(cmd)
+    if len(git_tag_check) > 0:
+        logger.info("Tag {0} exists already - skipping".format(tag))
+        return
+    
+    package = package.rstrip("/") # Trailing / causes shutil.move to add an extra subdir
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
@@ -104,7 +115,7 @@ def svn_cleanup(svn_path):
                 if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c"):
                     logger.info("Source file {0} is too large, but importing anyway".format(filename))
                 else:
-                    logger.info("File {0} is too large - not importing".format(filename))
+                    logger.warning("File {0} is too large - not importing".format(filename))
                     os.remove(filename)
             if filename.startswith("."):
                 logger.info("File {0} starts with a '.' - not importing")
@@ -118,7 +129,7 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
     logger.debug("Searching {0}".format(svn_path))
     cmd = ["svn", "ls", os.path.join(svnroot, svn_path)]
     dir_output = subprocess.check_output(cmd).split()
-    if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is quite non-standard (FastPhysTagMon)
+    if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is a bit non-standard (FastPhysTagMon)
         # We are a leaf!
         logger.debug("Found leaf package: {0}".format(svn_path))
         return [svn_path]
@@ -139,6 +150,8 @@ def main():
                         help="list of paths in the SVN tree to veto for processing (can refer to a leaf or an intermediate directory name)")
     parser.add_argument('--svnpackages', metavar='PACKAGE', nargs='+', default=[],
                         help="list of package paths in the SVN tree to process")
+    parser.add_argument('--svnpackagesfile', metavar='FILE', 
+                        help="file containing list of package paths in the SVN tree to process")
     parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
                         help="limit number of tags to import into git (by default import everything)")    
     parser.add_argument('--svncachefile', metavar='FILE',
@@ -151,7 +164,7 @@ def main():
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    if args.svnpackages == [] and args.svnpaths == []:
+    if args.svnpackages == [] and args.svnpaths == [] and args.svnpackagesfile == None:
         args.svnpaths = ["."]
 
     # Set svnroot and git repo
@@ -161,6 +174,14 @@ def main():
 
     # Decide which svn packages we will import
     svn_packages = args.svnpackages
+    if args.svnpackagesfile:
+        logger.info("Reading packages to import from {0}".format(args.svnpackagesfile))
+        with open(args.svnpackagesfile) as pkg_file:
+            for package in pkg_file:
+                package = package.strip()
+                if package.startswith("#") or package == "":
+                    continue
+                svn_packages.append(package)
     for path_element in args.svnpaths:
         svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
     logger.debug("Packages to import: {0}".format(svn_packages))
