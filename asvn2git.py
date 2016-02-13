@@ -17,7 +17,6 @@ import sys
 import tempfile
 import time
 import xml.etree.ElementTree as eltree
-from subprocess import CalledProcessError
 
 # Setup basic logging
 logger = logging.getLogger('as2g')
@@ -27,6 +26,27 @@ hdlr.setFormatter(frmt)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
+
+def check_output_with_retry(cmd, retires=3, wait=10):
+    '''Multiple attempt wrapper for subprocess.check_call'''
+    success = failure = False
+    tries = 0
+    while not success and not failure:
+        tries += 1
+        try:
+            logger.debug("Calling {0}".format(cmd))
+            output = subprocess.check_output(cmd)
+            success = True
+        except subprocess.CalledProcessError:
+            logger.warning("Attempt {0} to execute {1} failed".format(tries, cmd))
+            if tries >= retries:
+                failure = True
+            else:
+                time.sleep(wait)
+    if failure:
+        raise subprocess.CalledProcessError
+    return output
+    
 
 def set_svn_packages_from_args(svnroot, args):
     '''Return a list of svn packages to import, based on args settings'''
@@ -87,7 +107,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tr
 def get_all_package_tags(svnroot, package_path, include_trunk=True):
     '''Retrieve all tags for a package in svnroot'''
     cmd = ["svn", "ls", os.path.join(svnroot, package_path, "tags")]
-    tag_output = subprocess.check_output(cmd)
+    tag_output = check_output_with_retry(cmd)
     tag_list = [ os.path.join("tags", s.rstrip("/")) for s in tag_output.split() ]
     if include_trunk:
         tag_list.append("trunk")
@@ -121,10 +141,10 @@ def init_git(gitrepo):
     os.chdir(gitrepo)
     if os.path.exists(os.path.join(gitrepo, ".git")):
         logger.info("Found existing git repo, {0}".format(gitrepo))
-        subprocess.check_call(("git", "reset", "--hard"))
+        check_output_with_retry(("git", "reset", "--hard"))
     else:
         logger.info("Initialising git repo: {0}".format(gitrepo))
-        subprocess.check_call(("git", "init"))
+        check_output_with_retry(("git", "init"))
 
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master", delete_tag=False):
@@ -134,12 +154,12 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     os.chdir(gitrepo)
     git_tag = os.path.join(package, tag)
     cmd = ["git", "tag", "-l", git_tag]
-    git_tag_check = subprocess.check_output(cmd)
+    git_tag_check = check_output_with_retry(cmd)
     if len(git_tag_check) > 0:
         if delete_tag:
             logger.info("Deleting tag {0}".format(git_tag))
             cmd = ["git", "tag", "-d", git_tag]
-            subprocess.check_output(cmd)
+            check_output_with_retry(cmd)
         else:
             logger.info("Tag {0} exists already - skipping".format(git_tag))
             return
@@ -149,7 +169,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
     cmd = ["svn", "co", os.path.join(svnroot, package, tag), os.path.join(tempdir, package)]
-    subprocess.check_call(cmd)
+    check_output_with_retry(cmd)
 
     # Clean out directory of things we don't want to import
     svn_cleanup(full_svn_path)
@@ -169,18 +189,18 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     # Commit
     os.chdir(gitrepo)
     cmd = ["git", "add", "-A"]
-    subprocess.check_call(cmd)
+    check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
-        subprocess.check_call(cmd)
+        check_output_with_retry(cmd)
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
         cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), 
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
-    subprocess.check_call(cmd)
+    check_output_with_retry(cmd)
     cmd = ["git", "tag", "-a", git_tag, "-m", ""]
-    subprocess.check_call(cmd)
+    check_output_with_retry(cmd)
     
     # Clean up
     shutil.rmtree(tempdir)
@@ -212,7 +232,7 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
     my_package_list = []
     logger.debug("Searching {0}".format(svn_path))
     cmd = ["svn", "ls", os.path.join(svnroot, svn_path)]
-    dir_output = subprocess.check_output(cmd).split()
+    dir_output = check_output_with_retry(cmd).split()
     if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is a bit non-standard (FastPhysTagMon)
         # We are a leaf!
         logger.info("Found leaf package: {0}".format(svn_path))
@@ -227,7 +247,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     '''Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision'''
     logger.debug("Querying SVN metadeta for {0}".format(os.path.join(package, package_path)))
     cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
-    svn_info = subprocess.check_output(cmd)
+    svn_info = check_output_with_retry(cmd)
     tree = eltree.fromstring(svn_info)
     return {
             "date": tree.find(".//date").text,
