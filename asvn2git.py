@@ -27,8 +27,8 @@ logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
 
-def check_output_with_retry(cmd, retires=3, wait=10):
-    '''Multiple attempt wrapper for subprocess.check_call'''
+def check_output_with_retry(cmd, retries=3, wait=10):
+    '''Multiple attempt wrapper for subprocess.check_call (especially remove SVN commands can bork)'''
     success = failure = False
     tries = 0
     while not success and not failure:
@@ -44,7 +44,7 @@ def check_output_with_retry(cmd, retires=3, wait=10):
             else:
                 time.sleep(wait)
     if failure:
-        raise subprocess.CalledProcessError
+        raise RuntimeError("Repeated failures to execute {0}".format(cmd))
     return output
     
 
@@ -194,7 +194,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
-        check_output_with_retry(cmd)
+        msg.debug(check_output_with_retry(cmd))
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
         cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), 
@@ -234,13 +234,13 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
     my_package_list = []
     logger.debug("Searching {0}".format(svn_path))
     cmd = ["svn", "ls", os.path.join(svnroot, svn_path)]
-    dir_output = check_output_with_retry(cmd).split()
+    dir_output = check_output_with_retry(cmd).split("\n")
     if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is a bit non-standard (FastPhysTagMon)
         # We are a leaf!
         logger.info("Found leaf package: {0}".format(svn_path))
         return [svn_path]
     for entry in dir_output:
-        if entry.endswith("/") and not entry.rstrip("/") in pathveto:
+        if entry.endswith("/") and not entry.rstrip("/") in pathveto and not " " in entry:
             my_package_list.extend(svn_find_packages(svnroot, os.path.join(svn_path, entry)))
     return my_package_list
 
