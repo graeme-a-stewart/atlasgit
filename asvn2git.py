@@ -121,9 +121,10 @@ def svn_cache_revision_dict_init(svn_metadata_cache):
     for package in svn_metadata_cache:
         for tag in svn_metadata_cache[package]:
             if svn_metadata_cache[package][tag]["revision"] in svn_cache_revision_dict:
-                logger.error("Found 2 package tags on same ({0}) SVN revision!".format(svn_metadata_cache[package][tag]["revision"]))
-                sys.exit(1)
-            svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]] = {"package": package, "tag": tag}
+                # It is possible for a single SVN commit to straddle packages
+                svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]].append({"package": package, "tag": tag})
+            else:
+                svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]] = [{"package": package, "tag": tag}]
     return svn_cache_revision_dict
 
 
@@ -194,7 +195,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
-        msg.debug(check_output_with_retry(cmd))
+        logger.debug(check_output_with_retry(cmd))
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
         cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), 
@@ -330,9 +331,9 @@ def main():
     ordered_revisions = svn_cache_revision_dict.keys()
     ordered_revisions.sort()
     for rev in ordered_revisions:
-        svn_co_tag_and_commit(svnroot, gitrepo, svn_cache_revision_dict[rev]["package"], 
-                              svn_cache_revision_dict[rev]["tag"], 
-                              svn_metadata_cache[svn_cache_revision_dict[rev]["package"]][svn_cache_revision_dict[rev]["tag"]])
+        for pkg_tag in svn_cache_revision_dict[rev]:
+            svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
+                                  svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]])
 
 if __name__ == '__main__':
     main()
