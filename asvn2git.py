@@ -61,6 +61,8 @@ def set_svn_packages_from_args(svnroot, args):
                 svn_packages.append(package)
     for path_element in args.svnpath:
         svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
+    # De-duplicate!
+    svn_packages = list(set(svn_packages))
     logger.debug("Packages to import: {0}".format(svn_packages))
     return svn_packages
 
