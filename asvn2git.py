@@ -153,6 +153,9 @@ def init_git(gitrepo):
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master", delete_tag=False):
     '''Make a temporary space, check out, copy and then git commit'''
     
+    # Clean up package name a bit...
+    package = package.rstrip("/").lstrip("./")
+    
     # Pre-check if we have this tag already
     os.chdir(gitrepo)
     git_tag = os.path.join(package, tag)
@@ -167,7 +170,6 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
             logger.info("Tag {0} exists already - skipping".format(git_tag))
             return
     
-    package = package.rstrip("/") # Trailing / causes shutil.move to add an extra subdir
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
