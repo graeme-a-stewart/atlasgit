@@ -61,8 +61,8 @@ def set_svn_packages_from_args(svnroot, args):
                 svn_packages.append(package)
     for path_element in args.svnpath:
         svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
-    # De-duplicate!
-    svn_packages = list(set(svn_packages))
+    # De-duplicate and clean unwanted prefix/suffix pieces of the path
+    svn_packages = [ pkg.rstrip("/").lstrip("./") for pkg in set(svn_packages) ]
     logger.debug("Packages to import: {0}".format(svn_packages))
     return svn_packages
 
@@ -150,26 +150,8 @@ def init_git(gitrepo):
         check_output_with_retry(("git", "init"))
 
 
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master", delete_tag=False):
-    '''Make a temporary space, check out, copy and then git commit'''
-    
-    # Clean up package name a bit...
-    package = package.rstrip("/").lstrip("./")
-    
-    # Pre-check if we have this tag already
-    os.chdir(gitrepo)
-    git_tag = os.path.join(package, tag)
-    cmd = ["git", "tag", "-l", git_tag]
-    git_tag_check = check_output_with_retry(cmd)
-    if len(git_tag_check) > 0:
-        if delete_tag:
-            logger.info("Deleting tag {0}".format(git_tag))
-            cmd = ["git", "tag", "-d", git_tag]
-            check_output_with_retry(cmd)
-        else:
-            logger.info("Tag {0} exists already - skipping".format(git_tag))
-            return
-    
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master"):
+    '''Make a temporary space, check out from svn, clean-up, copy and then git commit and tag'''
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
@@ -261,6 +243,12 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
             }
 
 
+def get_current_git_tags(gitrepo):
+    os.chdir(gitrepo)
+    cmd = ["git", "tag", "-l"]
+    return check_output_with_retry(cmd).split("\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description='SVN to git migrator, ATLAS style')
     parser.add_argument('svnroot', metavar='SVNDIR',
@@ -329,11 +317,17 @@ def main():
     # Setup the git repository
     init_git(gitrepo)
 
+    # Pull current list of tags here, to fast skip work already done
+    current_git_tags = get_current_git_tags(gitrepo)
+
     # Process each SVN tag in order
     ordered_revisions = svn_cache_revision_dict.keys()
     ordered_revisions.sort()
     for rev in ordered_revisions:
         for pkg_tag in svn_cache_revision_dict[rev]:
+            if os.path.join(pkg_tag["package"], pkg_tag["tag"]) in current_git_tags:
+                logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
+                continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]])
 
