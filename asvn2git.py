@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
 
 
 def check_output_with_retry(cmd, retries=3, wait=10):
-    '''Multiple attempt wrapper for subprocess.check_call (especially remove SVN commands can bork)'''
+    '''Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)'''
     success = failure = False
     tries = 0
     while not success and not failure:
@@ -88,7 +88,7 @@ def initialise_svn_metadata(svncachefile):
     return svn_metadata_cache
 
 
-def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, trimtags=None):
+def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, trimtags=None, oldest_time=None):
     '''Scan package tags from SVN and populate metadata cache if necessary'''
     for package in svn_packages:
         logger.info("Preparing package {0}".format(package))
@@ -103,6 +103,12 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tr
             if package not in svn_metadata_cache:
                 svn_metadata_cache[package] = {}
             if tag not in svn_metadata_cache[package]:
+                svn_metadata = svn_get_path_metadata(svnroot, package, tag)
+                if oldest_time:
+                    svn_time = time.strptime(svn_metadata["date"], '%Y-%m-%dT%H:%M:%S')
+                    if svn_time < oldest_time:
+                        logger.debug("Vetoed {0} ({1} is too old)".format(tag, svn_metadata["date"]))
+                        continue
                 svn_metadata_cache[package][tag] = svn_get_path_metadata(svnroot, package, tag)
 
 
@@ -186,7 +192,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
     check_output_with_retry(cmd)
-    cmd = ["git", "tag", "-a", git_tag, "-m", ""]
+    cmd = ["git", "tag", "-a", os.path.join(package, tag), "-m", ""]
     check_output_with_retry(cmd)
     
     # Clean up
@@ -240,7 +246,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     svn_info = check_output_with_retry(cmd)
     tree = eltree.fromstring(svn_info)
     return {
-            "date": tree.find(".//date").text,
+            "date": tree.find(".//date").text.rsplit(".",1)[0], # Strip off sub-second part
             "author": tree.find(".//author").text,
             "revision": int(tree.find(".//commit").attrib['revision']),
             }
@@ -267,7 +273,9 @@ def main():
     parser.add_argument('--svnpackagefile', metavar='FILE', 
                         help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
-                        help="limit number of tags to import into git (by default import everything)")    
+                        help="limit number of tags to import into git (by default import everything)")
+    parser.add_argument('--tagtimelimit', metavar='YYYY-MM-DD', default=None, 
+                        help="limit tag import to tags newer than time limit")
     parser.add_argument('--skiptagscan', action="store_true", default=False,
                         help="skip scanning SVN for current tags (only tags from SVN cache file are processed)")    
     parser.add_argument('--svncachefile', metavar='FILE',
@@ -293,6 +301,9 @@ def main():
     start_timestamp_string = time.strftime("%Y%m%dT%H%M.%S")
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
 
+    if args.tagtimelimit:
+        args.tagtimelimit = time.strptime(args.tagtimelimit, "%Y-%m-%d")
+        
 
     ### Main actions start here
     ## SVN interactions and reloading state    
@@ -307,7 +318,7 @@ def main():
 
     # Prepare package import
     if not args.skiptagscan:
-        scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, args.trimtags)
+        scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, args.trimtags, args.tagtimelimit)
 
     # Now presistify metadata cache
     backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
