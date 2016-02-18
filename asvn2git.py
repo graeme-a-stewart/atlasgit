@@ -200,17 +200,20 @@ def svn_cleanup(svn_path):
     for root, dirs, files in os.walk(svn_path):
         for name in files:
             filename = os.path.join(root, name)
-            if os.stat(filename).st_size > 100*1024:
-                if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c"):
-                    logger.info("Source file {0} is too large, but importing anyway".format(filename))
-                elif name in ("ChangeLog"):
-                    logger.info("Repo file {0} is too large, but importing anyway".format(filename))
-                else:
-                    logger.warning("File {0} is too large - not importing".format(filename))
+            try:
+                if os.stat(filename).st_size > 100*1024:
+                    if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c"):
+                        logger.info("Source file {0} is too large, but importing anyway".format(filename))
+                    elif name in ("ChangeLog"):
+                        logger.info("Repo file {0} is too large, but importing anyway".format(filename))
+                    else:
+                        logger.warning("File {0} is too large - not importing".format(filename))
+                        os.remove(filename)
+                if filename.startswith("."):
+                    logger.warning("File {0} starts with a '.' - not importing")
                     os.remove(filename)
-            if filename.startswith("."):
-                logger.warning("File {0} starts with a '.' - not importing")
-                os.remove(filename)
+            except OSError, e:
+                logger.warning("Got OSError treating {0}: {1}".format(filename, e))
 
     
 def svn_find_packages(svnroot, svn_path, pathveto = []):
