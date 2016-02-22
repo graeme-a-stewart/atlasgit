@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import os.path
+import re
 import shutil
 import subprocess
 import sys
@@ -93,6 +94,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tr
     for package in svn_packages:
         logger.info("Preparing package {0}".format(package))
         tags = get_all_package_tags(svnroot, package)
+        last_veto_tag = None
         
         if trimtags:
             # Restrict tag list size
@@ -108,7 +110,15 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tr
                     svn_time = time.strptime(svn_metadata["date"], '%Y-%m-%dT%H:%M:%S')
                     if svn_time < oldest_time:
                         logger.debug("Vetoed {0} ({1} is too old)".format(tag, svn_metadata["date"]))
+                        # We save the latest trunk tag before the time veto, so that we have the trunk
+                        # tag on the time boundary
+                        # N.B. This relies on the time ordering of tags from "svn ls"!
+                        if is_trunk_tag(tag):
+                            last_veto_tag = tag
                         continue
+                if last_veto_tag:
+                    svn_metadata_cache[package][last_veto_tag] = svn_get_path_metadata(svnroot, package, last_veto_tag)
+                    last_veto_tag = None
                 svn_metadata_cache[package][tag] = svn_get_path_metadata(svnroot, package, tag)
 
 
@@ -256,6 +266,9 @@ def get_current_git_tags(gitrepo):
     os.chdir(gitrepo)
     cmd = ["git", "tag", "-l"]
     return check_output_with_retry(cmd).split("\n")
+
+def is_trunk_tag(tag):
+    return re.match(r'[a-zA-Z]+-\d{2}-\d{2}-\d{2}$', tag)
 
 
 def main():
