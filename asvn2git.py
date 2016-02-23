@@ -191,7 +191,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     
     # Commit
     os.chdir(gitrepo)
-    cmd = ["git", "add", "-A"]
+    cmd = ["git", "add", package]
     check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
