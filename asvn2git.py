@@ -288,7 +288,7 @@ def main():
 
     # Set svnroot and git repo, get some starting values
     svnroot = args.svnroot
-    gitrepo = args.gitrepo
+    gitrepo = os.path.abspath(args.gitrepo)
     start_cwd = os.getcwd()
     start_timestamp_string = time.strftime("%Y%m%dT%H%M.%S")
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
