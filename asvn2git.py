@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import os.path
+import pprint
 import re
 import shutil
 import subprocess
@@ -270,6 +271,24 @@ def get_current_git_tags(gitrepo):
 def is_trunk_tag(tag):
     return re.match(r'[a-zA-Z]+-\d{2}-\d{2}-\d{2}$', tag)
 
+def gettagsfromdiffs(tag_diff_files, only_release_tags):
+    svn_package_tags = {}
+    for tag_diff_file in tag_diff_files:
+        with open(tag_diff_file) as tag_diff_fh:
+            tag_diff_dict = json.load(tag_diff_fh)
+            for entry in tag_diff_dict:
+                logger.info("Parsing release {0} from {1}".format(entry["release"], tag_diff_file))
+                for tag_action in ("add", "update"):
+                    for package, tag in entry["diff"][tag_action].iteritems():
+                        if package in svn_package_tags:
+                            svn_package_tags[package].add(tag)
+                        else:
+                            svn_package_tags[package] = set((tag,))
+    pprint.pprint(svn_package_tags)
+    sys.exit(0)
+    return svn_package_tags
+            
+
 
 def main():
     parser = argparse.ArgumentParser(description='SVN to git migrator, ATLAS style')
@@ -289,6 +308,11 @@ def main():
                         help="limit number of tags to import into git (by default import everything)")
     parser.add_argument('--tagtimelimit', metavar='YYYY-MM-DD', default=None, 
                         help="limit tag import to tags newer than time limit")
+    parser.add_argument('--tagsfromtagdiff', nargs="+",
+                        help="read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
+                        "all will be scanned to find tags to import")
+    parser.add_argument('--onlyreleasetags', action="store_true", default=False,
+                        help="only import package tags from tag diff files, instead of all tags from oldest release tag")
     parser.add_argument('--skiptagscan', action="store_true", default=False,
                         help="skip scanning SVN for current tags (only tags from SVN cache file are processed)")    
     parser.add_argument('--svncachefile', metavar='FILE',
@@ -321,7 +345,10 @@ def main():
     ### Main actions start here
     ## SVN interactions and reloading state    
     # Decide which svn packages we will import
-    svn_packages = set_svn_packages_from_args(svnroot, args)
+    if args.tagsfromtagdiff != []:
+        svn_package_tags = gettagsfromdiffs(args.tagsfromtagdiff, args.onlyreleasetags)
+    else:
+        svn_packages = set_svn_packages_from_args(svnroot, args)
     
     # Save package list for the future 
     backup_package_list(svn_packages, start_cwd, args.svnpackagefile, start_timestamp_string)
