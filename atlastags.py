@@ -54,6 +54,12 @@ def parse_tag_file(filename):
                 (package, tag, project) = line.split(" ")
             except ValueError:
                 continue
+            # Gaudi packages live in a separate project
+            if project == "GAUDI":
+                continue
+            # "Release" packages live inside the Release path
+            if package.endswith("Release") and "/" not in package:
+                package = os.path.join("Projects", package)
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
             release_package_dict[package] = {"tag": tag, "project": project}
     return release_package_dict
