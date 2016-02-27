@@ -63,15 +63,16 @@ def set_svn_packages_from_args(svnroot, args):
         with open(args.svnpackagefile) as pkg_file:
             snv_packages = json.load(pkg_file)
     else:
+        logger.info("Base package list is empty")
         svn_packages = {}
-    extra_packges = args.svnpackage
+    extra_packages = args.svnpackage
     for path_element in args.svnpath:
-        extra_packges.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
+        extra_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
     # De-duplicate and clean unwanted prefix/suffix pieces of the path
-    extra_packages = [ pkg.rstrip("/").lstrip("./") for pkg in set(svn_packages) ]
+    extra_packages = [ pkg.rstrip("/").lstrip("./") for pkg in set(extra_packages) ]
     for package in extra_packages:
         if package not in svn_packages:
-            svn_package[package] = []
+            svn_packages[package] = []
     logger.debug("Packages to import: {0}".format(svn_packages))
     return svn_packages
 
@@ -103,7 +104,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
     # from release diff files then the logic is rather different than if it's from package
     # tag scans, so there's a big switch...
     for package, package_tags in svn_packages.iteritems():
-        logger.info("Preparing package {0}".format(package))
+        logger.info("Preparing package {0} (base tags: {1})".format(package, package_tags))
         if tags_from_diff:
             if only_package_tags:
                 # Nothing to do!
@@ -122,6 +123,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
                 # Restrict tag list size
                 tags = tags[-trimtags:]
             package_tags.extend(tags)
+            logger.debug("Found {0}".format(package_tags))
         # We need to now sort the package tags and remove any duplicates
         ordered_tags = list(set(package_tags))
         ordered_tags.sort()
@@ -216,12 +218,11 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
         os.makedirs(package_root)
     except OSError:
         pass
-    logger.info("Moving {0} to {1}".format(full_svn_path, package_root))
     shutil.move(full_svn_path, package_root)
     
     # Commit
     os.chdir(gitrepo)
-    cmd = ["git", "add", package]
+    cmd = ["git", "add", "-A", package]
     check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
@@ -340,7 +341,7 @@ def main():
                         help="limit number of tags to import into git (by default import everything)")
     parser.add_argument('--tagtimelimit', metavar='YYYY-MM-DD', default=None, 
                         help="limit tag import to tags newer than time limit")
-    parser.add_argument('--tagsfromtagdiff', nargs="+",
+    parser.add_argument('--tagsfromtagdiff', nargs="+", default=[],
                         help="read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
                         "all will be scanned to find tags to import. Note that this mode completely changes the way that "
                         "the tag scanning logic works, so the --svnpath*, --trimtags, --tagtimelimit will be ignored.")
@@ -383,7 +384,7 @@ def main():
     # Note that if we're pulling the packages from a tag diff file, we also get tags
     # at this point, therwise the tag list is empty.
     tag_diff_flag = False
-    if args.tagsfromtagdiff != []:
+    if len(args.tagsfromtagdiff) > 0:
         svn_packages = get_tags_from_diffs(args.tagsfromtagdiff)
         tag_diff_flag = True
     else:
