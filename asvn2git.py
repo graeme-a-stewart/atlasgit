@@ -353,6 +353,8 @@ def main():
                         help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="file containing cache of SVN information - default 'gitrepo.svn.metadata'")
+    parser.add_argument('--importtimingfile', metavar="FILE",
+                        help="file to dump SVN->git import timing information")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
@@ -424,6 +426,7 @@ def main():
     ordered_revisions.sort()
     logger.info("Will process {0} SVN revisions in total".format(len(ordered_revisions)))
     counter=0
+    timing = []
     for rev in ordered_revisions:
         counter+=1
         start=time.time()
@@ -434,7 +437,14 @@ def main():
                 continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]])
-        logger.info("{0} processed in {1}s".format(counter, time.time()-start))
+        elapsed = time.time()-start
+        logger.info("{0} processed in {1}s".format(counter, elapsed))
+        timing.append(elapsed)
+        
+    if args.importtimingfile:
+        os.chdir(start_cwd)
+        with open(args.importtimingfile, "w") as time_file:
+            json.dump(timing, time_file)
 
 if __name__ == '__main__':
     main()
