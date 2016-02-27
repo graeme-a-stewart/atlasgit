@@ -426,6 +426,7 @@ def main():
     counter=0
     for rev in ordered_revisions:
         counter+=1
+        start=time.time()
         logger.info("SVN Revsion {0} ({1} of {2})".format(rev, counter, len(ordered_revisions)))
         for pkg_tag in svn_cache_revision_dict[rev]:
             if os.path.join(pkg_tag["package"], pkg_tag["tag"]) in current_git_tags:
@@ -433,6 +434,7 @@ def main():
                 continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]])
+        logger.info("{0} processed in {1}s".format(counter, time.time()-start))
 
 if __name__ == '__main__':
     main()
