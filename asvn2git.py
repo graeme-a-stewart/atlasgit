@@ -311,14 +311,13 @@ def get_tags_from_diffs(tag_diff_files):
             tag_diff_dict = json.load(tag_diff_fh)
             for entry in tag_diff_dict:
                 logger.info("Parsing release {0} from {1}".format(entry["release"], tag_diff_file))
-                for tag_action in ("add", "update"):
-                    for package, tag in entry["diff"][tag_action].iteritems():
-                        # Add in the standard "tags" path 
-                        tag = os.path.join("tags", tag)
-                        if package in svn_package_tags:
-                            svn_package_tags[package].add(tag)
-                        else:
-                            svn_package_tags[package] = set((tag,))
+                for package, tag in entry["diff"]["add"].iteritems():
+                    # Add in the standard "tags" path 
+                    tag = os.path.join("tags", tag)
+                    if package in svn_package_tags:
+                        svn_package_tags[package].add(tag)
+                    else:
+                        svn_package_tags[package] = set((tag,))
     # Now convert back to list and sort tags...
     for package in svn_package_tags:
         svn_package_tags[package] = list(svn_package_tags[package])

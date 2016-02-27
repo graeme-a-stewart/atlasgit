@@ -58,10 +58,10 @@ def parse_tag_file(filename):
                 (package, tag, project) = line.split(" ")
             except ValueError:
                 continue
-            # Gaudi packages live in a separate project
+            # Gaudi packages live in a separate project, so don't add them
             if project == "GAUDI":
                 continue
-            # "Release" packages live inside the Release path
+            # "Release" and "RunTime" packages live inside the Release path
             if (package.endswith("Release") or package.endswith("RunTime")) and "/" not in package:
                 package = os.path.join("Projects", package)
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
@@ -70,8 +70,9 @@ def parse_tag_file(filename):
             
 def diff_release_tags(old, new, allow_removal=False):
     '''Return a structured dictionary describing the difference between releases.
+    Difference has two sections "add" for added/updated tags; "remove" for removed packages.
     If "old" release is "None", difference is the new release as all tags are considered added'''
-    rel_diff = {"update": {}, "add": {}, "remove": []}
+    rel_diff = {"add": {}, "remove": []}
     if old:
         logger.debug("Tag difference from {0} to {1} (removal: {2})".format(old["release"]["name"],
                                                                             new["release"]["name"],
@@ -87,7 +88,7 @@ def diff_release_tags(old, new, allow_removal=False):
                 logger.debug("Package {0} changed from tag {1} to {2}".format(package, 
                                                                               old["tags"][package]["tag"],
                                                                               new["tags"][package]["tag"]))
-                rel_diff["update"][package] = new["tags"][package]["tag"]
+                rel_diff["add"][package] = new["tags"][package]["tag"]
             else:
                 logger.debug("Package {0} added at tag {1}".format(package, 
                                                                    new["tags"][package]["tag"]))
@@ -104,12 +105,10 @@ def diff_release_tags(old, new, allow_removal=False):
 def cache_overlap_removal(release_diff, base_release, last_cache):
     for package in last_cache:
         # Remove packages that stayed the same between caches
-        if package in release_diff["update"] and release_diff["update"][package] == last_cache["tags"][package]["tag"]:
-            del(release_diff["update"][package])
-        elif package in release_diff["add"] and release_diff["add"][package] == last_cache["tags"][package]["tag"]:
+        if package in release_diff["add"] and release_diff["add"][package] == last_cache["tags"][package]["tag"]:
             del(release_diff["add"][package])
 
-        if package not in release_diff["update"] and package not in release_diff["add"]:
+        if package not in release_diff["add"]:
             # Package was removed from the cache - revert to base tag or remove completely
             try:
                 release_diff["update"][package] = base_release["tags"][package]["tag"]
