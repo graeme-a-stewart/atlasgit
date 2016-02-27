@@ -4,12 +4,22 @@ ATLAS git importer
 Files
 -----
 
-Modules to import ATLAS SVN to git
+Modules to import ATLAS SVN to git.
 
-`asvn2git.py` - Main script which imports a set of SVN tags into a git repository
+Main files:
 
-`atlastags.py` - Script that parses NICOS tag files to understand the SVN tag content
+`asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on the 
+master branch
+
+`atlastags.py` - Parses NICOS tag files to understand the SVN tag content
 of a release; does diffs between a base release and various caches
+
+`branchbuilder.py` - Reconstruct from tag diffs the state of an offline release
+on a git branch
+
+---
+
+Auxiliary files:
 
 `get_prod_tags.sh` - simple helper script to wrap atlastags.py and make simple
 tagdiff file for a base release and all caches
