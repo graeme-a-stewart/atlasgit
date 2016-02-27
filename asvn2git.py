@@ -39,6 +39,7 @@ def check_output_with_retry(cmd, retries=3, wait=10):
     '''Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)'''
     success = failure = False
     tries = 0
+    start = time.time()
     while not success and not failure:
         tries += 1
         try:
@@ -53,6 +54,7 @@ def check_output_with_retry(cmd, retries=3, wait=10):
                 time.sleep(wait)
     if failure:
         raise RuntimeError("Repeated failures to execute {0}".format(cmd))
+    logger.debug("Executed in {0}s".format(time.time()-start))
     return output
     
 
