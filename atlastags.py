@@ -18,7 +18,11 @@ hdlr.setFormatter(frmt)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 
+nicos="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/"
+
 def parse_release_data(release):
+    if release.startswith(nicos):
+        release = release[len(nicos):]
     release_name = release.split("/")[0]
     release_elements = release_name.split(".")
     if len(release_elements) < 3:
@@ -58,7 +62,7 @@ def parse_tag_file(filename):
             if project == "GAUDI":
                 continue
             # "Release" packages live inside the Release path
-            if package.endswith("Release") and "/" not in package:
+            if (package.endswith("Release") or package.endswith("RunTime")) and "/" not in package:
                 package = os.path.join("Projects", package)
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
             release_package_dict[package] = {"tag": tag, "project": project}
@@ -129,11 +133,15 @@ def main():
     tags_by_release = {}
     ordered_releases = []
     for release in args.release:
+        if not os.path.exists(release):
+            logger.warning("Release tag file {0} does not exist".format(release))
+            continue
         release_description = parse_release_data(release)
         ordered_releases.append(release_description["name"])
         release_tags = parse_tag_file(release)
         tags_by_release[release_description["name"]] = {"release": release_description,
                                                         "tags": release_tags}
+        logger.info("Processed tags for release {0}".format(release_description["name"]))
 
     # Debug...
     if args.debug:
