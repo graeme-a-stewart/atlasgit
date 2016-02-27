@@ -6,6 +6,12 @@
 # builds
 #
 
+## Note on data structures used:
+# svn_packages is a dictionary, keyed by packages, with a list of tags (usually sorted!)
+#   svn_package = {"path/pkg1": ["tags/pkg1-tag1", "tags/pkg1-tag2", "trunk"], ...} 
+#   N.B. Using a set() for the tag list is not so good - we want it sorted and set() cannot
+#   be JSON serialised.
+
 import argparse
 import json
 import logging
@@ -52,31 +58,31 @@ def check_output_with_retry(cmd, retries=3, wait=10):
 
 def set_svn_packages_from_args(svnroot, args):
     '''Return a list of svn packages to import, based on args settings'''
-    svn_packages = args.svnpackage
     if args.svnpackagefile and os.path.exists(args.svnpackagefile):
         logger.info("Reading packages to import from {0}".format(args.svnpackagefile))
         with open(args.svnpackagefile) as pkg_file:
-            for package in pkg_file:
-                package = package.strip()
-                if package.startswith("#") or package == "":
-                    continue
-                svn_packages.append(package)
+            snv_packages = json.load(pkg_file)
+    else:
+        svn_packages = {}
+    extra_packges = args.svnpackage
     for path_element in args.svnpath:
-        svn_packages.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
+        extra_packges.extend(svn_find_packages(svnroot, path_element, args.svnpathveto))
     # De-duplicate and clean unwanted prefix/suffix pieces of the path
-    svn_packages = [ pkg.rstrip("/").lstrip("./") for pkg in set(svn_packages) ]
+    extra_packages = [ pkg.rstrip("/").lstrip("./") for pkg in set(svn_packages) ]
+    for package in extra_packages:
+        if package not in svn_packages:
+            svn_package[package] = []
     logger.debug("Packages to import: {0}".format(svn_packages))
     return svn_packages
 
 
 def backup_package_list(svn_packages, start_cwd, svnpackagefile, start_timestamp_string):
-    '''Backup package lists to a file'''
+    '''Backup package lists to a file - JSON format'''
     os.chdir(start_cwd)
     if os.path.exists(svnpackagefile):
         os.rename(svnpackagefile, svnpackagefile+".bak."+start_timestamp_string)
     with open(svnpackagefile, "w") as pkg_dump:
-        for package in svn_packages:
-            print >>pkg_dump, package
+        json.dump(svn_packages, pkg_dump)
 
 
 def initialise_svn_metadata(svncachefile):
@@ -90,46 +96,69 @@ def initialise_svn_metadata(svncachefile):
     return svn_metadata_cache
 
 
-def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, trimtags=None, oldest_time=None):
-    '''Scan package tags from SVN and populate metadata cache if necessary'''
-    for package in svn_packages:
+def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tags_from_diff=False, 
+                                   trimtags=None, oldest_time=None, only_package_tags=False):
+    '''Get SVN metadata for each of the package tags we're interested in'''
+    # First we establish the list of tags which we need to deal with. If we are taking tags
+    # from release diff files then the logic is rather different than if it's from package
+    # tag scans, so there's a big switch...
+    for package, package_tags in svn_packages.iteritems():
         logger.info("Preparing package {0}".format(package))
-        tags = get_all_package_tags(svnroot, package)
-        last_veto_tag = None
-        
-        if trimtags:
-            # Restrict tag list size
-            tags = tags[-trimtags:]
+        if tags_from_diff:
+            if only_package_tags:
+                # Nothing to do!
+                pass
+            else:
+                youngest_tag = svn_packages[package][0]
+                tags = get_all_package_tags(svnroot, package)
+                try:
+                    package_tags.extend(tags[tags.value(youngest_tag)+1:])
+                except ValueError:
+                    logger.error("Youngest release tag ({0}) for package {1} not found in SVN!".format(youngest_tag, package))
+                    sys.exit(1)
+        else:
+            tags = get_all_package_tags(svnroot, package)
+            if trimtags:
+                # Restrict tag list size
+                tags = tags[-trimtags:]
+            package_tags.extend(tags)
+        # We need to now sort the package tags and remove any duplicates
+        ordered_tags = list(set(package_tags))
+        ordered_tags.sort()
+        svn_packages[package] = ordered_tags
 
-        for tag in tags:
+    # Now iterate over the required tags and ensure we have the necessary metadata
+    for package, package_tags in svn_packages.iteritems():
+        last_time_veto_tag = None
+        for tag in package_tags:
             # Do we have metadata?
             if package not in svn_metadata_cache:
                 svn_metadata_cache[package] = {}
-            if tag not in svn_metadata_cache[package]:
-                svn_metadata = svn_get_path_metadata(svnroot, package, tag)
-                if oldest_time:
-                    svn_time = time.strptime(svn_metadata["date"], '%Y-%m-%dT%H:%M:%S')
-                    if svn_time < oldest_time:
-                        logger.debug("Vetoed {0} ({1} is too old)".format(tag, svn_metadata["date"]))
-                        # We save the latest trunk tag before the time veto, so that we have the trunk
-                        # tag on the time boundary
-                        # N.B. This relies on the time ordering of tags from "svn ls"!
-                        if is_trunk_tag(tag):
-                            last_veto_tag = tag
-                        continue
-                if last_veto_tag:
-                    svn_metadata_cache[package][last_veto_tag] = svn_get_path_metadata(svnroot, package, last_veto_tag)
-                    last_veto_tag = None
-                svn_metadata_cache[package][tag] = svn_get_path_metadata(svnroot, package, tag)
+            try:
+                if tag not in svn_metadata_cache[package]:
+                    svn_metadata = svn_get_path_metadata(svnroot, package, tag)
+                    if oldest_time:
+                        svn_time = time.strptime(svn_metadata["date"], '%Y-%m-%dT%H:%M:%S')
+                        if svn_time < oldest_time and tag != "trunk":
+                            logger.debug("Vetoed {0} ({1} is too old)".format(tag, svn_metadata["date"]))
+                            # We save the latest trunk tag before the time veto, so that we have the trunk
+                            # tag on the time boundary
+                            # N.B. This relies on the time ordering of tags from "svn ls"!
+                            if is_trunk_tag(tag):
+                                last_time_veto_tag = tag
+                            continue
+                        if last_time_veto_tag:
+                            svn_metadata_cache[package][last_time_veto_tag] = svn_get_path_metadata(svnroot, package, last_time_veto_tag)
+                            last_time_veto_tag = None
+                    svn_metadata_cache[package][tag] = svn_metadata
+            except RuntimeError:
+                logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
-
-def get_all_package_tags(svnroot, package_path, include_trunk=True):
+def get_all_package_tags(svnroot, package_path):
     '''Retrieve all tags for a package in svnroot'''
     cmd = ["svn", "ls", os.path.join(svnroot, package_path, "tags")]
     tag_output = check_output_with_retry(cmd)
     tag_list = [ os.path.join("tags", s.rstrip("/")) for s in tag_output.split() ]
-    if include_trunk:
-        tag_list.append("trunk")
     return tag_list
 
 
@@ -271,7 +300,8 @@ def get_current_git_tags(gitrepo):
 def is_trunk_tag(tag):
     return re.match(r'[a-zA-Z]+-\d{2}-\d{2}-\d{2}$', tag)
 
-def gettagsfromdiffs(tag_diff_files, only_release_tags):
+def get_tags_from_diffs(tag_diff_files):
+    '''Parse packages and package tags from release diff files'''
     svn_package_tags = {}
     for tag_diff_file in tag_diff_files:
         with open(tag_diff_file) as tag_diff_fh:
@@ -280,12 +310,16 @@ def gettagsfromdiffs(tag_diff_files, only_release_tags):
                 logger.info("Parsing release {0} from {1}".format(entry["release"], tag_diff_file))
                 for tag_action in ("add", "update"):
                     for package, tag in entry["diff"][tag_action].iteritems():
+                        # Add in the standard "tags" path 
+                        tag = os.path.join("tags", tag)
                         if package in svn_package_tags:
                             svn_package_tags[package].add(tag)
                         else:
                             svn_package_tags[package] = set((tag,))
-    pprint.pprint(svn_package_tags)
-    sys.exit(0)
+    # Now convert back to list and sort tags...
+    for package in svn_package_tags:
+        svn_package_tags[package] = list(svn_package_tags[package])
+        svn_package_tags[package].sort()
     return svn_package_tags
             
 
@@ -302,19 +336,20 @@ def main():
                         help="list of paths in the SVN tree to veto for processing (can refer to a leaf or an intermediate directory name)")
     parser.add_argument('--svnpackage', metavar='PACKAGE', nargs='+', default=[],
                         help="list of package paths in the SVN tree to process")
-    parser.add_argument('--svnpackagefile', metavar='FILE', 
-                        help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--trimtags', metavar='N', type=int, default=0, 
                         help="limit number of tags to import into git (by default import everything)")
     parser.add_argument('--tagtimelimit', metavar='YYYY-MM-DD', default=None, 
                         help="limit tag import to tags newer than time limit")
     parser.add_argument('--tagsfromtagdiff', nargs="+",
                         help="read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
-                        "all will be scanned to find tags to import")
+                        "all will be scanned to find tags to import. Note that this mode completely changes the way that "
+                        "the tag scanning logic works, so the --svnpath*, --trimtags, --tagtimelimit will be ignored.")
     parser.add_argument('--onlyreleasetags', action="store_true", default=False,
                         help="only import package tags from tag diff files, instead of all tags from oldest release tag")
-    parser.add_argument('--skiptagscan', action="store_true", default=False,
-                        help="skip scanning SVN for current tags (only tags from SVN cache file are processed)")    
+    parser.add_argument('--skiptrunk', action="store_true", default=False,
+                        help="skip package trunk during the import (by default, the trunk will alwaye be processed)")    
+    parser.add_argument('--svnpackagefile', metavar='FILE', 
+                        help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="file containing cache of SVN information - default 'gitrepo.svn.metadata'")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
@@ -345,27 +380,36 @@ def main():
     ### Main actions start here
     ## SVN interactions and reloading state    
     # Decide which svn packages we will import
+    # Note that if we're pulling the packages from a tag diff file, we also get tags
+    # at this point, therwise the tag list is empty.
+    tag_diff_flag = False
     if args.tagsfromtagdiff != []:
-        svn_package_tags = gettagsfromdiffs(args.tagsfromtagdiff, args.onlyreleasetags)
+        svn_packages = get_tags_from_diffs(args.tagsfromtagdiff)
+        tag_diff_flag = True
     else:
         svn_packages = set_svn_packages_from_args(svnroot, args)
-    
+    # Add "trunk" packages, if required
+    for package, tags in svn_packages.iteritems():
+        if args.skiptrunk is False and "trunk" not in tags:
+            tags.append("trunk")
+
     # Save package list for the future 
     backup_package_list(svn_packages, start_cwd, args.svnpackagefile, start_timestamp_string)
     
-    # Initialise SVN metadata cache
+    # Initialise SVN metadata cache with any stored values
     svn_metadata_cache = initialise_svn_metadata(args.svncachefile)
 
     # Prepare package import
-    if not args.skiptagscan:
-        scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, args.trimtags, args.tagtimelimit)
+    #if not args.skiptagscan:
+    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tag_diff_flag, args.trimtags, 
+                                    args.tagtimelimit, args.onlyreleasetags)
 
     # Now presistify metadata cache
     backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
     
     # Setup dictionary for keying by SVN revision number
     svn_cache_revision_dict = svn_cache_revision_dict_init(svn_metadata_cache)
-            
+
 
     ## git actions
     # Setup the git repository
@@ -377,7 +421,11 @@ def main():
     # Process each SVN tag in order
     ordered_revisions = svn_cache_revision_dict.keys()
     ordered_revisions.sort()
+    logger.info("Will process {0} SVN revisions in total".format(len(ordered_revisions)))
+    counter=0
     for rev in ordered_revisions:
+        counter+=1
+        logger.info("SVN Revsion {0} ({1} of {2})".format(rev, counter, len(ordered_revisions)))
         for pkg_tag in svn_cache_revision_dict[rev]:
             if os.path.join(pkg_tag["package"], pkg_tag["tag"]) in current_git_tags:
                 logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
