@@ -43,7 +43,18 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
             logger.info("Tag to branch from master at is {0} (SVN revision {1})".format(tag_to_branch_at, youngest_svn_revision))
             git_change_to_branch(gitrepo, branch, tag_to_branch_at)
             branch_made = True
-            
+        
+        # "Flush" state of the release - the first base release will rebuild the
+        # initial contents
+        for entry in os.listdir(gitrepo):
+            if entry.startswith("."):
+                continue
+            entry = os.path.join(gitrepo, entry)
+            if os.path.isfile(entry):
+                os.unlink(entry)
+            elif os.path.isdir(entry):
+                shutil.rmtree(entry)
+        
         # Now cycle over package tags and update the content of the branch
         for release in tag_diff:
             for package, tag in release["diff"]["add"].iteritems():
@@ -51,7 +62,8 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
                 logger.debug("Checking out: {0}".format(cmd))
                 check_output_with_retry(cmd)
                 
-            check_output_with_retry(("git", "commit", "-A"))
+            check_output_with_retry(("git", "add", "-A"))
+            check_output_with_retry(("git", "commit", "-m", "Release {0}".format(release["release"])))
             check_output_with_retry(("git", "tag", os.path.join("release", release["release"])))
             logger.info("Tagged release {0}".format(release["release"]))
 
