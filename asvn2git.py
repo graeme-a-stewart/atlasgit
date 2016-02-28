@@ -112,12 +112,12 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
                 # Nothing to do!
                 pass
             else:
-                youngest_tag = svn_packages[package][0]
+                oldest_tag = svn_packages[package][0]
                 tags = get_all_package_tags(svnroot, package)
                 try:
-                    package_tags.extend(tags[tags.value(youngest_tag)+1:])
+                    package_tags.extend(tags[tags.index(oldest_tag)+1:])
                 except ValueError:
-                    logger.error("Youngest release tag ({0}) for package {1} not found in SVN!".format(youngest_tag, package))
+                    logger.error("Oldest release tag ({0}) for package {1} not found in SVN!".format(oldest_tag, package))
                     sys.exit(1)
         else:
             tags = get_all_package_tags(svnroot, package)
