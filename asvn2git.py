@@ -63,7 +63,7 @@ def set_svn_packages_from_args(svnroot, args):
     if args.svnpackagefile and os.path.exists(args.svnpackagefile):
         logger.info("Reading packages to import from {0}".format(args.svnpackagefile))
         with open(args.svnpackagefile) as pkg_file:
-            snv_packages = json.load(pkg_file)
+            svn_packages = json.load(pkg_file)
     else:
         logger.info("Base package list is empty")
         svn_packages = {}
@@ -235,7 +235,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
     check_output_with_retry(cmd)
-    cmd = ["git", "tag", "-a", os.path.join(package, tag), "-m", ""]
+    cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag), "-m", ""]
     check_output_with_retry(cmd)
     
     # Clean up
@@ -323,7 +323,12 @@ def get_tags_from_diffs(tag_diff_files):
         svn_package_tags[package] = list(svn_package_tags[package])
         svn_package_tags[package].sort()
     return svn_package_tags
-            
+
+        
+def get_flattened_git_tag(package, tag):
+    if tag == "trunk":
+        return os.path.join("import", "trunk", os.path.basename(package))
+    return os.path.join("import", "tag", os.path.basename(tag))
 
 
 def main():
@@ -433,7 +438,7 @@ def main():
         start=time.time()
         logger.info("SVN Revsion {0} ({1} of {2})".format(rev, counter, len(ordered_revisions)))
         for pkg_tag in svn_cache_revision_dict[rev]:
-            if os.path.join(pkg_tag["package"], pkg_tag["tag"]) in current_git_tags:
+            if get_flattened_git_tag(pkg_tag["package"], pkg_tag["tag"]) in current_git_tags:
                 logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
                 continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
