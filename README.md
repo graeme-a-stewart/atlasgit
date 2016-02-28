@@ -38,6 +38,20 @@ you want to do a more conventional import of a single SVN package, with each SVN
 commit reproduced as a git commit, then the built-in `git svn` module should do this
 for you.
 
+*Important Note* It's very important to run these scripts using version 1.7
+(or later) of the subversion client. This client is much more efficient and
+keeps a `.svn` only at the root of any checkout, which is far easier to import 
+from. (If you don't do this, pieces of SVN metadata will be imported into git!)
+
+On SLC6 use the scl module to activate the 1.7 SVN client:
+
+`/usr/bin/scl enable subversion17 /bin/bash`
+
+These scripts also use python2.7 features, whereas the SLC6 native python is 2.6.
+Fix with:
+
+`setupATLAS`
+`lsetup python`
 
 ### Decide what to import to master
 
