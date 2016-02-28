@@ -10,13 +10,8 @@ import os
 import os.path
 import sys
 
-# Setup basic logging
-logger = logging.getLogger('atags')
-hdlr = logging.StreamHandler(sys.stdout)
-frmt = logging.Formatter("%(name)s.%(funcName)s %(levelname)s %(message)s")
-hdlr.setFormatter(frmt)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
+from glogger import logger
+
 
 nicos="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/"
 

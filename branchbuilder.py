@@ -9,18 +9,11 @@ import json
 import logging
 import os
 import os.path
+import shutil
 import sys
 
 from asvn2git import check_output_with_retry 
-
-# Setup basic logging
-logger = logging.getLogger('bb')
-hdlr = logging.StreamHandler(sys.stdout)
-frmt = logging.Formatter("%(name)s.%(funcName)s %(levelname)s %(message)s")
-hdlr.setFormatter(frmt)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
-
+from glogger import logger
 
 def git_change_to_branch(gitrepo, branch, branch_point=None):
     os.chdir(gitrepo)

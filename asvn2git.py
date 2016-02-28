@@ -26,13 +26,7 @@ import tempfile
 import time
 import xml.etree.ElementTree as eltree
 
-# Setup basic logging
-logger = logging.getLogger('as2g')
-hdlr = logging.StreamHandler(sys.stdout)
-frmt = logging.Formatter("%(name)s.%(funcName)s %(levelname)s %(message)s")
-hdlr.setFormatter(frmt)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
+from glogger import logger
 
 
 def check_output_with_retry(cmd, retries=3, wait=10):
