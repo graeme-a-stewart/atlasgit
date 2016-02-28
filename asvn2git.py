@@ -231,7 +231,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
         logger.debug(check_output_with_retry(cmd))
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
-        cmd.extend(("--author='{0} <{0}@cern.ch>".format(svn_metadata["author"]), 
+        cmd.extend(("--author='{0} <{0}@cern.ch>'".format(svn_metadata["author"]), 
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
     check_output_with_retry(cmd)
