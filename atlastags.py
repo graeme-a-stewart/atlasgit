@@ -99,7 +99,8 @@ def diff_release_tags(old, new, allow_removal=False):
 
 
 def cache_overlap_removal(release_diff, base_release, last_cache):
-    for package in last_cache:
+    '''Remove and update packages vz a viz the last cache release'''
+    for package in last_cache["tags"]:
         # Remove packages that stayed the same between caches
         if package in release_diff["add"] and release_diff["add"][package] == last_cache["tags"][package]["tag"]:
             del(release_diff["add"][package])
@@ -107,7 +108,7 @@ def cache_overlap_removal(release_diff, base_release, last_cache):
         if package not in release_diff["add"]:
             # Package was removed from the cache - revert to base tag or remove completely
             try:
-                release_diff["update"][package] = base_release["tags"][package]["tag"]
+                release_diff["add"][package] = base_release["tags"][package]["tag"]
             except KeyError:
                 release_diff["remove"].append(package)
 
@@ -209,13 +210,6 @@ def main():
                                                         "tags": release_tags}
         logger.info("Processed tags for release {0}".format(release_description["name"]))
 
-    # Debug...
-    if args.debug:
-        for (old, new) in zip(ordered_releases[:-1], ordered_releases[1:]):
-            diff = diff_release_tags(tags_by_release[old], tags_by_release[new])
-            print "{0} -> {1}".format(old, new)
-            print "  add: {0} tags".format(len(diff["add"]))
-            print "  remove: {0} tags".format(len(diff["remove"]))
 
     ## Process releases in order, calculating tag differences
     if tags_by_release[ordered_releases[0]]["release"]["type"] != "base":
