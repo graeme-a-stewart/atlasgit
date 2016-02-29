@@ -57,13 +57,12 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
         
         # Now cycle over package tags and update the content of the branch
         for release in tag_diff:
+            logger.info("Processing release {0}".format(release["release"]))
             for package, tag in release["diff"]["add"].iteritems():
-                cmd = ["git", "checkout", os.path.join("import", "tag", tag), package]
-                logger.debug("Checking out: {0}".format(cmd))
-                check_output_with_retry(cmd)
+                check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package))
                 
             check_output_with_retry(("git", "add", "-A"))
-            check_output_with_retry(("git", "commit", "-m", "Release {0}".format(release["release"])))
+            check_output_with_retry(("git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])))
             check_output_with_retry(("git", "tag", os.path.join("release", release["release"])))
             logger.info("Tagged release {0}".format(release["release"]))
 
