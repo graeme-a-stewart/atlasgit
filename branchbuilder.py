@@ -3,6 +3,7 @@
 # Build a git release branch from a tagdiff history of
 # numbered ATLAS release builds
 #
+# TODO - make retart possible in case of problems part way through
 
 import argparse
 import json
@@ -59,7 +60,10 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
         for release in tag_diff:
             logger.info("Processing release {0}".format(release["release"]))
             for package, tag in release["diff"]["add"].iteritems():
-                check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package))
+                try:
+                    check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package))
+                except RuntimeError:
+                    logger.error("git checkout of {0} tag {1} failed (not imported onto master branch?)".format(package, tag))
                 
             check_output_with_retry(("git", "add", "-A"))
             check_output_with_retry(("git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])))
