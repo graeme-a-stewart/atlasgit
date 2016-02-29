@@ -164,7 +164,7 @@ def find_nicos_from_base(base_release):
     for entry in dir_list:
         if re.match(release_match, entry):
             cache_list.append(entry)
-    cache_list.sort(cmp=lambda x,y: cmp(x.split(".")[3], y.split(".")[3]))
+    cache_list.sort(cmp=lambda x,y: cmp(int(x.split(".")[3]), int(y.split(".")[3])))
     logger.debug("Found ordered list of production caches: {0}".format(cache_list))
     
     # And get tag files...
