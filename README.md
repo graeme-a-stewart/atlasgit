@@ -114,6 +114,15 @@ into any release.)
 Note that `asvn2git.py` will query SVN for revision numbers are make sure that it 
 imports from SVN in SVN commit order. Thus the master branch history is fairly sane.
 
+In order to facilitate the next step (release branch creation) the script creates a git
+tag for every package imported. These are:
+
+`import/tag/Package-XX-YY-ZZ` for tags
+
+`import/trunk/Package` for the trunk
+
+N.B. The creation of this huge number of tags impacts on git performance, so it's best
+to delete the import tags when the branches have been reconstructed.
 
 ### Construct git branches for numbered releases
 
@@ -131,6 +140,11 @@ with a git tag containing the release name being created, e.g., `release/20.1.5.
 
 Note that in the example above a branch was made for the entire 20.1 series. It's
 also possible to make a branch for only, e.g., 20.1.5 and caches.
+
+The script has protection against trying to import a package tag for which no
+corresponding git import tag exists, but this should not happen if the tagdiff
+files used to create the master branch and the release branch are the same.
+
 
 
 
