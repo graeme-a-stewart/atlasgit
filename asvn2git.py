@@ -354,7 +354,7 @@ def main():
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="file containing cache of SVN information - default 'gitrepo.svn.metadata'")
     parser.add_argument('--importtimingfile', metavar="FILE",
-                        help="file to dump SVN->git import timing information")
+                        help="file to dump SVN->git import timing information - default 'gitrepo-timing.json'")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
@@ -368,6 +368,8 @@ def main():
         args.svncachefile = os.path.basename(args.gitrepo) + ".svn.metadata"
     if not args.svnpackagefile:
         args.svnpackagefile = os.path.basename(args.gitrepo) + ".packages"
+    if not args.importtimingfile:
+        args.importtimingfile = os.path.basename(args.gitrepo) + "-timing.json"
 
     # Set svnroot and git repo, get some starting values
     svnroot = args.svnroot
