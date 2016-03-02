@@ -61,7 +61,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
             logger.info("Processing release {0}".format(release["release"]))
             for package, tag in release["diff"]["add"].iteritems():
                 try:
-                    check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package))
+                    check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package), retries=1)
                 except RuntimeError:
                     logger.error("git checkout of {0} tag {1} failed (not imported onto master branch?)".format(package, tag))
                 
