@@ -17,6 +17,10 @@ from glogger import logger
 nicos="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/"
 
 def parse_release_data(release):
+    '''Parse release data from the NICOS name
+    - this is a bit inflexible, relying on the NICOS path or on 
+      the first path element being the release number'''
+    timestamp = os.stat(release).st_mtime
     if release.startswith(nicos):
         release = release[len(nicos):]
     release_name = release.split("/")[0]
@@ -38,6 +42,8 @@ def parse_release_data(release):
                     "patch": release_elements[2],
                     "cache": cache_number,
                     "type": rel_type,
+                    "timestamp": timestamp,
+                    "author": "ATLAS Librarian <alibrari@cern.ch>"
                     }
     logger.debug(release_desc)
     return release_desc
@@ -61,9 +67,11 @@ def parse_tag_file(filename):
             if (package.endswith("Release") or package.endswith("RunTime")) and "/" not in package:
                 package = os.path.join("Projects", package)
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
-            release_package_dict[package] = {"tag": tag, "project": project}
+            release_package_dict[package] = {"tag": tag, 
+                                             "project": project,}
     return release_package_dict
-            
+
+
 def diff_release_tags(old, new, allow_removal=False):
     '''Return a structured dictionary describing the difference between releases.
     Difference has two sections "add" for added/updated tags; "remove" for removed packages.
@@ -222,6 +230,7 @@ def main():
 
         diff = diff_release_tags(None, tags_by_release[last_base_release])
         release_diff_list = [{"release": last_base_release,
+                              "meta": tags_by_release[last_base_release]["release"],
                               "diff": diff}]
         
         for release in ordered_releases[1:]:
@@ -236,6 +245,7 @@ def main():
                     cache_overlap_removal(diff, tags_by_release[last_base_release], tags_by_release[last_cache_release])
                 last_cache_release = release
             release_diff_list.append({"release": release,
+                                      "meta": tags_by_release[release]["release"],
                                       "diff": diff})
         json.dump(release_diff_list, tag_output, indent=2)
 
