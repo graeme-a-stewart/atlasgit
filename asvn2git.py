@@ -216,18 +216,29 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
         pass
     shutil.move(full_svn_path, package_root)
     
-    # Commit
     os.chdir(gitrepo)
+
+    # get ChangeLog diff
+    changelog_diff = ""
+    cl_file = os.path.join(package, 'ChangeLog')
+    if os.path.isfile(cl_file):
+        change_diff_cmd = 'git diff -u {0} | tail -n +5'.format(cl_file)
+        changelog_diff = subprocess.check_output(change_diff_cmd,shell=True)
+
+    # Commit
     cmd = ["git", "add", "-A", package]
     check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
-        logger.debug(check_output_with_retry(cmd))
+        logger.debug(check_output_with_retry(cmd))        
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
         cmd.extend(("--author='{0} <{0}@cern.ch>'".format(svn_metadata["author"]), 
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
+
+    if changelog_diff:
+        cmd.extend(("-m","Diff in ChangeLog:\n" + changelog_diff))
     check_output_with_retry(cmd)
     cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag), "-m", ""]
     check_output_with_retry(cmd)
