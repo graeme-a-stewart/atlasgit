@@ -73,10 +73,10 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
             tag_diff = json.load(tag_diff_fh)
             
         if not branch_made:
-            yougest_tag = find_youngest_tag(tag_diff, svn_metadata_cache)
-            git_change_to_branch(gitrepo, branch, tag_to_branch_at)
+            yougest_git_tag = find_youngest_tag(tag_diff, svn_metadata_cache)
+            git_change_to_branch(gitrepo, branch, yougest_git_tag)
             branch_made = True
-            
+        
         # Now cycle over package tags and update the content of the branch
         for release in tag_diff:
             logger.info("Processing release {0}".format(release["release"]))
@@ -97,10 +97,10 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
             # Done - now commit and tag
             check_output_with_retry(("git", "add", "-A"))
             cmd = ["git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])]
-            cmd.append("--author='{0}'".format(author_string(release["release"]["meta"]["author"])))
-            cmd.append("--date={0}".format(release["release"]["meta"]["timestamp"]))
-            check_output_with_retry(("git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])))
-            check_output_with_retry(("git", "tag", os.path.join("release", release["release"])))
+            cmd.append("--author='{0}'".format(author_string(release["meta"]["author"])))
+            cmd.append("--date={0}".format(int(release["meta"]["timestamp"])))
+            check_output_with_retry(cmd, retries=1)
+            check_output_with_retry(("git", "tag", os.path.join("release", release["release"])), retries=1)
             logger.info("Tagged release {0}".format(release["release"]))
 
 
