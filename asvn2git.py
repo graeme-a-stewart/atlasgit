@@ -225,7 +225,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
         logger.debug(check_output_with_retry(cmd))
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
     if svn_metadata:
-        cmd.extend(("--author='{0} <{0}@cern.ch>'".format(svn_metadata["author"]), 
+        cmd.extend(("--author='{0} <{0}@cern.ch>'".format(author_string(svn_metadata["author"])), 
                     "--date={0}".format(svn_metadata["date"]),
                     "-m", "SVN r{0}".format(svn_metadata['revision'])))
     check_output_with_retry(cmd)
@@ -278,7 +278,7 @@ def svn_find_packages(svnroot, svn_path, pathveto = []):
 
 def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     '''Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision'''
-    logger.debug("Querying SVN metadeta for {0}".format(os.path.join(package, package_path)))
+    logger.info("Querying SVN metadeta for {0}".format(os.path.join(package, package_path)))
     cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
     svn_info = check_output_with_retry(cmd)
     tree = eltree.fromstring(svn_info)
@@ -294,8 +294,10 @@ def get_current_git_tags(gitrepo):
     cmd = ["git", "tag", "-l"]
     return check_output_with_retry(cmd).split("\n")
 
+
 def is_trunk_tag(tag):
     return re.match(r'[a-zA-Z]+-\d{2}-\d{2}-\d{2}$', tag)
+
 
 def get_tags_from_diffs(tag_diff_files):
     '''Parse packages and package tags from release diff files'''
@@ -323,6 +325,15 @@ def get_flattened_git_tag(package, tag):
     if tag == "trunk":
         return os.path.join("import", "trunk", os.path.basename(package))
     return os.path.join("import", "tag", os.path.basename(tag))
+
+def author_string(author):
+    '''Write a formatted commit author string - if we have a valid
+    email keep it as is, but otherwise assume it's a ME@cern.ch address'''
+    if re.search(r"<[a-zA-Z0-9-]+@[a-zA-Z0-9-]+>", author):
+        return author
+    elif re.match(r"[a-zA-Z0-9]+$", author):
+        return "${0} <${0}@cern.ch>".format(author)
+    return author
 
 
 def main():
