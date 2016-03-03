@@ -233,11 +233,10 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
         logger.debug(check_output_with_retry(cmd))
-    cmd = ["git", "commit", "--allow-empty", "-m", "{0} tag {1}".format(package, tag)]
+    cmd = ["git", "commit", "--allow-empty", "-m", "{0} - r{1}".format(os.path.join(package, tag), svn_metadata['revision'])]
     if svn_metadata:
-        cmd.extend(("--author='{0} <{0}@cern.ch>'".format(author_string(svn_metadata["author"])), 
-                    "--date={0}".format(svn_metadata["date"]),
-                    "-m", "SVN r{0}".format(svn_metadata['revision'])))
+        cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"])), 
+                    "--date={0}".format(svn_metadata["date"])))
 
     if changelog_diff:
         cmd.extend(("-m","Diff in ChangeLog:\n" + '\n'.join(changelog_diff)))
@@ -345,7 +344,7 @@ def author_string(author):
     if re.search(r"<[a-zA-Z0-9-]+@[a-zA-Z0-9-]+>", author):
         return author
     elif re.match(r"[a-zA-Z0-9]+$", author):
-        return "${0} <${0}@cern.ch>".format(author)
+        return "{0} <{0}@cern.ch>".format(author)
     return author
 
 
