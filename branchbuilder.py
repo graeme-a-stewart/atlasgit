@@ -13,59 +13,92 @@ import os.path
 import shutil
 import sys
 
-from asvn2git import check_output_with_retry 
+from asvn2git import check_output_with_retry, get_current_git_tags, author_string
 from glogger import logger
 
 def git_change_to_branch(gitrepo, branch, branch_point=None):
-    os.chdir(gitrepo)
     cmd = ["git", "checkout", "-b", branch]
     if branch_point:
         cmd.append(branch_point)
     logger.info("Creating branch with {0}".format(cmd))
-    check_output_with_retry(cmd)
+    check_output_with_retry(cmd, retries=1)
+
+
+def branch_exists(gitrepo, branch):
+    branches = check_output_with_retry(("git", "branch"), retries=1)
+    if branch in branches:
+        return True
+    return False
+
+
+def find_youngest_tag(tag_diff, svn_metadata_cache):
+    '''Use the svn metadata cache to find the youngest tag in the release''' 
+    yougest_tag = None
+    youngest_svn_revision = -1
+    if svn_metadata_cache:
+        for package, tag in tag_diff[0]["diff"]["add"].iteritems():
+            if svn_metadata_cache[package][os.path.join("tags", tag)]["revision"] > youngest_svn_revision:
+                youngest_svn_revision = svn_metadata_cache[package][os.path.join("tags", tag)]["revision"]
+                yougest_tag = os.path.join("import", "tag", tag)
+    logger.info("Tag to branch from master at is {0} (SVN revision {1})".format(yougest_tag, youngest_svn_revision))
+    return yougest_tag
+
+
+def recursive_delete(gitrepo):
+    '''Delete all files in the repository working copy'''
+    for entry in os.listdir(gitrepo):
+        if entry.startswith("."):
+            continue
+        entry = os.path.join(gitrepo, entry)
+        if os.path.isfile(entry):
+            os.unlink(entry)
+        elif os.path.isdir(entry):
+            shutil.rmtree(entry)
 
 
 def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
     '''Main branch builder function'''
-    branch_made = False
+    os.chdir(gitrepo)
+    tag_list = get_current_git_tags(gitrepo)
+    if branch_exists(gitrepo, branch):
+        logger.info("Branch {0} already exists - switching and reseting...".format(branch))
+        check_output_with_retry(("git", "checkout", branch), retries=1)
+        check_output_with_retry(("git", "reset", "--hard"), retries=1)
+        branch_made = True
+    else:
+        branch_made = False
+
     for tag_diff_file in tag_diff_files:
         with open(tag_diff_file) as tag_diff_fh:
             tag_diff = json.load(tag_diff_fh)
             
         if not branch_made:
-            # Need to find and set the point as which we want to branch from master
-            tag_to_branch_at = None
-            youngest_svn_revision = -1
-            if svn_metadata_cache:
-                for package, tag in tag_diff[0]["diff"]["add"].iteritems():
-                    if svn_metadata_cache[package][os.path.join("tags", tag)]["revision"] > youngest_svn_revision:
-                        youngest_svn_revision = svn_metadata_cache[package][os.path.join("tags", tag)]["revision"]
-                        tag_to_branch_at = os.path.join("import", "tag", tag)
-            logger.info("Tag to branch from master at is {0} (SVN revision {1})".format(tag_to_branch_at, youngest_svn_revision))
+            yougest_tag = find_youngest_tag(tag_diff, svn_metadata_cache)
             git_change_to_branch(gitrepo, branch, tag_to_branch_at)
             branch_made = True
-        
-        # "Flush" state of the release - the first base release will rebuild the
-        # initial contents
-        for entry in os.listdir(gitrepo):
-            if entry.startswith("."):
-                continue
-            entry = os.path.join(gitrepo, entry)
-            if os.path.isfile(entry):
-                os.unlink(entry)
-            elif os.path.isdir(entry):
-                shutil.rmtree(entry)
-        
+            
         # Now cycle over package tags and update the content of the branch
         for release in tag_diff:
             logger.info("Processing release {0}".format(release["release"]))
+            release_tag = os.path.join("release", release["release"])
+            if release_tag in tag_list:
+                logger.info("Release tag {0} already made - skipping".format(release_tag))
+                continue
+            if release["meta"]["type"] == "base":
+                recursive_delete(gitrepo)
+            
+            # Reconstruct release by adding each tag
             for package, tag in release["diff"]["add"].iteritems():
                 try:
                     check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package), retries=1)
                 except RuntimeError:
                     logger.error("git checkout of {0} tag {1} failed (not imported onto master branch?)".format(package, tag))
-                
+            
+            # Done - now commit and tag
             check_output_with_retry(("git", "add", "-A"))
+            cmd = ["git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])]
+            cmd.append("--author='{0}'".format(author_string(release["release"]["meta"]["author"])))
+            cmd.append("--date={0}".format(release["release"]["meta"]["timestamp"]))
             check_output_with_retry(("git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])))
             check_output_with_retry(("git", "tag", os.path.join("release", release["release"])))
             logger.info("Tagged release {0}".format(release["release"]))
