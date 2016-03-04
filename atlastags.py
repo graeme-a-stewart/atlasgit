@@ -14,16 +14,20 @@ import sys
 from glogger import logger
 
 
-nicos="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/"
+def get_release_name(release):
+    with open(release) as release_file:
+        for line in release_file:
+            release_match = re.match(r"#release\s([\d\.]+)", line)
+            if release_match:
+                return release_match.group(1)
+        logger.error("Failed to parse release name from tag file {0}".format(release))
+        sys.exit(1)
+
 
 def parse_release_data(release):
-    '''Parse release data from the NICOS name
-    - this is a bit inflexible, relying on the NICOS path or on 
-      the first path element being the release number'''
+    '''Parse release data from the NICOS tag file'''
     timestamp = os.stat(release).st_mtime
-    if release.startswith(nicos):
-        release = release[len(nicos):]
-    release_name = release.split("/")[0]
+    release_name = get_release_name(release)
     release_elements = release_name.split(".")
     if len(release_elements) < 3:
         raise RuntimeError("Weird release: {0}".format(release_name))
@@ -155,19 +159,18 @@ def get_tag_file(base_path):
     return (os.path.join(base_path, best_arch, best_tag_file))
 
 
-def find_nicos_from_base(base_release):
+def find_nicos_from_base(nicos_path, base_release):
     tag_files = []
-    if not os.path.isdir(base_release):
+    if not os.path.isdir(os.path.join(nicos_path, base_release)):
         logger.error("Searching for NICOS tags from base release {0}, but no NICOS directory for this release was found!")
         sys.exit(1)
 
     # Process base release first
-    tag_files.append(get_tag_file(os.path.join(nicos, base_release)))
+    tag_files.append(get_tag_file(os.path.join(nicos_path, base_release)))
 
     # Now find the caches and sort them
     cache_list = []
-    base_dir = os.path.dirname(base_release)
-    dir_list = os.listdir(base_dir)
+    dir_list = os.listdir(nicos_path)
     release_match = "{0}\.(\d+)$".format(os.path.basename(base_release).replace(".", r"\."))
     for entry in dir_list:
         if re.match(release_match, entry):
@@ -177,7 +180,7 @@ def find_nicos_from_base(base_release):
     
     # And get tag files...
     for cache in cache_list:
-        tag_files.append(get_tag_file(os.path.join(base_dir, cache)))
+        tag_files.append(get_tag_file(os.path.join(nicos_path, cache)))
 
     return tag_files
 
@@ -193,6 +196,8 @@ def main():
                         help="switch logging into DEBUG mode")
     parser.add_argument('--tagdiffile', required=True,
                         help="output file for tag evolution between releases")
+    parser.add_argument('--nicospath', default="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/",
+                        help="path to NICOS tag files (defaults to usual CERN AFS location)")
 
     args = parser.parse_args()
     if args.debug:
@@ -203,14 +208,19 @@ def main():
     
     # Case when a single bese release is given - we have to expand this
     if len(args.release) == 1 and re.match(r"(\d+)\.(\d+)\.(\d+)$", args.release[0]):
-        nicos_paths = find_nicos_from_base(os.path.join(nicos, args.release[0]))
+        nicos_paths = find_nicos_from_base(args.nicospath, args.release[0])
     else:
-        nicos_paths = args.release
+        nicos_paths = []
+        for path in args.release:
+            if os.path.exists(path):
+                nicos_paths.append(path)
+            elif os.path.exists(os.path.join(args.nicospath, path)):
+                nicos_paths.append(os.path.join(args.nicospath, path))
+            else:
+                logger.error("Path {0} doesn't exist (even after prepending NICOS path)".format(path))
+                sys.exit(1)
     
     for release in nicos_paths:
-        if not os.path.exists(release):
-            logger.warning("Release tag file {0} does not exist".format(release))
-            continue
         release_description = parse_release_data(release)
         ordered_releases.append(release_description["name"])
         release_tags = parse_tag_file(release)
