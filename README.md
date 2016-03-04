@@ -24,6 +24,10 @@ Auxiliary files:
 `tjson2txt.py` - simple script to convert JSON timing file (from asvn2git.py) into
 a text file that can be imported and plotted into a spreadsheet
 
+`casefilter.sh` - git filter-branch script that resets the case of repository files
+which at some point in their SVN history changed case (causing problems on
+case insensitive file systems).
+
 
 HOWTO
 -----
@@ -122,7 +126,8 @@ tag for every package imported. These are:
 `import/trunk/Package` for the trunk
 
 N.B. The creation of this huge number of tags impacts on git performance, so it's best
-to delete the import tags when the branches have been reconstructed.
+to not export these tags to gitlab/github (or delete from the the original import
+repository).
 
 ### Construct git branches for numbered releases
 
@@ -136,15 +141,40 @@ point in the master import history, i.e., when the last tag that forms a branch
 was committed to the master.
 
 From the branch creation point, each numbered release is constructed and committed,
-with a git tag containing the release name being created, e.g., `release/20.1.5.12`.
+with a git tag containing the release name being created, e.g., `release/20.1.5.12`. 
+The commit is timestamped with the date that NICOS created its tag list file for
+that release.  
 
 Note that in the example above a branch was made for the entire 20.1 series. It's
-also possible to make a branch for only, e.g., 20.1.5 and caches.
+also possible to make a branch for only 20.1.5 and caches (for example).
 
 The script has protection against trying to import a package tag for which no
 corresponding git import tag exists, but this should not happen if the tagdiff
 files used to create the master branch and the release branch are the same.
 
+### Upload to gitlab/github
 
+1. Create an empty repository in the social coding site of your choice.
+
+1. Add the repository to your imported repository, e.g., as:
+
+```git remote add origin https://gitlab.cern.ch/graemes/aogt.git```
+```git remote add origin https://:@gitlab.cern.ch:8443/graemes/aogt.git```
+```git remote add origin https://github.com/graeme-a-stewart/atlasofflinesw.git```
+
+1. Push your import to the new upstream origin:
+
+```git push --all origin```
+
+1. Push up tags that you care about
+
+```git push origin MY_TAG```
+
+or 
+
+```git push --tags origin```
+
+Note that in the last case (`--tags`) make sure you _delete_ all tags in `import/`, 
+as these are not needed post-import and they substantially degrade performance.
 
 
