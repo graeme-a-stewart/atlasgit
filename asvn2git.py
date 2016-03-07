@@ -108,7 +108,7 @@ def initialise_svn_metadata(svncachefile):
 
 
 def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tags_from_diff=False, 
-                                   trimtags=None, oldest_time=None, only_package_tags=False):
+                                   trimtags=None, oldest_time=None, only_package_tags=False, skip_tag_list_scan=False):
     '''Get SVN metadata for each of the package tags we're interested in'''
     # First we establish the list of tags which we need to deal with. If we are taking tags
     # from release diff files then the logic is rather different than if it's from package
@@ -116,7 +116,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
     for package, package_tags in svn_packages.iteritems():
         logger.info("Preparing package {0} (base tags: {1})".format(package, package_tags))
         if tags_from_diff:
-            if only_package_tags:
+            if only_package_tags or skip_tag_list_scan:
                 # Nothing to do!
                 pass
             else:
@@ -127,7 +127,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
                 except ValueError:
                     logger.error("Oldest release tag ({0}) for package {1} not found in SVN!".format(oldest_tag, package))
                     sys.exit(1)
-        else:
+        elif not skip_tag_list_scan:
             tags = get_all_package_tags(svnroot, package)
             if trimtags:
                 # Restrict tag list size
@@ -208,8 +208,12 @@ def init_git(gitrepo):
         check_output_with_retry(("git", "init"))
 
 def clean_changelog_diff(logfile):
+    '''Return a cleaned up ChangeLog - this is only as useful as what the developer wrote!'''
     o_lines = check_output_with_retry(("git", "diff", "-U0", logfile), retries=1).split("\n")
-    return [line.lstrip('+-') for line in o_lines[6:]]
+    o_lines = [ line.lstrip("+-") for line in o_lines[6:] if not re.search(r"(\s[MADR]\s+[\w\/]*)|(@@)", line) ]
+    if len(o_lines) > 40:
+        return ["ChangeLog diff too large"]
+    return o_lines
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master"):
     '''Make a temporary space, check out from svn, clean-up, copy and then git commit and tag'''
@@ -386,6 +390,8 @@ def main():
                         help="only import package tags from tag diff files, instead of all tags from oldest release tag")
     parser.add_argument('--skiptrunk', action="store_true", default=False,
                         help="skip package trunk during the import (by default, the trunk will alwaye be processed)")    
+    parser.add_argument('--skiptaglistscan', action="store_true", default=False,
+                        help="skip listing of tags from SVN (use only if the current SVN metadata cache is complete)")    
     parser.add_argument('--svnpackagefile', metavar='FILE', 
                         help="file containing list of package paths in the SVN tree to process - default 'gitrepo.packages'")
     parser.add_argument('--svncachefile', metavar='FILE',
@@ -442,9 +448,8 @@ def main():
     svn_metadata_cache = initialise_svn_metadata(args.svncachefile)
 
     # Prepare package import
-    #if not args.skiptagscan:
     scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tag_diff_flag, args.trimtags, 
-                                    args.tagtimelimit, args.onlyreleasetags)
+                                    args.tagtimelimit, args.onlyreleasetags, args.skiptaglistscan)
 
     # Now presistify metadata cache
     backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
