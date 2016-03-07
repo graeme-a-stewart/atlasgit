@@ -40,19 +40,13 @@ commit reproduced as a git commit, then the built-in `git svn` module should do 
 for you.
 
 *Important Note* It's very important to run these scripts using version 1.7
-(or later) of the subversion client. This client is much more efficient and
+(or later) of the subversion client and python 2.7. The SVN client is much more efficient and
 keeps a `.svn` only at the root of any checkout, which is far easier to import 
-from. (If you don't do this, pieces of SVN metadata will be imported into git!)
+from. The python version is needed for a few features used in these scripts.
 
-On SLC6 use the scl module to activate the 1.7 SVN client:
+On SLC6 use the scl module to activate the 1.7 SVN client and python 2.7:
 
-`/usr/bin/scl enable subversion17 /bin/bash`
-
-These scripts also use python2.7 features, whereas the SLC6 native python is 2.6.
-Fix with:
-
-`setupATLAS`
-`lsetup python`
+`/usr/bin/scl enable subversion17 python27 -- /bin/bash`
 
 ### Decide what to import to master
 
