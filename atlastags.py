@@ -209,8 +209,9 @@ def main():
                         "be used).")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
-    parser.add_argument('--tagdiffile', required=True,
-                        help="output file for tag evolution between releases")
+    parser.add_argument('--tdfile', '--tagdiffile',
+                        help="output file for tag evolution between releases (defaults to A.B.X.tagdiff only for single "
+                        "base release use case - otherwise must be specified using this option)")
     parser.add_argument('--nicospath', default="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/",
                         help="path to NICOS tag files (defaults to usual CERN AFS location)")
 
@@ -224,6 +225,8 @@ def main():
     # Case when a single bese release is given - we have to expand this
     if len(args.release) == 1 and re.match(r"(\d+)\.(\d+)\.(\d+)$", args.release[0]):
         nicos_paths = find_nicos_from_base(args.nicospath, args.release[0])
+        if not args.tdfile:
+            args.tdfile = args.release[0] + ".tagdiff"
     else:
         nicos_paths = []
         for path in args.release:
@@ -234,6 +237,10 @@ def main():
             else:
                 logger.error("Path {0} doesn't exist (even after prepending NICOS path)".format(path))
                 sys.exit(1)
+        if not args.tdfile:
+            logger.error("When giving specific NICOS file paths the --tdfile must be specified manually ".format(path))
+            sys.exit(1)
+            
     
     for release in nicos_paths:
         release_description = parse_release_data(release)
@@ -249,7 +256,7 @@ def main():
         logger.error("First release along a series must be a base release (release {0} is {1})".format(ordered_releases[0],
                                                                                                        tags_by_release[ordered_releases[0]]["release"]["type"]))
         sys.exit(1)
-    with open(args.tagdiffile, "w") as tag_output:
+    with open(args.tdfile, "w") as tag_output:
         last_base_release = ordered_releases[0]
         last_cache_release = None
 
