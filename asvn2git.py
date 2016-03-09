@@ -210,7 +210,7 @@ def init_git(gitrepo):
 def clean_changelog_diff(logfile):
     '''Return a cleaned up ChangeLog - this is only as useful as what the developer wrote!'''
     o_lines = check_output_with_retry(("git", "diff", "-U0", logfile), retries=1).split("\n")
-    o_lines = [ line.lstrip("+-") for line in o_lines[6:] if not re.search(r"(\s[MADR]\s+[\w\/]*)|(@@)", line) ]
+    o_lines = [ line.lstrip("+-") for line in o_lines[6:] if not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
     if len(o_lines) > 40:
         return ["ChangeLog diff too large"]
     return o_lines
