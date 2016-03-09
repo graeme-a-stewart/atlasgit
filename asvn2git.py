@@ -282,7 +282,7 @@ def svn_cleanup(svn_path):
                     else:
                         logger.warning("File {0} is too large - not importing".format(filename))
                         os.remove(filename)
-                if filename.startswith("."):
+                if name.startswith("."):
                     logger.warning("File {0} starts with a '.' - not importing")
                     os.remove(filename)
             except OSError, e:
