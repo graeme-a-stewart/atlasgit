@@ -52,7 +52,8 @@ def find_youngest_tag(tag_diff, svn_metadata_cache):
     youngest_svn_revision = -1
     if svn_metadata_cache:
         for package, tag in tag_diff[0]["diff"]["add"].iteritems():
-            if svn_metadata_cache[package][os.path.join("tags", tag)]["revision"] > youngest_svn_revision:
+            if (package in svn_metadata_cache and 
+                svn_metadata_cache[package][os.path.join("tags", tag)]["revision"] > youngest_svn_revision):
                 youngest_svn_revision = svn_metadata_cache[package][os.path.join("tags", tag)]["revision"]
                 yougest_tag = os.path.join("import", "tag", tag)
     logger.info("Tag to branch from master at is {0} (SVN revision {1})".format(yougest_tag, youngest_svn_revision))
@@ -105,6 +106,10 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
             # Reconstruct release by adding each tag
             for package, tag in release["diff"]["add"].iteritems():
                 try:
+                    import_tag = os.path.join("import", "tag", tag)
+                    if import_tag not in tag_list:
+                        logger.warning("import tag {0} not found - assuming restricted import".format(import_tag))
+                        continue
                     check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package), retries=1)
                 except RuntimeError:
                     logger.error("git checkout of {0} tag {1} failed (not imported onto master branch?)".format(package, tag))
@@ -114,6 +119,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
             cmd = ["git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])]
             cmd.append("--author='{0}'".format(author_string(release["meta"]["author"])))
             cmd.append("--date={0}".format(int(release["meta"]["timestamp"])))
+            os.environ["GIT_COMMITTER_DATE"] = str(release["meta"]["timestamp"])
             check_output_with_retry(cmd, retries=1)
             check_output_with_retry(("git", "tag", os.path.join("release", release["release"])), retries=1)
             logger.info("Tagged release {0}".format(release["release"]))
