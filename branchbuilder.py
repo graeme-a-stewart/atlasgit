@@ -115,6 +115,9 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache=None):
                     logger.error("git checkout of {0} tag {1} failed (not imported onto master branch?)".format(package, tag))
             
             # Done - now commit and tag
+            if logger.level <= logging.DEBUG:
+                cmd = ["git", "status"]
+                logger.debug(check_output_with_retry(cmd))
             check_output_with_retry(("git", "add", "-A"))
             cmd = ["git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])]
             cmd.append("--author='{0}'".format(author_string(release["meta"]["author"])))
