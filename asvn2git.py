@@ -255,6 +255,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     if svn_metadata:
         cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"])), 
                     "--date={0}".format(svn_metadata["date"])))
+        os.environ["GIT_COMMITTER_DATE"] = svn_metadata["date"]
 
     if changelog_diff:
         cmd.extend(("-m","Diff in ChangeLog:\n" + '\n'.join(changelog_diff)))
@@ -329,7 +330,7 @@ def is_trunk_tag(tag):
     return re.match(r'[a-zA-Z]+-\d{2}-\d{2}-\d{2}$', tag)
 
 
-def get_tags_from_diffs(tag_diff_files):
+def get_tags_from_diffs(tag_diff_files, svn_path_accept):
     '''Parse packages and package tags from release diff files'''
     svn_package_tags = {}
     for tag_diff_file in tag_diff_files:
@@ -338,6 +339,14 @@ def get_tags_from_diffs(tag_diff_files):
             for entry in tag_diff_dict:
                 logger.info("Parsing release {0} from {1}".format(entry["release"], tag_diff_file))
                 for package, tag in entry["diff"]["add"].iteritems():
+                    if len(svn_path_accept) > 0:
+                        accept = False
+                        for path in svn_path_accept:
+                            if package.startswith(path):
+                                accept = True
+                                break
+                        if not accept:
+                            continue
                     # Add in the standard "tags" path 
                     tag = os.path.join("tags", tag)
                     if package in svn_package_tags:
@@ -373,7 +382,9 @@ def main():
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="location of git repository")
     parser.add_argument('--svnpath', metavar='PATH', nargs='+', default=[],
-                        help="list of paths in the SVN tree to process (use '.' to process entire SVN repo)")
+                        help="list of paths in the SVN tree to process (use '.' to process entire SVN repo). if "
+                        "used with the --tagsfromtagdiff option, these paths become a filter on accepted "
+                        "packages, which can be used to make small scale tests of the import workflow.")
     parser.add_argument('--svnpathveto', metavar='PATH', nargs='+', default=[],
                         help="list of paths in the SVN tree to veto for processing (can refer to a leaf or an intermediate directory name)")
     parser.add_argument('--svnpackage', metavar='PACKAGE', nargs='+', default=[],
@@ -432,7 +443,7 @@ def main():
     # at this point, therwise the tag list is empty.
     tag_diff_flag = False
     if len(args.tagsfromtagdiff) > 0:
-        svn_packages = get_tags_from_diffs(args.tagsfromtagdiff)
+        svn_packages = get_tags_from_diffs(args.tagsfromtagdiff, args.svnpath)
         tag_diff_flag = True
     else:
         svn_packages = set_svn_packages_from_args(svnroot, args)
