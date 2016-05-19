@@ -260,7 +260,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, b
     if changelog_diff:
         cmd.extend(("-m","Diff in ChangeLog:\n" + '\n'.join(changelog_diff)))
     check_output_with_retry(cmd)
-    cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag), "-m", ""]
+    cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag, svn_metadata["revision"]), "-m", ""]
     check_output_with_retry(cmd)
     
     # Clean up
@@ -360,9 +360,9 @@ def get_tags_from_diffs(tag_diff_files, svn_path_accept):
     return svn_package_tags
 
         
-def get_flattened_git_tag(package, tag):
+def get_flattened_git_tag(package, tag, revision):
     if tag == "trunk":
-        return os.path.join("import", "trunk", os.path.basename(package))
+        return os.path.join("import", "trunk","{0}-r{1}".format(os.path.basename(package), revision))
     return os.path.join("import", "tag", os.path.basename(tag))
 
 def author_string(author):
@@ -440,7 +440,7 @@ def main():
     ## SVN interactions and reloading state    
     # Decide which svn packages we will import
     # Note that if we're pulling the packages from a tag diff file, we also get tags
-    # at this point, therwise the tag list is empty.
+    # at this point, otherwise the tag list is empty.
     tag_diff_flag = False
     if len(args.tagsfromtagdiff) > 0:
         svn_packages = get_tags_from_diffs(args.tagsfromtagdiff, args.svnpath)
@@ -468,7 +468,6 @@ def main():
     # Setup dictionary for keying by SVN revision number
     svn_cache_revision_dict = svn_cache_revision_dict_init(svn_metadata_cache)
 
-
     ## git actions
     # Setup the git repository
     init_git(gitrepo)
@@ -487,7 +486,7 @@ def main():
         start=time.time()
         logger.info("SVN Revsion {0} ({1} of {2})".format(rev, counter, len(ordered_revisions)))
         for pkg_tag in svn_cache_revision_dict[rev]:
-            if get_flattened_git_tag(pkg_tag["package"], pkg_tag["tag"]) in current_git_tags:
+            if get_flattened_git_tag(pkg_tag["package"], pkg_tag["tag"], svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]]["revision"]) in current_git_tags:
                 logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
                 continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
