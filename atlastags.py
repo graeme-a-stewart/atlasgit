@@ -32,9 +32,14 @@ from glogger import logger
 def get_release_name(release):
     with open(release) as release_file:
         for line in release_file:
-            release_match = re.match(r"#release\s([\d\.]+)", line)
-            if release_match:
-                return release_match.group(1)
+            if line.startswith("#release"):
+                release_match = re.match(r"#release\s([\d\.]+)", line)
+                if release_match:
+                    return release_match.group(1)
+            elif line.startswith("#tags for"):
+                release_match = re.match(r"#tags for\s([\d\.]+)", line)
+                if release_match:
+                    return release_match.group(1)
         logger.error("Failed to parse release name from tag file {0}".format(release))
         sys.exit(1)
 
