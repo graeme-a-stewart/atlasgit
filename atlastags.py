@@ -88,7 +88,8 @@ def parse_tag_file(filename):
             if project == "GAUDI":
                 continue
             # "Release" and "RunTime" packages live inside the Release path
-            if (package.endswith("Release") or package.endswith("RunTime")) and "/" not in package:
+            if (package.endswith("Release") or package.endswith("RunTime") or 
+                package.startswith("Atlas") or package.startswith("DetCommon")) and "/" not in package:
                 package = os.path.join("Projects", package)
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
             release_package_dict[package] = {"tag": tag, 
