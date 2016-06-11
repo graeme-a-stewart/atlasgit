@@ -19,6 +19,7 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import datetime
 import json
 import logging
 import os
@@ -29,25 +30,33 @@ import sys
 from glogger import logger
 
 
-def get_release_name(release):
-    with open(release) as release_file:
+def get_release_name(release_file_path):
+    ## @brief a NICOS tag file to get tags and projects for this build.
+    #  @param release_file_path Path to file with NICOS tags for the release of interest
+    #  @return Tuple of release name, plus boolen if the release is a nightly 
+    #  (thus @c False for a numbered release)
+    with open(release_file_path) as release_file:
         for line in release_file:
             if line.startswith("#release"):
+                # This is a numbered release_file_path
                 release_match = re.match(r"#release\s([\d\.]+)", line)
                 if release_match:
-                    return release_match.group(1)
+                    return release_match.group(1), False
             elif line.startswith("#tags for"):
+                # This is a nightly
                 release_match = re.match(r"#tags for\s([\d\.]+)", line)
                 if release_match:
-                    return release_match.group(1)
-        logger.error("Failed to parse release name from tag file {0}".format(release))
-        sys.exit(1)
+                    return release_match.group(1), True
+        logger.error("Failed to parse release_file_path name from tag file {0}".format(release_file_path))
+        raise RuntimeError("Failed to find release name")
 
 
-def parse_release_data(release):
-    '''Parse release data from the NICOS tag file'''
-    timestamp = os.stat(release).st_mtime
-    release_name = get_release_name(release)
+def parse_release_data(release_file_path):
+    ## @brief Parse release data from the NICOS tag file
+    #  @param release_file_path Path to file with NICOS tags for the release of interest
+    #  @return Dictionary of values for the different release properties
+    timestamp = os.stat(release_file_path).st_mtime
+    release_name, nightly_flag = get_release_name(release_file_path)
     release_elements = release_name.split(".")
     if len(release_elements) < 3:
         raise RuntimeError("Weird release: {0}".format(release_name))
@@ -67,15 +76,20 @@ def parse_release_data(release):
                     "cache": cache_number,
                     "type": rel_type,
                     "timestamp": timestamp,
+                    "nightly": nightly_flag,
                     "author": "ATLAS Librarian <alibrari@cern.ch>"
                     }
     logger.debug(release_desc)
     return release_desc
 
 
-def parse_tag_file(filename):
+def parse_tag_file(release_file_path):
+    ## @brief Open a NICOS tag file and extract the package tags
+    #  @param release_file_path Path to file with NICOS tags for the release of interest
+    #  @return Dictionary keyed by package, with each value a dictionary with @c tag and @project
+    #  information for the package
     release_package_dict = {}
-    with open(filename) as tag_file:
+    with open(release_file_path) as tag_file:
         for line in tag_file:
             line = line.strip()
             if len(line) == 0 or line.startswith("#"):
@@ -98,9 +112,16 @@ def parse_tag_file(filename):
 
 
 def diff_release_tags(old, new, allow_removal=False):
-    '''Return a structured dictionary describing the difference between releases.
-    Difference has two sections "add" for added/updated tags; "remove" for removed packages.
-    If "old" release is "None", difference is the new release as all tags are considered added'''
+    ## @brief Return a structured dictionary describing the difference between releases
+    #  @param old Tag lists for older release (can be @c None, in which case all new release
+    #  tags are considered added)
+    #  @param new Tag lists for newer release 
+    #  @param allow_removal If missing tags in the new release are considred to be removed
+    #  packages (@c True) or simply unchanged (@c False). This is set to @True
+    #  for diffing base relesases; for a base to cache comparison it should be @c False 
+    #  @return Dictionary with two keys, @c add and @c remove; @c add dictionary value is a 
+    #  dictionary keyed by package, with value the updated tag; @remove dictionary is
+    #  list of packages that have been removed
     rel_diff = {"add": {}, "remove": []}
     if old:
         logger.debug("Tag difference from {0} to {1} (removal: {2})".format(old["release"]["name"],
@@ -132,7 +153,11 @@ def diff_release_tags(old, new, allow_removal=False):
 
 
 def cache_overlap_removal(release_diff, base_release, last_cache):
-    '''Remove and update packages vz a viz the last cache release'''
+    ## @brief Remove and update packages vz a viz the last cache release
+    #  @param release_diff output from @c diff_release_tags finction
+    #  @param base_release tag lists from base release for this cache
+    #  @param last_cache tag lists from cache release
+    #  @return None (@c release_diff is updated as side effect)
     for package in last_cache["tags"]:
         # Remove packages that stayed the same between caches
         if package in release_diff["add"] and release_diff["add"][package] == last_cache["tags"][package]["tag"]:
@@ -147,6 +172,10 @@ def cache_overlap_removal(release_diff, base_release, last_cache):
 
 
 def find_best_arch(base_path):
+    ## @brief Find the "best" achitecture when various NICOS architectures are available
+    #  for a particular release ("opt" release is preferred)
+    #  @param base_path Directory path to NICOS architecture subdirectories
+    #  @return Chosen architecture
     best_arch = None
     arch = os.listdir(base_path)
     if len(arch) == 1:
@@ -166,6 +195,10 @@ def find_best_arch(base_path):
 
 
 def find_best_tagfile(arch_path):
+    ## @brief Find the newest tag file when various NICOS tag files are available
+    #  for a particular release
+    #  @param arch_path Directory path to NICOS tag files
+    #  @return Chosen tag file
     tag_files = os.listdir(arch_path)
     tag_files.sort()
     logger.debug("Best tagfile for {0} is {1} (chosen from {2})".format(arch_path, tag_files[-1], len(tag_files)))
@@ -173,14 +206,20 @@ def find_best_tagfile(arch_path):
 
 
 def get_tag_file(base_path):
-    '''Walk down the NICOS path, finding the "best" tag file to take
-    (which means the highest gcc version, the opt build and the youngest tag file)'''
+    ## @brief Walk down the NICOS path, finding the "best" tag file to take
+    #  which means the highest gcc version, the opt build and the youngest tag file)
+    #  @param base_path Directory base with architecture subdirectories containing tag files
     best_arch = find_best_arch(base_path)
     best_tag_file = find_best_tagfile(os.path.join(base_path, best_arch))
     return (os.path.join(base_path, best_arch, best_tag_file))
 
 
 def find_nicos_from_base(nicos_path, base_release):
+    ## @brief Find base release and cache release tag files when only a base release number
+    #  is given
+    #  @param nicos_path Base path to NICOS tag file area
+    #  @param base_release Base release number A.B.X (e.g., 21.0.1)
+    #  @return list of tag files for base and caches, in release numbered order
     tag_files = []
     if not os.path.isdir(os.path.join(nicos_path, base_release)):
         logger.error("Searching for NICOS tags from base release {0}, but no NICOS directory for this release was found!")
@@ -207,8 +246,8 @@ def find_nicos_from_base(nicos_path, base_release):
 
 def main():
     parser = argparse.ArgumentParser(description='ATLAS tag munger, calculating tag evolution across a releases series')
-    parser.add_argument('release', metavar='', nargs="+",
-                        help="Files containing tag lists (NICOS format). If a base release is givem (e.g., 20.1.3) "
+    parser.add_argument('release', metavar='RELEASE', nargs="+",
+                        help="Files containing tag lists (NICOS format). If a base release is given (e.g., 20.1.3) "
                         "the script will search for the base release and all caches to build the tagdiff in "
                         "a simple way, without worrying about the details of the NICOS tag files and paths (N.B. "
                         "in the rare cases when there is more than one tag file for a release, the last one will "
