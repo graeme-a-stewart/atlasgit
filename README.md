@@ -25,8 +25,9 @@ Auxiliary files:
 a text file that can be imported and plotted into a spreadsheet
 
 `casefilter.sh` - git filter-branch script that resets the case of repository files
-which at some point in their SVN history changed case (causing problems on
-case insensitive file systems).
+which at some point in their SVN history changed case, causing problems on
+case insensitive file systems. N.B. It is observed that managing the SVN to git
+migration using the git 2.7 client seems to avoid these problems.
 
 
 HOWTO
@@ -47,6 +48,12 @@ from. The python version is needed for a few features used in these scripts.
 On SLC6 use the scl module to activate the 1.7 SVN client and python 2.7:
 
 `/usr/bin/scl enable subversion17 python27 -- /bin/bash`
+
+Using an up to date git client will certainly _do no harm_ and specifically helps
+when files have undergone case changes in their history. An up to date git client
+is available via
+
+`atlasSetup; lsetup git`
 
 ### Decide what to import to master
 
