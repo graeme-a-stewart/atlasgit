@@ -188,8 +188,7 @@ def find_best_arch(base_path):
             opt_arch.sort()
             best_arch = opt_arch[0]
     if not best_arch:
-        logger.error("Failed to find a good architecture from {0}".format(base_path))
-        sys.exit(1)
+        raise RuntimeError("Failed to find a good architecture from {0}".format(base_path))
     logger.debug("Best archfile for {0} is {1} (chosen from {2})".format(base_path, best_arch, len(arch)))
     return best_arch
 
@@ -201,6 +200,8 @@ def find_best_tagfile(arch_path):
     #  @return Chosen tag file
     tag_files = os.listdir(arch_path)
     tag_files.sort()
+    if len(tag_files) == 0:
+        raise RuntimeError("No tags files found in {0}".format(arch_path))
     logger.debug("Best tagfile for {0} is {1} (chosen from {2})".format(arch_path, tag_files[-1], len(tag_files)))
     return(tag_files[-1])
 
