@@ -3,8 +3,6 @@
 # Build a git release branch from a tagdiff history of
 # numbered ATLAS release builds
 #
-# TODO - make retart possible in case of problems part way through
-#
 # Copyright (c) Graeme Andrew Stewart <graeme.a.stewart@gmail.com>
 #
 #     This program is free software: you can redistribute it and/or modify
