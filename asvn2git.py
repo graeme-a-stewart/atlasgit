@@ -276,7 +276,7 @@ def svn_cleanup(svn_path):
             filename = os.path.join(root, name)
             try:
                 if os.stat(filename).st_size > 100*1024:
-                    if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c"):
+                    if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "hpp", "hh"):
                         logger.info("Source file {0} is too large, but importing anyway".format(filename))
                     elif name in ("ChangeLog"):
                         logger.info("Repo file {0} is too large, but importing anyway".format(filename))
