@@ -25,6 +25,29 @@
 #   svn_package = {"path/pkg1": ["tags/pkg1-tag1", "tags/pkg1-tag2", "trunk"], ...} 
 #   N.B. Using a set() for the tag list is not so good - we want it sorted and set() cannot
 #   be JSON serialised.
+#
+# svn_metadata_cache is a dictionary keyed by package, with value as a dictionary,
+#  keyed by svn subpath (trunk or tag/blah-XX-YY-ZZ), value dictionary keyed by revision (as trunk
+#  can have many revisions, in principle) and a final value dictionary with date, revsion
+#  and author key-value pairs, e.g.,
+#  {
+#   "Tools/PyJobTransformsCore": {
+#     "tags/PyJobTransformsCore-00-09-43": {
+#       "735942": {
+#         "date": "2016-04-08T16:35:02",
+#         "revision": 735942,
+#         "author": "alibrari"
+#       }
+#     },
+#     "trunk": {
+#       "735943": {
+#         "date": "2016-04-08T16:35:05",
+#         "revision": 735943,
+#         "author": "alibrari"
+#       }
+#     }
+#   },
+#   ...
 
 import argparse
 import json
@@ -108,7 +131,7 @@ def initialise_svn_metadata(svncachefile):
 
 
 def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tags_from_diff=False, 
-                                   trimtags=None, oldest_time=None, only_package_tags=False, skip_tag_list_scan=False):
+                                   trimtags=None, oldest_time=None, all_package_tags=False, skip_tag_list_scan=False):
     '''Get SVN metadata for each of the package tags we're interested in'''
     # First we establish the list of tags which we need to deal with. If we are taking tags
     # from release diff files then the logic is rather different than if it's from package
@@ -116,7 +139,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
     for package, package_tags in svn_packages.iteritems():
         logger.info("Preparing package {0} (base tags: {1})".format(package, package_tags))
         if tags_from_diff:
-            if only_package_tags or skip_tag_list_scan:
+            if (not all_package_tags) or skip_tag_list_scan:
                 # Nothing to do!
                 pass
             else:
@@ -162,7 +185,9 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
                         if last_time_veto_tag:
                             svn_metadata_cache[package][last_time_veto_tag] = svn_get_path_metadata(svnroot, package, last_time_veto_tag)
                             last_time_veto_tag = None
-                    svn_metadata_cache[package][tag] = svn_metadata
+                    if tag not in svn_metadata_cache[package]:
+                        svn_metadata_cache[package][tag] = {}
+                    svn_metadata_cache[package][tag][svn_metadata["revision"]] = svn_metadata
             except RuntimeError:
                 logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
@@ -178,11 +203,11 @@ def svn_cache_revision_dict_init(svn_metadata_cache):
     svn_cache_revision_dict = {}
     for package in svn_metadata_cache:
         for tag in svn_metadata_cache[package]:
-            if svn_metadata_cache[package][tag]["revision"] in svn_cache_revision_dict:
-                # It is possible for a single SVN commit to straddle packages
-                svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]].append({"package": package, "tag": tag})
-            else:
-                svn_cache_revision_dict[svn_metadata_cache[package][tag]["revision"]] = [{"package": package, "tag": tag}]
+            for revision in svn_metadata_cache[package][tag]:
+                if revision in svn_cache_revision_dict:
+                    svn_cache_revision_dict[revision].append({"package": package, "tag": tag})
+                else:
+                    svn_cache_revision_dict[revision] = [{"package": package, "tag": tag}]
     return svn_cache_revision_dict
 
 
@@ -215,12 +240,21 @@ def clean_changelog_diff(logfile):
         return ["ChangeLog diff too large"]
     return o_lines
 
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="master"):
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata = None, branch="import"):
     '''Make a temporary space, check out from svn, clean-up, copy and then git commit and tag'''
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
+    
+    current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
+    if (branch not in current_branch):
+        all_branches = check_output_with_retry(("git", "branch", "-l"))
+        if branch in all_branches:
+            check_output_with_retry(("git", "checkout", branch))
+        else:
+            check_output_with_retry(("git", "checkout", "-b", branch))
+    
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
-    cmd = ["svn", "co", os.path.join(svnroot, package, tag), os.path.join(tempdir, package)]
+    cmd = ["svn", "checkout", "-r", str(svn_metadata["revision"]), os.path.join(svnroot, package, tag), os.path.join(tempdir, package)]
     check_output_with_retry(cmd)
 
     # Clean out directory of things we don't want to import
@@ -284,7 +318,7 @@ def svn_cleanup(svn_path):
                         logger.warning("File {0} is too large - not importing".format(filename))
                         os.remove(filename)
                 if name.startswith("."):
-                    logger.warning("File {0} starts with a '.' - not importing")
+                    logger.warning("File {0} starts with a '.' - not importing".format(filename))
                     os.remove(filename)
             except OSError, e:
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
@@ -381,6 +415,8 @@ def main():
                         help="location of svn repository root")
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="location of git repository")
+    parser.add_argument('--targetbranch', default="import",
+                        help="Target git branch for import (default is 'import')")
     parser.add_argument('--svnpath', metavar='PATH', nargs='+', default=[],
                         help="list of paths in the SVN tree to process (use '.' to process entire SVN repo). if "
                         "used with the --tagsfromtagdiff option, these paths become a filter on accepted "
@@ -397,8 +433,8 @@ def main():
                         help="read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
                         "all will be scanned to find tags to import. Note that this mode completely changes the way that "
                         "the tag scanning logic works, so the --svnpath*, --trimtags, --tagtimelimit will be ignored.")
-    parser.add_argument('--onlyreleasetags', action="store_true", default=False,
-                        help="only import package tags from tag diff files, instead of all tags from oldest release tag")
+    parser.add_argument('--intermediatetags', action="store_true", default=False,
+                        help="import all tags from oldest release tag found, instead of just release tags")
     parser.add_argument('--skiptrunk', action="store_true", default=False,
                         help="skip package trunk during the import (by default, the trunk will alwaye be processed)")    
     parser.add_argument('--skiptaglistscan', action="store_true", default=False,
@@ -460,7 +496,7 @@ def main():
 
     # Prepare package import
     scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tag_diff_flag, args.trimtags, 
-                                    args.tagtimelimit, args.onlyreleasetags, args.skiptaglistscan)
+                                    args.tagtimelimit, args.intermediatetags, args.skiptaglistscan)
 
     # Now presistify metadata cache
     backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
@@ -486,11 +522,11 @@ def main():
         start=time.time()
         logger.info("SVN Revsion {0} ({1} of {2})".format(rev, counter, len(ordered_revisions)))
         for pkg_tag in svn_cache_revision_dict[rev]:
-            if get_flattened_git_tag(pkg_tag["package"], pkg_tag["tag"], svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]]["revision"]) in current_git_tags:
+            if get_flattened_git_tag(pkg_tag["package"], pkg_tag["tag"], rev) in current_git_tags:
                 logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
                 continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
-                                  svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]])
+                                  svn_metadata_cache[pkg_tag["package"]][pkg_tag["tag"]][rev])
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s".format(counter, elapsed))
         timing.append(elapsed)
