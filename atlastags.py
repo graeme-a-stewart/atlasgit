@@ -26,6 +26,7 @@ import os
 import os.path
 import re
 import sys
+import time
 
 from glogger import logger
 
@@ -79,6 +80,8 @@ def parse_release_data(release_file_path):
                     "nightly": nightly_flag,
                     "author": "ATLAS Librarian <alibrari@cern.ch>"
                     }
+    if nightly_flag:
+        release_desc["name"] += "-{0}".format(time.strftime("%Y-%m-%dT%H%M", time.localtime(timestamp)))
     logger.debug(release_desc)
     return release_desc
 
