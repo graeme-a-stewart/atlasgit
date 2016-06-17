@@ -26,8 +26,8 @@ import os.path
 import shutil
 import sys
 
-from asvn2git import check_output_with_retry, get_current_git_tags, author_string
 from glogger import logger
+from atutils import check_output_with_retry, get_current_git_tags, author_string
 
 def git_change_to_branch(gitrepo, branch, branch_point=None):
     cmd = ["git", "checkout", "-b", branch]

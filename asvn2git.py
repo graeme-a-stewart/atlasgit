@@ -64,33 +64,7 @@ import time
 import xml.etree.ElementTree as eltree
 
 from glogger import logger
-
-
-def check_output_with_retry(cmd, retries=3, wait=10):
-    ## @brief Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)
-    #  @param cmd list or tuple of command line parameters
-    #  @param retries Number of attempts to execute successfully
-    #  @param wait Sleep time after an unsuccessful execution attempt
-    #  @return String containing command output 
-    success = failure = False
-    tries = 0
-    start = time.time()
-    while not success and not failure:
-        tries += 1
-        try:
-            logger.debug("Calling {0}".format(cmd))
-            output = subprocess.check_output(cmd)
-            success = True
-        except subprocess.CalledProcessError:
-            logger.warning("Attempt {0} to execute {1} failed".format(tries, cmd))
-            if tries >= retries:
-                failure = True
-            else:
-                time.sleep(wait)
-    if failure:
-        raise RuntimeError("Repeated failures to execute {0}".format(cmd))
-    logger.debug("Executed in {0}s".format(time.time()-start))
-    return output
+from atutils import check_output_with_retry, get_current_git_tags, author_string, get_flattened_git_tag
     
 
 def initialise_svn_metadata(svncachefile):
@@ -317,13 +291,6 @@ def svn_cleanup(svn_path):
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
 
 
-def get_current_git_tags(gitrepo):
-    ## @brief Return a list of current git tags
-    os.chdir(gitrepo)
-    cmd = ["git", "tag", "-l"]
-    return check_output_with_retry(cmd).split("\n")
-
-
 def get_tags_from_diffs(tag_diff_files, svn_path_accept):
     ## @brief Parse packages and package tags from release diff files
     svn_package_tags = {}
@@ -354,22 +321,6 @@ def get_tags_from_diffs(tag_diff_files, svn_path_accept):
     return svn_package_tags
 
         
-def get_flattened_git_tag(package, tag, revision):
-    ## @brief Construct a git tag to signal the import of a particular SVN tag or revision
-    if tag == "trunk":
-        return os.path.join("import", "trunk","{0}-r{1}".format(os.path.basename(package), revision))
-    return os.path.join("import", "tag", os.path.basename(tag))
-
-def author_string(author):
-    ## @brief Write a formatted commit author string
-    #  @note if we have a valid email keep it as is, but otherwise assume it's a ME@cern.ch address
-    if re.search(r"<[a-zA-Z0-9-]+@[a-zA-Z0-9-]+>", author):
-        return author
-    elif re.match(r"[a-zA-Z0-9]+$", author):
-        return "{0} <{0}@cern.ch>".format(author)
-    return author
-
-
 def main():
     parser = argparse.ArgumentParser(description='SVN to git migrator, ATLAS style')
     parser.add_argument('svnroot', metavar='SVNDIR',
