@@ -93,15 +93,6 @@ def check_output_with_retry(cmd, retries=3, wait=10):
     return output
     
 
-def backup_package_list(svn_packages, start_cwd, svnpackagefile, start_timestamp_string):
-    '''Backup package lists to a file - JSON format'''
-    os.chdir(start_cwd)
-    if os.path.exists(svnpackagefile):
-        os.rename(svnpackagefile, svnpackagefile+".bak."+start_timestamp_string)
-    with open(svnpackagefile, "w") as pkg_dump:
-        json.dump(svn_packages, pkg_dump)
-
-
 def initialise_svn_metadata(svncachefile):
     '''Load existing cache file, if it exists, or return empty cache'''
     if os.path.exists(svncachefile):
@@ -113,6 +104,7 @@ def initialise_svn_metadata(svncachefile):
     return svn_metadata_cache
 
 def tag_cmp(tag_x, tag_y):
+    ## @brief Special sort for svn paths, which always places trunk after any tags 
     if x=="trunk":
          return 1
     elif y=="trunk":
@@ -159,13 +151,6 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
             except RuntimeError:
                 logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
-def get_all_package_tags(svnroot, package_path):
-    '''Retrieve all tags for a package in svnroot'''
-    cmd = ["svn", "ls", os.path.join(svnroot, package_path, "tags")]
-    tag_output = check_output_with_retry(cmd)
-    tag_list = [ os.path.join("tags", s.rstrip("/")) for s in tag_output.split() ]
-    return tag_list
-
 
 def svn_cache_revision_dict_init(svn_metadata_cache):
     svn_cache_revision_dict = {}
@@ -201,6 +186,7 @@ def init_git(gitrepo):
         logger.info("Initialising git repo: {0}".format(gitrepo))
         check_output_with_retry(("git", "init"))
 
+
 def clean_changelog_diff(logfile):
     '''Return a cleaned up ChangeLog - this is only as useful as what the developer wrote!'''
     o_lines = check_output_with_retry(("git", "diff", "-U0", logfile), retries=1).split("\n")
@@ -218,6 +204,7 @@ def switch_to_branch(branch):
             check_output_with_retry(("git", "checkout", branch))
         else:
             check_output_with_retry(("git", "checkout", "-b", branch))
+
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None):
     '''Make a temporary space, check out from svn, clean-up, copy and then git commit and tag'''
@@ -302,23 +289,6 @@ def svn_cleanup(svn_path):
             except OSError, e:
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
 
-    
-def svn_find_packages(svnroot, svn_path, pathveto = []):
-    '''Recursively list SVN directories, looking for leaf packages, defined by having
-    a branches/tags/trunk structure'''
-    my_package_list = []
-    logger.debug("Searching {0}".format(svn_path))
-    cmd = ["svn", "ls", os.path.join(svnroot, svn_path)]
-    dir_output = check_output_with_retry(cmd).split("\n")
-    if ("trunk/" in dir_output and "tags/" in dir_output): # N.B. some packages lack "branches", though this is a bit non-standard (FastPhysTagMon)
-        # We are a leaf!
-        logger.info("Found leaf package: {0}".format(svn_path))
-        return [svn_path]
-    for entry in dir_output:
-        if entry.endswith("/") and not entry.rstrip("/") in pathveto and not " " in entry:
-            my_package_list.extend(svn_find_packages(svnroot, os.path.join(svn_path, entry)))
-    return my_package_list
-
 
 def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     '''Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision'''
@@ -337,10 +307,6 @@ def get_current_git_tags(gitrepo):
     os.chdir(gitrepo)
     cmd = ["git", "tag", "-l"]
     return check_output_with_retry(cmd).split("\n")
-
-
-def is_trunk_tag(tag):
-    return re.match(r'[a-zA-Z]+-\d{2}-\d{2}-\d{2}$', tag)
 
 
 def get_tags_from_diffs(tag_diff_files, svn_path_accept):
