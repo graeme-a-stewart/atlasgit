@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
-# Prototype migration script from atlasoff to git,
-# moving sets of package tags identified with releases
-# to branches, and making tags for identified release
-# builds
+## Prototype migration script from atlasoff to git,
+#  moving sets of package tags identified with releases
+#  to branches, and making tags for identified release
+#  builds
 #
 # Copyright (c) Graeme Andrew Stewart <graeme.a.stewart@gmail.com>
 #
@@ -21,10 +21,6 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Note on data structures used:
-# svn_packages is a dictionary, keyed by packages, with a list of tags (usually sorted!)
-#   svn_package = {"path/pkg1": ["tags/pkg1-tag1", "tags/pkg1-tag2", "trunk"], ...} 
-#   N.B. Using a set() for the tag list is not so good - we want it sorted and set() cannot
-#   be JSON serialised.
 #
 # svn_metadata_cache is a dictionary keyed by package name, with value as a dictionary,
 #  containing "path" and "svn" entries. The "svn" element is then 
@@ -71,7 +67,11 @@ from glogger import logger
 
 
 def check_output_with_retry(cmd, retries=3, wait=10):
-    '''Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)'''
+    ## @brief Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)
+    #  @param cmd list or tuple of command line parameters
+    #  @param retries Number of attempts to execute successfully
+    #  @param wait Sleep time after an unsuccessful execution attempt
+    #  @return String containing command output 
     success = failure = False
     tries = 0
     start = time.time()
@@ -94,7 +94,8 @@ def check_output_with_retry(cmd, retries=3, wait=10):
     
 
 def initialise_svn_metadata(svncachefile):
-    '''Load existing cache file, if it exists, or return empty cache'''
+    ## @brief Load existing cache file, if it exists, or return empty cache
+    #  @param svncachefile Name of svn cache file (serialised in JSON)
     if os.path.exists(svncachefile):
         logger.info("Reloading SVN cache from {0}".format(svncachefile))
         with file(svncachefile) as md_load:
@@ -102,6 +103,19 @@ def initialise_svn_metadata(svncachefile):
     else:
         svn_metadata_cache = {}
     return svn_metadata_cache
+
+
+def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_timestamp_string):
+    ## @brief Persistify SVN metadata cache in JSON format
+    #  @param svn_metadata_cache SVN metadata cache
+    #  @param start_cwd Directory to change to before dumping
+    #  @param start_timestamp_string Timestamp backup for previous version of the cache
+    os.chdir(start_cwd)
+    if os.path.exists(svncachefile):
+        os.rename(svncachefile, svncachefile+".bak."+start_timestamp_string)
+    with file(svncachefile, "w") as md_dump:
+        json.dump(svn_metadata_cache, md_dump, indent=2)
+
 
 def tag_cmp(tag_x, tag_y):
     ## @brief Special sort for svn paths, which always places trunk after any tags 
@@ -111,9 +125,13 @@ def tag_cmp(tag_x, tag_y):
         return -1
     return cmp(tag_x, tag_y)
 
-def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tags_from_diff=False, 
-                                   all_package_tags=False):
-    '''Get SVN metadata for each of the package tags we're interested in'''
+def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, all_package_tags=False):
+    ## @brief Get SVN metadata for each of the package tags we're interested in
+    #  @param svnroot URL of SVN repository
+    #  @param svn_packages Dictionary of packages and tags to process
+    #  @param svn_metadata_cache SVN metadata cache
+    #  @param all_package_tags Boolean flag triggering import of all package tags in SVN
+ 
     # First we establish the list of tags which we need to deal with.
     for package, package_tags in svn_packages.iteritems():
         logger.info("Preparing package {0} (base tags: {1})".format(package, package_tags))
@@ -152,7 +170,23 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, ta
                 logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
 
+def svn_get_path_metadata(svnroot, package, package_path, revision=None):
+    ## @brief Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision
+    logger.info("Querying SVN metadeta for {0}".format(os.path.join(package, package_path)))
+    cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
+    svn_info = check_output_with_retry(cmd)
+    tree = eltree.fromstring(svn_info)
+    return {
+            "date": tree.find(".//date").text.rsplit(".",1)[0], # Strip off sub-second part
+            "author": tree.find(".//author").text,
+            "revision": int(tree.find(".//commit").attrib['revision']),
+            }
+
+
 def svn_cache_revision_dict_init(svn_metadata_cache):
+    ## @brief Build a dictionary keyed by SVN revision and indicating which tags changed there
+    #  @param svn_metadata_cache SVN metadata cache
+    #  @return Cache revision dictionary with value list of packages and tags
     svn_cache_revision_dict = {}
     for package_name in svn_metadata_cache:
         for tag in svn_metadata_cache[package_name]["svn"]:
@@ -165,17 +199,9 @@ def svn_cache_revision_dict_init(svn_metadata_cache):
     return svn_cache_revision_dict
 
 
-def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_timestamp_string):
-    '''Persistify SVN metadata cache (as JSON)'''
-    os.chdir(start_cwd)
-    if os.path.exists(svncachefile):
-        os.rename(svncachefile, svncachefile+".bak."+start_timestamp_string)
-    with file(svncachefile, "w") as md_dump:
-        json.dump(svn_metadata_cache, md_dump, indent=2)
-
-
 def init_git(gitrepo):
-    '''Initialise git repo, if needed'''
+    ## @brief Initialise git repo, if needed
+    #  @param gitrepo Git repository path
     if not os.path.exists(gitrepo):
         os.makedirs(gitrepo)
     os.chdir(gitrepo)
@@ -188,7 +214,7 @@ def init_git(gitrepo):
 
 
 def clean_changelog_diff(logfile):
-    '''Return a cleaned up ChangeLog - this is only as useful as what the developer wrote!'''
+    ## @brief Return a cleaned up ChangeLog diff - this is only as useful as what the developer wrote!
     o_lines = check_output_with_retry(("git", "diff", "-U0", logfile), retries=1).split("\n")
     o_lines = [ line.lstrip("+") for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
     if len(o_lines) > 40:
@@ -197,6 +223,7 @@ def clean_changelog_diff(logfile):
 
 
 def switch_to_branch(branch):
+    ## @brief Switch to branch, creating it if necessary
     current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
     if branch not in current_branch:
         all_branches = [ line.lstrip(" *").rstrip() for line in check_output_with_retry(("git", "branch", "-l")).split("\n") ]
@@ -207,7 +234,7 @@ def switch_to_branch(branch):
 
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None):
-    '''Make a temporary space, check out from svn, clean-up, copy and then git commit and tag'''
+    ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
     
     if branch:
@@ -267,7 +294,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
     shutil.rmtree(tempdir)
     
 def svn_cleanup(svn_path):
-    '''Cleanout files we do not want to import into git'''
+    ## @brief Cleanout files we do not want to import into git
     shutil.rmtree(os.path.join(svn_path, ".svn"))
     
     # File size veto
@@ -290,27 +317,15 @@ def svn_cleanup(svn_path):
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
 
 
-def svn_get_path_metadata(svnroot, package, package_path, revision=None):
-    '''Get SVN metadata and return as a simple dictionary keyed on date, author and commit revision'''
-    logger.info("Querying SVN metadeta for {0}".format(os.path.join(package, package_path)))
-    cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
-    svn_info = check_output_with_retry(cmd)
-    tree = eltree.fromstring(svn_info)
-    return {
-            "date": tree.find(".//date").text.rsplit(".",1)[0], # Strip off sub-second part
-            "author": tree.find(".//author").text,
-            "revision": int(tree.find(".//commit").attrib['revision']),
-            }
-
-
 def get_current_git_tags(gitrepo):
+    ## @brief Return a list of current git tags
     os.chdir(gitrepo)
     cmd = ["git", "tag", "-l"]
     return check_output_with_retry(cmd).split("\n")
 
 
 def get_tags_from_diffs(tag_diff_files, svn_path_accept):
-    '''Parse packages and package tags from release diff files'''
+    ## @brief Parse packages and package tags from release diff files
     svn_package_tags = {}
     for tag_diff_file in tag_diff_files:
         with open(tag_diff_file) as tag_diff_fh:
@@ -340,13 +355,14 @@ def get_tags_from_diffs(tag_diff_files, svn_path_accept):
 
         
 def get_flattened_git_tag(package, tag, revision):
+    ## @brief Construct a git tag to signal the import of a particular SVN tag or revision
     if tag == "trunk":
         return os.path.join("import", "trunk","{0}-r{1}".format(os.path.basename(package), revision))
     return os.path.join("import", "tag", os.path.basename(tag))
 
 def author_string(author):
-    '''Write a formatted commit author string - if we have a valid
-    email keep it as is, but otherwise assume it's a ME@cern.ch address'''
+    ## @brief Write a formatted commit author string
+    #  @note if we have a valid email keep it as is, but otherwise assume it's a ME@cern.ch address
     if re.search(r"<[a-zA-Z0-9-]+@[a-zA-Z0-9-]+>", author):
         return author
     elif re.match(r"[a-zA-Z0-9]+$", author):
@@ -423,8 +439,7 @@ def main():
     svn_metadata_cache = initialise_svn_metadata(args.svncachefile)
 
     # Prepare package import
-    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, tag_diff_flag, 
-                                   args.intermediatetags)
+    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, args.intermediatetags)
 
     # Now presistify metadata cache
     backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
