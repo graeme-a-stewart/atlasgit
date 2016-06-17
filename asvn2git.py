@@ -64,38 +64,15 @@ import time
 import xml.etree.ElementTree as eltree
 
 from glogger import logger
-from atutils import check_output_with_retry, get_current_git_tags, author_string, get_flattened_git_tag
-    
-
-def initialise_svn_metadata(svncachefile):
-    ## @brief Load existing cache file, if it exists, or return empty cache
-    #  @param svncachefile Name of svn cache file (serialised in JSON)
-    if os.path.exists(svncachefile):
-        logger.info("Reloading SVN cache from {0}".format(svncachefile))
-        with file(svncachefile) as md_load:
-            svn_metadata_cache = json.load(md_load)
-    else:
-        svn_metadata_cache = {}
-    return svn_metadata_cache
-
-
-def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_timestamp_string):
-    ## @brief Persistify SVN metadata cache in JSON format
-    #  @param svn_metadata_cache SVN metadata cache
-    #  @param start_cwd Directory to change to before dumping
-    #  @param start_timestamp_string Timestamp backup for previous version of the cache
-    os.chdir(start_cwd)
-    if os.path.exists(svncachefile):
-        os.rename(svncachefile, svncachefile+".bak."+start_timestamp_string)
-    with file(svncachefile, "w") as md_dump:
-        json.dump(svn_metadata_cache, md_dump, indent=2)
+from atutils import check_output_with_retry, get_current_git_tags, author_string
+from atutils import get_flattened_git_tag, initialise_svn_metadata, backup_svn_metadata
 
 
 def tag_cmp(tag_x, tag_y):
     ## @brief Special sort for svn paths, which always places trunk after any tags 
-    if x=="trunk":
+    if tag_x=="trunk":
          return 1
-    elif y=="trunk":
+    elif tag_y=="trunk":
         return -1
     return cmp(tag_x, tag_y)
 
@@ -135,11 +112,13 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, al
                     # We always need to get the metadata for trunk tags as we need to
                     # know the current revision
                     svn_metadata = svn_get_path_metadata(svnroot, package, tag)
-                    if svn_metadata["revision"] not in svn_metadata_cache[package_name]["svn"]:
-                        svn_metadata_cache[package_name]["svn"][svn_metadata["revision"]] = svn_metadata
+                    if tag not in svn_metadata_cache[package_name]["svn"]:
+                        svn_metadata_cache[package_name]["svn"][tag] = {svn_metadata["revision"]: svn_metadata}
+                    elif svn_metadata["revision"] not in svn_metadata_cache[package_name]["svn"][tag]:
+                        svn_metadata_cache[package_name]["svn"][tag][svn_metadata["revision"]] = svn_metadata
                 elif tag not in svn_metadata_cache[package_name]["svn"]:
                     svn_metadata = svn_get_path_metadata(svnroot, package, tag)
-                    svn_metadata_cache[package]["svn"][tag][svn_metadata["revision"]] = svn_metadata
+                    svn_metadata_cache[package_name]["svn"][tag] = {svn_metadata["revision"]: svn_metadata}
             except RuntimeError:
                 logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
@@ -153,7 +132,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     return {
             "date": tree.find(".//date").text.rsplit(".",1)[0], # Strip off sub-second part
             "author": tree.find(".//author").text,
-            "revision": int(tree.find(".//commit").attrib['revision']),
+            "revision": tree.find(".//commit").attrib['revision'],
             }
 
 
@@ -164,8 +143,9 @@ def svn_cache_revision_dict_init(svn_metadata_cache):
     svn_cache_revision_dict = {}
     for package_name in svn_metadata_cache:
         for tag in svn_metadata_cache[package_name]["svn"]:
-            for revision in svn_metadata_cache[package_name][tag]["svn"]:
-                element = {"package": os.path.join(svn_metadata_cache[package_name]["path"], package) ,"tag": tag}
+            for revision in svn_metadata_cache[package_name]["svn"][tag]:
+                element = {"package": os.path.join(svn_metadata_cache[package_name]["path"], package_name), 
+                           "tag": tag, "revision": revision}
                 if revision in svn_cache_revision_dict:
                     svn_cache_revision_dict[revision].append(element)
                 else:
@@ -371,6 +351,7 @@ def main():
     # Pull current list of tags here, to fast skip any work already done
     switch_to_branch(args.targetbranch)
     current_git_tags = get_current_git_tags(gitrepo)
+    os.chdir(start_cwd)
     
     ## SVN interactions and reloading state    
     # Decide which svn packages we will import
@@ -401,10 +382,11 @@ def main():
     ## git processing actions
     # Process each SVN tag in order
     ordered_revisions = svn_cache_revision_dict.keys()
-    ordered_revisions.sort()
+    ordered_revisions.sort(cmp=lambda x,y: cmp(int(x), int(y)))
     logger.info("Will process {0} SVN revisions in total".format(len(ordered_revisions)))
     counter=0
     timing = []
+    os.chdir(gitrepo)
     
     for rev in ordered_revisions:
         counter+=1
@@ -415,7 +397,7 @@ def main():
                 logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
                 continue
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
-                                  svn_metadata_cache[pkg_tag["package"]]["svn"][pkg_tag["tag"]][rev])
+                                  svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev])
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s".format(counter, elapsed))
         timing.append(elapsed)
