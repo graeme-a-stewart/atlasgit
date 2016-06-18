@@ -8,11 +8,14 @@ Modules to import ATLAS SVN to git.
 
 Main files:
 
-`asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on the 
-master branch
+`asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on an 
+import branch
 
 `atlastags.py` - Parses NICOS tag files to understand the SVN tag content
 of a release; does diffs between a base release and various caches
+
+`trunktagdiff.py` - Generates a simple tagdiff file for trunk versions of SVN
+packages; used to update master branch to latest trunk versions 
 
 `branchbuilder.py` - Reconstruct from tag diffs the state of an offline release
 on a git branch
@@ -28,6 +31,8 @@ a text file that can be imported and plotted into a spreadsheet
 which at some point in their SVN history changed case, causing problems on
 case insensitive file systems. N.B. It is observed that managing the SVN to git
 migration using the git 2.7 client seems to avoid these problems.
+
+`glogger.py`, `atutils.py` - module files for shared functions
 
 
 HOWTO
@@ -57,36 +62,13 @@ is available via
 
 ### Decide what to import to master
 
-There are two basic strategies for importing packages onto the git master using `asvn2git.py`:
-
-1. Import a certain section of the SVN repository
-  * This is supported directly in `asvn2git.py`:
-  * `--svnpackage` list of package paths in the SVN tree to process (e.g., `--svnpackage Tools/PyJobTransforms`)
-  * `--svnpath` list of paths in SVN that will be scanned for leaf packages, 
-  every leaf package found will be imported (e.g., `--svnpath Tracking`)
-  * `--svnpathveto` list of paths in the SVN tree to veto for processing if the given string
-  matches any part of the package path, these leaves will be omitted 
-  (e.g. `--svnpath PhysicsAnalysis --svnpathveto HiggsPhys D3PDMaker/HeavyIonD3PDMaker`)
-
 1. Import tags from a NICOS list of the tags built into a particular release
-  * `--tagsfromtagdiff` list of files containing tagdiffs (as produced by `atlastags.py`)
-  
-In general, the first strategy is good when you want to just slice out a piece of the 
-current SVN repository. The second works far better for a general import of the offline
-SVN repository to git.
-
-There are also a few options that control how extensive the import to git will be:
-
-* `--trimtags N` take only the last `N` tags of a package (only useful for first strategy)
-* `--tagtimelimit YYYY-MM-DD` take only tags younger than the specified date, plus the last tag made 
-  before the date limit (so the 'current' tag on the given date is also admitted; again, this 
-  is only useful for the first strategy)
-* `--onlyreleasetags` take _only_ tags that were part of a release, otherwise all tags
-  from the oldest tag in a release onwards are imported (only used with the second
-  strategy)
+  * `--tagsfromtagdiff` list of files containing tagdiffs (as produced by `atlastags.py`)  
   
 By default the current `trunk` is always imported, but this can be suppressed with 
-the `--skiptrunk` option.
+the `--skiptrunk` option. Only SVN tags that appeared in releases are imported, unless
+the `--intermediatetags` option is used, which process all tags from the oldest found
+in a release..
 
 #### Preparing tagdiff files from known releases
 
@@ -96,10 +78,11 @@ evolved.
 
 By far the easiest way to do this is to give a base release:
 
-`atlastags.py 20.1.0 --tagdifffile 20.1.0.tagdiff`
+`atlastags.py 20.1.0`
 
 This takes the base content of release 20.1.0, then finds and parses all the 20.1.0.Y caches
-and produces and internal _diff_ that describes the package tag evolution.
+and produces and internal _diff_ that describes the package tag evolution. The default
+tagdiff file in this case is `20.1.0.tagdiff`.
 
 Usually one wants to produce tagdiff files for a whole release series (i.e., all 20.1.X(.Y)
 numbered releases).
@@ -113,11 +96,8 @@ to give *all* the tagdiff files for the release branches you will want to build,
 
 `asvn2git.py --tagsfromtagdiff 20.*.tagdiff --importtimingfile r20.json file:///data/graemes/atlasoff/ao-mirror r20`
 
-(Just note to use the option `--onlyreleasetags` to leave out tags that were not put 
-into any release.)
-
 Note that `asvn2git.py` will query SVN for revision numbers are make sure that it 
-imports from SVN in SVN commit order. Thus the master branch history is fairly sane.
+imports from SVN in SVN commit order. Thus the import history is fairly sane.
 
 In order to facilitate the next step (release branch creation) the script creates a git
 tag for every package imported. These are:
@@ -132,17 +112,17 @@ repository).
 
 ### Construct git branches for numbered releases
 
-Once the main git master branch has been made, each release branch that is required 
+Once the main git import branch has been made, each release branch that is required 
 can be reconstructed with `branchbuilder.py`.
 
 `branchbuilder.py --svnmetadata r20.svn.metadata r20 20.1 20.1.*.tagdiff`
 
-Note that the `svnmetadata` option is used to branch from master at the correct 
-point in the master import history, i.e., when the last tag that forms a branch
-was committed to the master.
+Note that the `svnmetadata` option is used to ensure that branches are built
+with packages in SVN commit order (by default `GITREPO.svn.metadata` will be used).
 
-From the branch creation point, each numbered release is constructed and committed,
-with a git tag containing the release name being created, e.g., `release/20.1.5.12`. 
+From the branch creation point, each package is imported and committed; an import tag
+for that branch is made for bookkeeping . Once a release is processed a git 
+tag containing the release name being created, e.g., `release/20.1.5.12`. 
 The commit is timestamped with the date that NICOS created its tag list file for
 that release.  
 
