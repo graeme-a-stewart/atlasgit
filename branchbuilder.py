@@ -58,19 +58,22 @@ def find_youngest_tag(tag_diff, svn_metadata_cache):
     return yougest_tag
 
 
-def recursive_delete(gitrepo):
+def recursive_delete(directory):
     '''Delete all files in the repository working copy'''
-    for entry in os.listdir(gitrepo):
-        if entry.startswith("."):
-            continue
-        entry = os.path.join(gitrepo, entry)
-        if os.path.isfile(entry):
-            os.unlink(entry)
-        elif os.path.isdir(entry):
-            shutil.rmtree(entry)
+    try:
+        for entry in os.listdir(directory):
+            if entry.startswith("."):
+                continue
+            entry = os.path.join(directory, entry)
+            if os.path.isfile(entry):
+                os.unlink(entry)
+            elif os.path.isdir(entry):
+                shutil.rmtree(entry)
+    except OSError:
+        pass
 
 
-def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, svn_name_path):
+def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbranch=None):
     '''Main branch builder function'''
     os.chdir(gitrepo)
     tag_list = get_current_git_tags(gitrepo)
@@ -78,81 +81,91 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, svn_name
         logger.info("Branch {0} already exists - switching and reseting...".format(branch))
         check_output_with_retry(("git", "checkout", branch), retries=1)
         check_output_with_retry(("git", "reset", "--hard"), retries=1)
-        branch_made = True
-    elif branch == "master":
-        logger.info("Creating new empty master branch")
+    elif not parentbranch:
+        logger.info("Creating new empty branch {0}".format(branch))
         check_output_with_retry(("git", "checkout", "--orphan", branch), retries=1)
         recursive_delete(gitrepo)
-        branch_made = True
     else:
-        branch_made = False
-        
-    if branch == "master" and len(tag_diff_files) == 0:
-        # Special import method for master branch
-        trunk_import_revisions = [ os.path.basename(tag) for tag in tag_list 
-                           if tag.startswith("import/trunk") and 
-                           (os.path.join("copy", "trunk", os.path.basename(tag)) not in tag_list) ]
-        trunk_import_revisions.sort(cmp = lambda x,y: cmp(int(x[x.find("-r")+2:]), int(y[y.find("-r")+2:])))
-        logger.debug(trunk_import_revisions)
+        parent, commit = parentbranch.split(":")
+        check_output_with_retry(("git", "checkout", parent, commit), retries=1)
+        check_output_with_retry(("git", "checkout", "-b", branch), retries=1)
 
-        # Now loop, commit and tag...
-        for trunk_rev in trunk_import_revisions:
-            package_name = trunk_rev[:trunk_rev.find("-r")]
-            package_revision = trunk_rev[trunk_rev.find("-r")+2:]
-            package = svn_name_path[package_name]
-            check_output_with_retry(("git", "checkout", os.path.join("import", "trunk", trunk_rev), package), retries=1)
-            check_output_with_retry(("git", "add", "-A"))
-            cmd = ["git", "commit", "--allow-empty", "-m", "{0} (r{1}) commited to {2}".format(package_name, package_revision, branch)]
-            cmd.append("--author='{0}'".format(author_string(svn_metadata_cache[package]["trunk"][package_revision]["author"])))
-            cmd.append("--date={0}".format(svn_metadata_cache[package]["trunk"][package_revision]["date"]))
-            os.environ["GIT_COMMITTER_DATE"] = svn_metadata_cache[package]["trunk"][package_revision]["date"]
-            check_output_with_retry(cmd, retries=1)
-            check_output_with_retry(("git", "tag", os.path.join("copy", branch, trunk_rev)), retries=1)
-            logger.info("Tagged commit of {0}".format(trunk_rev))
+    for tag_diff_file in tag_diff_files:
+        with open(tag_diff_file) as tag_diff_fh:
+            tag_diff = json.load(tag_diff_fh)
+            tag_list = get_current_git_tags(gitrepo)
 
-    else:
-        for tag_diff_file in tag_diff_files:
-            with open(tag_diff_file) as tag_diff_fh:
-                tag_diff = json.load(tag_diff_fh)
-                
-            if not branch_made:
-                yougest_git_tag = find_youngest_tag(tag_diff, svn_metadata_cache)
-                git_change_to_branch(gitrepo, branch, yougest_git_tag)
-                branch_made = True
-            
-            # Now cycle over package tags and update the content of the branch
             for release in tag_diff:
                 logger.info("Processing release {0}".format(release["release"]))
                 release_tag = os.path.join("release", release["release"])
                 if release_tag in tag_list:
                     logger.info("Release tag {0} already made - skipping".format(release_tag))
                     continue
-                if release["meta"]["type"] == "base":
-                    recursive_delete(gitrepo)
                 
                 # Reconstruct release by adding each tag
+                import_list = {}
                 for package, tag in release["diff"]["add"].iteritems():
-                    try:
-                        import_tag = os.path.join("import", "tag", tag)
+                    package_name = os.path.basename(package)
+                    if package_name not in svn_metadata_cache:
+                        #logger.warning("Package {0} not found - assuming restricted import".format(package_name))
+                        continue
+                    if tag == "trunk":
+                        tag_index = "trunk"
+                    else:
+                        tag_index = os.path.join("tags", tag)
+                    for revision in svn_metadata_cache[package_name]["svn"][tag_index]:
+                        if tag == "trunk":
+                            import_tag = os.path.join("import", "trunk", "{0}-r{1}".format(package_name, revision))
+                        else:
+                            import_tag = os.path.join("import", "tag", tag)
                         if import_tag not in tag_list:
-                            logger.warning("import tag {0} not found - assuming restricted import".format(import_tag))
+                            #logger.warning("import tag {0} not found - assuming restricted import".format(import_tag))
                             continue
-                        check_output_with_retry(("git", "checkout", os.path.join("import", "tag", tag), package), retries=1)
-                    except RuntimeError:
-                        logger.error("git checkout of {0} tag {1} failed (not imported onto master branch?)".format(package, tag))
+                        branch_import_tag = os.path.join(branch, import_tag)
+                        if branch_import_tag in tag_list:
+                            logger.info("branch import tag {0} found - assuming import already done".format(branch_import_tag))
+                            continue
+                        import_element = {"package": package, "import_tag": import_tag, "tag": tag, 
+                                          "branch_import_tag": branch_import_tag}
+                        logger.debug("Will import {0} to {1}".format(import_element, branch))
+                        if revision in import_list:
+                            import_list[revision].append(import_element)
+                        else:
+                            import_list[revision] = [import_element]
+
+                sorted_import_revisions = import_list.keys()
+                sorted_import_revisions.sort(cmp=lambda x,y: cmp(int(x), int(y)))
                 
-                # Done - now commit and tag
-                if logger.level <= logging.DEBUG:
-                    cmd = ["git", "status"]
-                    logger.debug(check_output_with_retry(cmd))
-                check_output_with_retry(("git", "add", "-A"))
-                cmd = ["git", "commit", "--allow-empty", "-m", "Release {0}".format(release["release"])]
-                cmd.append("--author='{0}'".format(author_string(release["meta"]["author"])))
-                cmd.append("--date={0}".format(int(release["meta"]["timestamp"])))
-                os.environ["GIT_COMMITTER_DATE"] = str(release["meta"]["timestamp"])
-                check_output_with_retry(cmd, retries=1)
-                check_output_with_retry(("git", "tag", os.path.join("release", release["release"])), retries=1)
-                logger.info("Tagged release {0}".format(release["release"]))
+                for revision in sorted_import_revisions:
+                    for pkg_import in import_list[revision]:
+                        check_output_with_retry(("git", "checkout", pkg_import["import_tag"], pkg_import["package"]))
+                        # Done - now commit and tag
+                        if logger.level <= logging.DEBUG:
+                            cmd = ["git", "status"]
+                            logger.debug(check_output_with_retry(cmd))
+                        check_output_with_retry(("git", "add", "-A"))
+                        cmd = ["git", "commit", "--allow-empty", "-m", "{0} imported onto {1}".format(pkg_import["package"], branch)]
+                        cmd.append("--author='{0}'".format(author_string(release["meta"]["author"])))
+                        cmd.append("--date={0}".format(int(release["meta"]["timestamp"])))
+                        os.environ["GIT_COMMITTER_DATE"] = str(release["meta"]["timestamp"])
+                        check_output_with_retry(cmd, retries=1)
+                        check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1)
+                        logger.info("Tagged {0} onto {1}".format(pkg_import["package"], branch))
+
+                for package in release["diff"]["remove"]:
+                    logger.info("Removing {0} from {1}".format(package, branch))
+                    os.chdir(gitrepo)
+                    recursive_delete(package)
+                    check_output_with_retry(("git", "add", "-A"))
+                    cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package, branch)]
+
+                if release["meta"]["type"] != "snapshot":
+                    if release["meta"]["nightly"]:
+                        stub = "nightly"
+                    else:
+                        stub = "release"
+                    check_output_with_retry(("git", "tag", os.path.join(stub, release["meta"]["name"])), retries=1)
+                    logger.info("Tagged release {0}".format(release["release"]))
 
 
 def main():
@@ -160,12 +173,11 @@ def main():
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="Location of git repository")
     parser.add_argument('branchname',
-                        help="git branch name to build (default is to add trunk tags to master branch")
-    parser.add_argument('--tagdiff', metavar="FILE", nargs="+", default=[],
-                        help="tagdiff files to use to build git branch from, this is mandatory unless you "
-                        "are building the master branch")
-    parser.add_argument('--parentbranch', 
-                        help="If branch does not yet exist, select this branch to make it from")
+                        help="Git branch name to build")
+    parser.add_argument('tagdiff', metavar="FILE", nargs="+", default=[],
+                        help="Tagdiff files to use to build git branch from")
+    parser.add_argument('--parentbranch', metavar="BRANCH:COMMIT",
+                        help="If branch does not yet exist, use this BRANCH to make it from at COMMIT")
     parser.add_argument('--svnmetadata', metavar="FILE",
                         help="File with SVN metadata per SVN tag in the git repository - using this option "
                         "allows the branch to be made from the correct point in the parent branch history. "
@@ -180,10 +192,7 @@ def main():
         
     gitrepo = os.path.abspath(args.gitrepo)
     branch = args.branchname
-    
-    if args.branchname != "master" and len(args.tagdiff) == 0: 
-        print >>sys.stderr, "--tagdiff files are mandatory when dealing with a release branch"
-        sys.exit(1)
+    tag_diffs = [ os.path.abspath(fname) for fname in args.tagdiff ]
     
     # Load SVN metadata cache - this is the fastest way to query the SVN ordering in which tags
     # were made
@@ -197,13 +206,8 @@ def main():
         svn_metadata_cache = json.load(cache_fh)
     logger.info("Loaded SVN metadata from {0}".format(args.svnmetadata))
     
-    # Now make a map of the package base name back to the repository path
-    svn_name_path = {}
-    for full_package in svn_metadata_cache.keys():
-        svn_name_path[os.path.basename(full_package)] = full_package
-
     # Main branch reconstruction function
-    branch_builder(gitrepo, args.branchname, args.tagdiff, svn_metadata_cache, svn_name_path)
+    branch_builder(gitrepo, args.branchname, tag_diffs, svn_metadata_cache, args.parentbranch)
     
 
 if __name__ == '__main__':
