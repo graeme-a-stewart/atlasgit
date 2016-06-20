@@ -98,3 +98,19 @@ def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_times
     with file(svncachefile, "w") as md_dump:
         json.dump(svn_metadata_cache, md_dump, indent=2)
 
+
+def switch_to_branch(branch, orphan=False):
+    ## @brief Switch to branch, creating it if necessary
+    #  @param branch Branch to switch to or create
+    #  @param orphan If @c Ture then create branch as an orphan and delete all current files
+    current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
+    if branch != current_branch:
+        all_branches = [ line.lstrip(" *").rstrip() for line in check_output_with_retry(("git", "branch", "-l")).split("\n") ]
+        if branch in all_branches:
+            check_output_with_retry(("git", "checkout", branch))
+        elif not orphan:
+            check_output_with_retry(("git", "checkout", "-B", branch))
+        else:
+            check_output_with_retry(("git", "checkout", "--orphan", branch))
+            recursive_delete(".")
+            

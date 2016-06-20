@@ -64,7 +64,7 @@ import time
 import xml.etree.ElementTree as eltree
 
 from glogger import logger
-from atutils import check_output_with_retry, get_current_git_tags, author_string
+from atutils import check_output_with_retry, get_current_git_tags, author_string, switch_to_branch
 from atutils import get_flattened_git_tag, initialise_svn_metadata, backup_svn_metadata
 
 
@@ -176,29 +176,13 @@ def clean_changelog_diff(logfile):
     return o_lines
 
 
-def switch_to_branch(branch):
-    ## @brief Switch to branch, creating it if necessary
-    current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
-    if branch not in current_branch:
-        all_branches = [ line.lstrip(" *").rstrip() for line in check_output_with_retry(("git", "branch", "-l")).split("\n") ]
-        if branch in all_branches:
-            check_output_with_retry(("git", "checkout", branch))
-        else:
-            check_output_with_retry(("git", "checkout", "-b", branch))
-
-
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
-    logger.info("processing {0} tag {1} to branch {2}".format(package, tag, branch))
+    logger.info("Processing {0} tag {1}".format(package, tag))
     
     if branch:
-        current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
-        if (branch not in current_branch):
-            all_branches = check_output_with_retry(("git", "branch", "-l"))
-            if branch in all_branches:
-                check_output_with_retry(("git", "checkout", branch))
-            else:
-                check_output_with_retry(("git", "checkout", "-b", branch))
+        logger.info("Switching to branch {0}".format(branch))
+        switch_to_branch(args.targetbranch)
     
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
@@ -219,8 +203,6 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
         pass
     shutil.move(full_svn_path, package_root)
     
-    os.chdir(gitrepo)
-
     # get ChangeLog diff
     changelog_diff = None
     cl_file = os.path.join(package, 'ChangeLog')
@@ -228,7 +210,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
         changelog_diff = clean_changelog_diff(cl_file)
 
     # Commit
-    cmd = ["git", "add", "-A", package]
+    cmd = ["git", "add", "-A"]
     check_output_with_retry(cmd)
     if logger.level <= logging.DEBUG:
         logger.debug(check_output_with_retry(("git", "status")))
@@ -308,7 +290,8 @@ def main():
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="Location of git repository")
     parser.add_argument('--targetbranch', default="import",
-                        help="Target git branch for import (default is 'import')")
+                        help="Target git branch for import. If special value 'package' is given "
+                        "each package is imported onto its own branch (default is single 'import' branch)")
     parser.add_argument('--svnpath', metavar='PATH', nargs='+', default=[],
                         help="Restrict actions to this list of paths in the SVN tree (use to "
                         "make small scale tests of the import workflow).")
@@ -349,7 +332,8 @@ def main():
     # Setup the git repository
     init_git(gitrepo)
     # Pull current list of tags here, to fast skip any work already done
-    switch_to_branch(args.targetbranch)
+    if args.targetbranch != "package":
+        switch_to_branch(args.targetbranch, orphan=True)
     current_git_tags = get_current_git_tags(gitrepo)
     os.chdir(start_cwd)
     
@@ -396,6 +380,8 @@ def main():
             if get_flattened_git_tag(pkg_tag["package"], pkg_tag["tag"], rev) in current_git_tags:
                 logger.info("Tag {0} exists already - skipping".format(os.path.join(pkg_tag["package"], pkg_tag["tag"])))
                 continue
+            if args.targetbranch == "package":
+                switch_to_branch(os.path.basename(pkg_tag["package"]), orphan=True)
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev])
         elapsed = time.time()-start
@@ -406,6 +392,9 @@ def main():
         os.chdir(start_cwd)
         with open(args.importtimingfile, "w") as time_file:
             json.dump(timing, time_file)
+            
+    # Last task, clean all empty directories (git does not track these, but they are clutter)
+    check_output_with_retry(("find", gitrepo, "-type", "d", "-empty", "-delete"))
 
 if __name__ == '__main__':
     main()
