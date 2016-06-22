@@ -70,9 +70,9 @@ def main():
     for package_name, pkg_data in svn_metadata_cache.iteritems():
         release_diff["add"][os.path.join(pkg_data["path"], package_name)] = "trunk"
         
-    tagdiff = {"release": "trunk",
+    tagdiff = [{"release": "trunk",
                "diff": release_diff,
-               "meta": release_desc}
+               "meta": release_desc},]
     
     with open(args.tdfile, "w") as tagdiff_fp:
         json.dump(tagdiff, tagdiff_fp, indent=2)
