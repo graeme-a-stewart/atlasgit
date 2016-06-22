@@ -27,7 +27,7 @@ import shutil
 import sys
 
 from glogger import logger
-from atutils import check_output_with_retry, get_current_git_tags, author_string
+from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete
 
 def git_change_to_branch(gitrepo, branch, branch_point=None):
     cmd = ["git", "checkout", "-b", branch]
@@ -58,22 +58,7 @@ def find_youngest_tag(tag_diff, svn_metadata_cache):
     return yougest_tag
 
 
-def recursive_delete(directory):
-    '''Delete all files in the repository working copy'''
-    try:
-        for entry in os.listdir(directory):
-            if entry.startswith("."):
-                continue
-            entry = os.path.join(directory, entry)
-            if os.path.isfile(entry):
-                os.unlink(entry)
-            elif os.path.isdir(entry):
-                shutil.rmtree(entry)
-    except OSError:
-        pass
-
-
-def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbranch=None):
+def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbranch=None, skipreleasetag=False):
     '''Main branch builder function'''
     os.chdir(gitrepo)
     tag_list = get_current_git_tags(gitrepo)
@@ -93,9 +78,12 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
     for tag_diff_file in tag_diff_files:
         with open(tag_diff_file) as tag_diff_fh:
             tag_diff = json.load(tag_diff_fh)
-            tag_list = get_current_git_tags(gitrepo)
 
+            last_base_release = None
             for release in tag_diff:
+                if release["meta"]["type"] == "base":
+                    last_base_release = release
+                tag_list = get_current_git_tags(gitrepo)
                 logger.info("Processing release {0}".format(release["release"]))
                 release_tag = os.path.join("release", release["release"])
                 if release_tag in tag_list:
@@ -122,9 +110,6 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                             #logger.warning("import tag {0} not found - assuming restricted import".format(import_tag))
                             continue
                         branch_import_tag = os.path.join(branch, import_tag)
-                        if branch_import_tag in tag_list:
-                            logger.info("branch import tag {0} found - assuming import already done".format(branch_import_tag))
-                            continue
                         import_element = {"package": package, "import_tag": import_tag, "tag": tag, 
                                           "branch_import_tag": branch_import_tag}
                         logger.debug("Will import {0} to {1}".format(import_element, branch))
@@ -149,23 +134,30 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         cmd.append("--date={0}".format(int(release["meta"]["timestamp"])))
                         os.environ["GIT_COMMITTER_DATE"] = str(release["meta"]["timestamp"])
                         check_output_with_retry(cmd, retries=1)
-                        check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1)
-                        logger.info("Tagged {0} onto {1}".format(pkg_import["package"], branch))
+                        if pkg_import["branch_import_tag"] not in tag_list:
+                            check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1)
+                        logger.info("Committed {0} ({1}) onto {2}".format(pkg_import["package"], pkg_import["tag"], branch))
 
                 for package in release["diff"]["remove"]:
-                    logger.info("Removing {0} from {1}".format(package, branch))
-                    os.chdir(gitrepo)
-                    recursive_delete(package)
+                    if last_base_release and package in last_base_release["diff"]["add"]:
+                        logger.info("Reverting {0} to base release version {1}".format(package, last_base_release["release"]))
+                        import_tag = os.path.join("import", "tag", last_base_release["diff"]["add"][package])
+                        check_output_with_retry(("git", "checkout", import_tag, package))
+                    else:
+                        logger.info("Removing {0} from {1}".format(package, branch))
+                        recursive_delete(package)
                     check_output_with_retry(("git", "add", "-A"))
                     cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package, branch)]
 
-                if release["meta"]["type"] != "snapshot":
+                if release["meta"]["type"] != "snapshot" and not skipreleasetag:
                     if release["meta"]["nightly"]:
                         stub = "nightly"
                     else:
                         stub = "release"
                     check_output_with_retry(("git", "tag", os.path.join(stub, release["meta"]["name"])), retries=1)
                     logger.info("Tagged release {0}".format(release["release"]))
+                else:
+                    logger.info("Processed release {0} (no tag)".format(release["release"]))
 
 
 def main():
@@ -182,6 +174,10 @@ def main():
                         help="File with SVN metadata per SVN tag in the git repository - using this option "
                         "allows the branch to be made from the correct point in the parent branch history. "
                         "By default GITREPO.svn.metadata will be used, if it exists.")
+    parser.add_argument('--skipreleasetag', action="store_true",
+                        help="Do not create a git tag for this release, nor skip processing if a release tag "
+                        "exists - use this option to add packages to a 'secondary' branch from the main "
+                        "release branch (e.g., pushing these tags to master)")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
 
@@ -207,7 +203,7 @@ def main():
     logger.info("Loaded SVN metadata from {0}".format(args.svnmetadata))
     
     # Main branch reconstruction function
-    branch_builder(gitrepo, args.branchname, tag_diffs, svn_metadata_cache, args.parentbranch)
+    branch_builder(gitrepo, args.branchname, tag_diffs, svn_metadata_cache, args.parentbranch, args.skipreleasetag)
     
 
 if __name__ == '__main__':

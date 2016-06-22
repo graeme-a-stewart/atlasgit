@@ -19,6 +19,7 @@ import json
 import os
 import os.path
 import re
+import shutil
 import subprocess
 import time
 
@@ -49,6 +50,23 @@ def check_output_with_retry(cmd, retries=3, wait=10):
         raise RuntimeError("Repeated failures to execute {0}".format(cmd))
     logger.debug("Executed in {0}s".format(time.time()-start))
     return output
+
+
+def recursive_delete(directory=None):
+    '''Delete all files in the repository working copy'''
+    if not directory:
+        directory="."
+    try:
+        for entry in os.listdir(directory):
+            if entry.startswith("."):
+                continue
+            entry = os.path.join(directory, entry)
+            if os.path.isfile(entry):
+                os.unlink(entry)
+            elif os.path.isdir(entry):
+                shutil.rmtree(entry)
+    except OSError:
+        pass
 
 
 def get_current_git_tags(gitrepo):
