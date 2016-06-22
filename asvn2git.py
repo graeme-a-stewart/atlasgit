@@ -271,7 +271,8 @@ def get_tags_from_diffs(tag_diff_files, svn_path_accept):
                         if not accept:
                             continue
                     # Add in the standard "tags" path 
-                    tag = os.path.join("tags", tag)
+                    if tag != "trunk":
+                        tag = os.path.join("tags", tag)
                     if package in svn_package_tags:
                         svn_package_tags[package].add(tag)
                     else:
