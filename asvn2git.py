@@ -54,10 +54,8 @@ import json
 import logging
 import os
 import os.path
-import pprint
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
@@ -178,7 +176,10 @@ def clean_changelog_diff(logfile):
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
-    logger.info("Processing {0} tag {1}".format(package, tag))
+    msg = "Processing {0} tag {1}".format(package, tag)
+    if tag == "trunk":
+        msg += " (r{0})".format(svn_metadata["revision"])
+    logger.info(msg)
     
     if branch:
         logger.info("Switching to branch {0}".format(branch))
@@ -210,8 +211,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
         changelog_diff = clean_changelog_diff(cl_file)
 
     # Commit
-    cmd = ["git", "add", "-A"]
-    check_output_with_retry(cmd)
+    check_output_with_retry(("git", "add", "-A", package))
     if logger.level <= logging.DEBUG:
         logger.debug(check_output_with_retry(("git", "status")))
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} - r{1}".format(os.path.join(package, tag), svn_metadata['revision'])]
