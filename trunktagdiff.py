@@ -47,7 +47,7 @@ def main():
     if not args.tdfile:
         if args.gitrepo == None:
             logger.error("Either tdfile or gitrepo must be given")
-        args.tdfile = os.path.basename(args.gitrepo) + ".master.tagdiff"
+        args.tdfile = os.path.basename(args.gitrepo) + ".trunk.tagdiff"
     if not args.svncachefile:
         if args.gitrepo == None:
             logger.error("Either tdfile or svncachefile must be given")
