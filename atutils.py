@@ -69,18 +69,27 @@ def recursive_delete(directory=None):
         pass
 
 
-def get_current_git_tags(gitrepo):
+def get_current_git_tags(gitrepo=None):
     ## @brief Return a list of current git tags
-    os.chdir(gitrepo)
+    if gitrepo:
+        os.chdir(gitrepo)
     cmd = ["git", "tag", "-l"]
     return check_output_with_retry(cmd).split("\n")
 
 
-def get_flattened_git_tag(package, tag, revision):
+def get_flattened_git_tag(package, svntag, revision, branch=None):
     ## @brief Construct a git tag to signal the import of a particular SVN tag or revision
-    if tag == "trunk":
-        return os.path.join("import", "trunk","{0}-r{1}".format(os.path.basename(package), revision))
-    return os.path.join("import", "tag", os.path.basename(tag))
+    #  @param Package path
+    #  @param svntag SVN tag (or @c trunk)
+    #  @param revision SVN revision number
+    #  @param branch Create tag for a specific branch import (if present)
+    if svntag == "trunk":
+        git_tag = os.path.join("import","{0}-r{1}".format(os.path.basename(package), revision))
+    else:
+        git_tag = os.path.join("import", os.path.basename(svntag))
+    if branch:
+        git_tag = os.path.join(branch, git_tag)
+    return git_tag
 
 
 def author_string(author):
