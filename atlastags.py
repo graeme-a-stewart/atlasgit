@@ -104,7 +104,8 @@ def parse_tag_file(release_file_path):
             # Gaudi packages live in a separate project, so don't add them
             if project == "GAUDI":
                 continue
-            # "Release" and "RunTime" packages live inside the Release path
+            # "Release" and "RunTime" packages live inside the Release path, but in fact
+            # we ignore them for git 
             if package.endswith("Release") or package.endswith("RunTime"):
                 continue
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
@@ -152,25 +153,6 @@ def diff_release_tags(old, new, allow_removal=False):
         for package in new["tags"]:
             rel_diff["add"][package] = new["tags"][package]["tag"]
     return rel_diff
-
-
-def cache_overlap_removal(release_diff, base_release, last_cache):
-    ## @brief Remove and update packages vz a viz the last cache release
-    #  @param release_diff output from @c diff_release_tags finction
-    #  @param base_release tag lists from base release for this cache
-    #  @param last_cache tag lists from cache release
-    #  @return None (@c release_diff is updated as side effect)
-    for package in last_cache["tags"]:
-        # Remove packages that stayed the same between caches
-        if package in release_diff["add"] and release_diff["add"][package] == last_cache["tags"][package]["tag"]:
-            del(release_diff["add"][package])
-
-        if package not in release_diff["add"]:
-            # Package was removed from the cache - revert to base tag or remove completely
-            try:
-                release_diff["add"][package] = base_release["tags"][package]["tag"]
-            except KeyError:
-                release_diff["remove"].append(package)
 
 
 def find_best_arch(base_path):
@@ -320,9 +302,6 @@ def main():
                 last_cache_release = None
             else:
                 diff = diff_release_tags(tags_by_release[last_base_release], tags_by_release[release], allow_removal=False)
-                # Now look for tags which were the same in the last cache release
-                if last_cache_release:
-                    cache_overlap_removal(diff, tags_by_release[last_base_release], tags_by_release[last_cache_release])
                 last_cache_release = release
             release_diff_list.append({"release": release,
                                       "meta": tags_by_release[release]["release"],
