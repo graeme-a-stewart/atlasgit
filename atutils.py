@@ -139,5 +139,7 @@ def switch_to_branch(branch, orphan=False):
             check_output_with_retry(("git", "checkout", "-B", branch))
         else:
             check_output_with_retry(("git", "checkout", "--orphan", branch))
+            # Clean up the new branch, deleting all files and clearing the staging area
             recursive_delete(".")
+            check_output_with_retry(("git", "rm", "-r", "--cached", "--ignore-unmatch", "."))
             
