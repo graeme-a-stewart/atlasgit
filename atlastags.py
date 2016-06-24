@@ -239,7 +239,7 @@ def main():
                         "be used).")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
-    parser.add_argument('--tdfile', '--tagdiffile',
+    parser.add_argument('--tagdiff',
                         help="output file for tag evolution between releases (defaults to A.B.X.tagdiff only for single "
                         "base release use case - otherwise must be specified using this option)")
     parser.add_argument('--nicospath', default="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/",

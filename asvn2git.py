@@ -293,12 +293,12 @@ def main():
     parser.add_argument('--targetbranch', default="import",
                         help="Target git branch for import. If special value 'package' is given "
                         "each package is imported onto its own branch (default is single 'import' branch)")
+    parser.add_argument('--tagdiff', nargs="+", default=[], required=True,
+                        help="Read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
+                        "all will be scanned to find tags to import.")
     parser.add_argument('--svnpath', metavar='PATH', nargs='+', default=[],
                         help="Restrict actions to this list of paths in the SVN tree (use to "
                         "make small scale tests of the import workflow).")
-    parser.add_argument('--tagsfromtagdiff', nargs="+", default=[],
-                        help="Read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
-                        "all will be scanned to find tags to import.")
     parser.add_argument('--intermediatetags', action="store_true", default=False,
                         help="Import all tags from oldest release tag found, instead of just release tags")
     parser.add_argument('--skiptrunk', action="store_true", default=False,

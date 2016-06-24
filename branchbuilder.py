@@ -163,7 +163,7 @@ def main():
                         help="Location of git repository")
     parser.add_argument('branchname',
                         help="Git branch name to build")
-    parser.add_argument('tagdiff', metavar="FILE", nargs="+", default=[],
+    parser.add_argument('--tagdiff', metavar="FILE", nargs="+", default=[], required=True,
                         help="Tagdiff files to use to build git branch from")
     parser.add_argument('--parentbranch', metavar="BRANCH:COMMIT",
                         help="If branch does not yet exist, use this BRANCH to make it from at COMMIT")
