@@ -1,24 +1,28 @@
 ATLAS git importer
 ==================
 
-Files
------
+Overview
+--------
 
-Modules to import ATLAS SVN to git.
+This package contains some modules and scripts that can be used to import 
+the ATLAS offline SVN repository into git.
 
-Main files:
 
-`asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on an 
-import branch
+### Files
+
+Main scripts:
 
 `atlastags.py` - Parses NICOS tag files to understand the SVN tag content
-of a release; does diffs between a base release and various caches
+of ATLAS releases and prepare lists of SVN tags to import into git
 
-`trunktagdiff.py` - Generates a simple tagdiff file for trunk versions of SVN
-packages; used to update master branch to latest trunk versions 
+`asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on  
+import branch(es)
 
 `branchbuilder.py` - Reconstruct from tag diffs the state of an offline release
 on a git branch
+
+`trunktagdiff.py` - Generates a simple tagdiff file for trunk versions of SVN
+packages; used to update master branch to latest trunk versions 
 
 ---
 
@@ -60,78 +64,82 @@ is available via
 
 `atlasSetup; lsetup git`
 
-### Decide what to import to master
+### Preparing tagdiff files from known releases
 
-1. Import tags from a NICOS list of the tags built into a particular release
-  * `--tagsfromtagdiff` list of files containing tagdiffs (as produced by `atlastags.py`)  
-  
-By default the current `trunk` is always imported, but this can be suppressed with 
-the `--skiptrunk` option. Only SVN tags that appeared in releases are imported, unless
-the `--intermediatetags` option is used, which process all tags from the oldest found
-in a release..
-
-#### Preparing tagdiff files from known releases
-
-To employ the second strategy use the `atlastags.py` script to parse NICOS tag files and
-write a few JSON _tagdiff_ files, encapsulating the way that a base release and it's caches
+Use the `atlastags.py` script to parse NICOS tag files and
+write a few JSON _tagdiff_ files, encapsulating the way that a base release and its caches
 evolved.
 
 By far the easiest way to do this is to give a base release:
 
-`atlastags.py 20.1.0`
+`atlastags.py 20.7.0`
 
-This takes the base content of release 20.1.0, then finds and parses all the 20.1.0.Y caches
+This takes the base content of release 20.7.0, then finds and parses all the 20.7.0.Y caches
 and produces and internal _diff_ that describes the package tag evolution. The default
 tagdiff file in this case is `20.1.0.tagdiff`.
 
-Usually one wants to produce tagdiff files for a whole release series (i.e., all 20.1.X(.Y)
-numbered releases).
+Usually one wants to produce tagdiff files for a whole release series (i.e., all 20.7.X(.Y)
+numbered releases), e.g.,
 
-### Do the import
+`for X in $(seq 0 7); do atlastags.py 20.7.$X; done`
 
-Using the import options described above imports are pretty easy.
+### Import SVN tags into git
 
-In the case that you want to import based on a set of tagdiff files it's very important
-to give *all* the tagdiff files for the release branches you will want to build, e.g.,
+Using the `asvn2git.py` script take the tagdiff files prepared above and import them into 
+a fresh git repository.
 
-`asvn2git.py --tagsfromtagdiff 20.*.tagdiff --importtimingfile r20.json file:///data/graemes/atlasoff/ao-mirror r20`
+Positional arguments are SVNREPO and GITREPO and `--tagdiff` files must also be given. e.g.,
 
-Note that `asvn2git.py` will query SVN for revision numbers are make sure that it 
+`asvn2git.py file:///data/graemes/atlasoff/ao-mirror Tier0 --tagdiff 20.7.* --targetbranch package`
+
+In the last case the option `--targetbranch` is used, with the special value `package` to
+import each SVN package onto a separate git branch.
+
+Tests of the import procedure can be made using the option `--svnpath PATH` that
+restricts the import to packages that start with `PATH`.   
+
+`asvn2git.py` will query SVN for revision numbers are make sure that it 
 imports from SVN in SVN commit order. Thus the import history is fairly sane.
 
 In order to facilitate the next step (release branch creation) the script creates a git
 tag for every package imported. These are:
 
-`import/tag/Package-XX-YY-ZZ` for tags
+`import/Package-XX-YY-ZZ` for package tags
 
-`import/trunk/Package` for the trunk
+`import/Package-rNNNNNN` for package trunk at SVN revision `NNNNNN`
 
-N.B. The creation of this huge number of tags impacts on git performance, so it's best
-to not export these tags to gitlab/github (or delete from the the original import
-repository).
+It is better that tagdiff files are processed in roughly historical order,
+which assures a better import history.
+
+It is possible to re-run `asvn2git.py` with new or updated tagdiff files. The bookkeeping
+git tags will ensure that no duplicate imports are made.
 
 ### Construct git branches for numbered releases
 
-Once the main git import branch has been made, each release branch that is required 
-can be reconstructed with `branchbuilder.py`.
+Once the main git import has been made, each release branch that is required 
+can be reconstructed with `branchbuilder.py`. Git repo and branch name are positional, 
+and `--tagdiff` files are needed. e.g., 
 
-`branchbuilder.py --svnmetadata r20.svn.metadata r20 20.1 20.1.*.tagdiff`
+`branchbuilder.py Tier0 20.7 --tagdiff 20.7.*`
 
-Note that the `svnmetadata` option is used to ensure that branches are built
-with packages in SVN commit order (by default `GITREPO.svn.metadata` will be used).
+As SVN package versions are processed, git tags are created to record each package
+import. In addition a release tag, `release/A.B.X.Y`, is created once a release
+is complete, unless the branch being constructed is `master`.
 
-From the branch creation point, each package is imported and committed; an import tag
-for that branch is made for bookkeeping . Once a release is processed a git 
-tag containing the release name being created, e.g., `release/20.1.5.12`. 
-The commit is timestamped with the date that NICOS created its tag list file for
-that release.  
+Re-running over the import is perfectly fine, as the git bookkeeping tags are used
+to prevent duplicated imports.
 
-Note that in the example above a branch was made for the entire 20.1 series. It's
-also possible to make a branch for only 20.1.5 and caches (for example).
+### Updating
 
-The script has protection against trying to import a package tag for which no
-corresponding git import tag exists, but this should not happen if the tagdiff
-files used to create the master branch and the release branch are the same.
+As indicated, the whole process, from tagdiff file creation through importing from SVN
+and creating branches, can be re-run multiple times, updating releases as they are made.
+Bookkeeping git tags allow skipping work already done.
+
+The `trunktagdiff.py` script will create a special tagdiff file with the `trunk` path
+in SVN, which allows for updating the `master` branch to reflect SVN trunk changes. 
+(Internally, trunk tags use bookkeeping with a revision number, so this is also
+quite safe to rerun.) 
+
 
 ### Upload to gitlab/github
 
