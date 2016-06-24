@@ -137,7 +137,7 @@ Bookkeeping git tags allow skipping work already done.
 
 The `trunktagdiff.py` script will create a special tagdiff file with the `trunk` path
 in SVN, which allows for updating the `master` branch to reflect SVN trunk changes. 
-(Internally, trunk tags use bookkeeping with a revision number, so this is also
+(Internally, trunk tags do bookkeeping with a revision number, so this is also
 quite safe to rerun.) 
 
 
@@ -154,6 +154,10 @@ quite safe to rerun.)
 1. Push your import to the new upstream origin:
 
 ```git push --all origin```
+
+Note, if packages were imported on _per-package_ branches it may not be a good idea to
+import all of these small branches. gitlab repositories get rather unweildy when
+there are many, many branches.
 
 1. Push up tags that you care about
 
