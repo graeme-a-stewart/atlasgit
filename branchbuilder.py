@@ -96,7 +96,11 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                             logger.debug("import tag {0} not found - assuming restricted import".format(import_tag))
                             continue
                         branch_import_tag = get_flattened_git_tag(package, tag, revision, branch)
-                        if branch_import_tag in tag_list:
+                        # To ensure that reverts of packages to older versions are processed
+                        # correctly on release branches we never skip the import of a package
+                        # into a cache, unless skipreleasetag=True, which is for rebuilding
+                        # the master branch 
+                        if branch_import_tag in tag_list and not skipreleasetag:
                             logger.info("import of {0} ({1} r{2}) onto {3} done - skipping".format(package, tag, revision, branch))
                             continue
                         import_element = {"package": package, "import_tag": import_tag, "tag": tag, 
@@ -119,6 +123,10 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                             cmd = ["git", "status"]
                             logger.debug(check_output_with_retry(cmd))
                         check_output_with_retry(("git", "add", "-A", pkg_import["package"]))
+                        staged = check_output_with_retry(("git", "diff", "--name-only", "--staged"))
+                        if len(staged) == 0: # Nothing staged, so skip
+                            logger.info("Package {0} - no changes staged, skipping".format(pkg_import["package"]))
+                            continue
                         msg = "{0} imported onto {1}".format(pkg_import["package"], branch)
                         if pkg_import["tag"] == "trunk":
                             msg += " (trunk r{0})".format(revision)
@@ -131,7 +139,8 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         check_output_with_retry(cmd, retries=1)
                         if pkg_import["branch_import_tag"] not in tag_list:
                             check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1)
-                        logger.info("Committed {0} ({1}) onto {2}".format(pkg_import["package"], pkg_import["tag"], branch))
+                        logger.info("Committed {0} ({1}) onto {2} for {3}".format(pkg_import["package"], 
+                                                                                  pkg_import["tag"], branch, release["release"]))
                         pkg_processed += 1
 
                 for package in release["diff"]["remove"]:
