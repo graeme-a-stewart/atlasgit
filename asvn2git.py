@@ -342,8 +342,8 @@ def main():
     # Decide which svn packages we will import
     # Note that if we're pulling the packages from a tag diff file, we also get tags
     # at this point, otherwise the tag list is empty.
-    if len(args.tagsfromtagdiff) > 0:
-        svn_packages = get_tags_from_diffs(args.tagsfromtagdiff, args.svnpath)
+    if len(args.tagdiff) > 0:
+        svn_packages = get_tags_from_diffs(args.tagdiff, args.svnpath)
         # Add "trunk" packages, if required
         for package, tags in svn_packages.iteritems():
             if args.skiptrunk is False and "trunk" not in tags:
@@ -370,6 +370,7 @@ def main():
     ordered_revisions.sort(cmp=lambda x,y: cmp(int(x), int(y)))
     logger.info("Will process {0} SVN revisions in total".format(len(ordered_revisions)))
     counter=0
+    processed_tags=0
     timing = []
     os.chdir(gitrepo)
     
@@ -385,8 +386,9 @@ def main():
                 switch_to_branch(os.path.basename(pkg_tag["package"]), orphan=True)
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev])
+            processed_tags += 1
         elapsed = time.time()-start
-        logger.info("{0} processed in {1}s".format(counter, elapsed))
+        logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))
         timing.append(elapsed)
         
     if args.importtimingfile:
