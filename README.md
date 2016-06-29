@@ -145,10 +145,12 @@ quite safe to rerun.)
 
 1. Create an empty repository in the social coding site of your choice.
 
-1. Add the repository to your imported repository, e.g., as:
+1. Add the repository to your imported repository, e.g., as one of:
 
 ```git remote add origin https://gitlab.cern.ch/graemes/aogt.git```
+
 ```git remote add origin https://:@gitlab.cern.ch:8443/graemes/aogt.git```
+
 ```git remote add origin https://github.com/graeme-a-stewart/atlasofflinesw.git```
 
 1. Push your import to the new upstream origin:
