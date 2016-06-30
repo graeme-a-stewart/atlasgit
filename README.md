@@ -12,8 +12,11 @@ the ATLAS offline SVN repository into git.
 
 Main scripts:
 
-`atlastags.py` - Parses NICOS tag files to understand the SVN tag content
-of ATLAS releases and prepare lists of SVN tags to import into git
+`cmaketags.py` - Parses a CMake release to obtain the SVN tag content
+for importing into git. 
+
+`cmttags.py` - Parses NICOS tag files to understand the SVN tag content
+of CMT built releases to import into git
 
 `asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on  
 import branch(es)
@@ -66,22 +69,22 @@ is available via
 
 ### Preparing tagdiff files from known releases
 
-Use the `atlastags.py` script to parse NICOS tag files and
-write a few JSON _tagdiff_ files, encapsulating the way that a base release and its caches
-evolved.
+Use the `cmttags.py` and/or `cmaketags.py` script the SVN tag content of interesting
+releases and write a few JSON _tagdiff_ files, encapsulating the way that a 
+base release and its caches evolved.
 
-By far the easiest way to do this is to give a base release:
+By far the easiest way to do this is just to give a base release:
 
-`atlastags.py 20.7.0`
+`cmttags.py 20.7.0`
 
 This takes the base content of release 20.7.0, then finds and parses all the 20.7.0.Y caches
 and produces and internal _diff_ that describes the package tag evolution. The default
-tagdiff file in this case is `20.1.0.tagdiff`.
+tagdiff file in this case is `20.7.0.tagdiff`.
 
 Usually one wants to produce tagdiff files for a whole release series (i.e., all 20.7.X(.Y)
 numbered releases), e.g.,
 
-`for X in $(seq 0 7); do atlastags.py 20.7.$X; done`
+`for X in $(seq 0 7); do cmttags.py 20.7.$X; done`
 
 ### Import SVN tags into git
 
@@ -159,7 +162,8 @@ quite safe to rerun.)
 
 Note, if packages were imported on _per-package_ branches it may not be a good idea to
 import all of these small branches. gitlab repositories get rather unweildy when
-there are many, many branches.
+there are many, many branches (indeed, currently there is a bug in gitlab and the
+web interface is broken when there are more than around 1000 branches).
 
 1. Push up tags that you care about
 
