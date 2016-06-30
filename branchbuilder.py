@@ -105,7 +105,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                             logger.info("import of {0} ({1} r{2}) onto {3} done - skipping".format(package, tag, revision, branch))
                             continue
                         import_element = {"package": package, "import_tag": import_tag, "tag": tag, 
-                                          "branch_import_tag": branch_import_tag}
+                                          "branch_import_tag": branch_import_tag, "tag_key": tag_index}
                         logger.debug("Will import {0} to {1}".format(import_element, branch))
                         if revision in import_list:
                             import_list[revision].append(import_element)
@@ -118,6 +118,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                 pkg_processed = 0
                 for revision in sorted_import_revisions:
                     for pkg_import in import_list[revision]:
+                        package_name = os.path.basename(pkg_import["package"])
                         check_output_with_retry(("git", "checkout", pkg_import["import_tag"], pkg_import["package"]))
                         # Done - now commit and tag
                         if logger.level <= logging.DEBUG:
@@ -134,9 +135,11 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         else:
                             msg += " ({0})".format(pkg_import["tag"])
                         cmd = ["git", "commit", "--allow-empty", "-m", msg]
-                        cmd.append("--author='{0}'".format(author_string(release["meta"]["author"])))
-                        cmd.append("--date={0}".format(int(release["meta"]["timestamp"])))
-                        os.environ["GIT_COMMITTER_DATE"] = str(release["meta"]["timestamp"])
+                        author = author_string(svn_metadata_cache[package_name]["svn"][pkg_import["tag_key"]][revision]["author"])
+                        date = author_string(svn_metadata_cache[package_name]["svn"][pkg_import["tag_key"]][revision]["date"])
+                        cmd.append("--author='{0}'".format(author))
+                        cmd.append("--date={0}".format(date))
+                        os.environ["GIT_COMMITTER_DATE"] = date
                         check_output_with_retry(cmd, retries=1)
                         if pkg_import["branch_import_tag"] not in tag_list:
                             check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1)
