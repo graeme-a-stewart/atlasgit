@@ -28,7 +28,7 @@ import sys
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete
-from atutils import switch_to_branch, get_flattened_git_tag
+from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff
 
 
 def branch_exists(gitrepo, branch):
@@ -134,6 +134,9 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                             msg += " (trunk r{0})".format(revision)
                         else:
                             msg += " ({0})".format(pkg_import["tag"])
+                        cl_diff = changelog_diff(pkg_import["package"], staged=True)
+                        if cl_diff:
+                            msg += "\n\n" + "\n".join(cl_diff)
                         cmd = ["git", "commit", "--allow-empty", "-m", msg]
                         author = author_string(svn_metadata_cache[package_name]["svn"][pkg_import["tag_key"]][revision]["author"])
                         date = author_string(svn_metadata_cache[package_name]["svn"][pkg_import["tag_key"]][revision]["date"])
