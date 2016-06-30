@@ -63,7 +63,7 @@ import xml.etree.ElementTree as eltree
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, switch_to_branch
-from atutils import get_flattened_git_tag, initialise_svn_metadata, backup_svn_metadata
+from atutils import get_flattened_git_tag, initialise_svn_metadata, backup_svn_metadata, changelog_diff
 
 
 def tag_cmp(tag_x, tag_y):
@@ -165,15 +165,6 @@ def init_git(gitrepo):
         check_output_with_retry(("git", "init"))
 
 
-def clean_changelog_diff(logfile):
-    ## @brief Return a cleaned up ChangeLog diff - this is only as useful as what the developer wrote!
-    o_lines = check_output_with_retry(("git", "diff", "-U0", logfile), retries=1).split("\n")
-    o_lines = [ line.lstrip("+") for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
-    if len(o_lines) > 40:
-        return ["ChangeLog diff too large"]
-    return o_lines
-
-
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     msg = "Processing {0} tag {1}".format(package, tag)
@@ -205,10 +196,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
     shutil.move(full_svn_path, package_root)
     
     # get ChangeLog diff
-    changelog_diff = None
-    cl_file = os.path.join(package, 'ChangeLog')
-    if os.path.isfile(cl_file):
-        changelog_diff = clean_changelog_diff(cl_file)
+    cl_diff = changelog_diff(package)
 
     # Commit
     check_output_with_retry(("git", "add", "-A", package))
@@ -220,8 +208,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
                     "--date={0}".format(svn_metadata["date"])))
         os.environ["GIT_COMMITTER_DATE"] = svn_metadata["date"]
 
-    if changelog_diff:
-        cmd.extend(("-m","Diff in ChangeLog:\n" + '\n'.join(changelog_diff)))
+    if cl_diff:
+        cmd.extend(("-m","Diff in ChangeLog:\n" + '\n'.join(cl_diff)))
     check_output_with_retry(cmd)
     cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag, svn_metadata["revision"]), "-m", ""]
     check_output_with_retry(cmd)

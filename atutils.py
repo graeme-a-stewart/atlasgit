@@ -25,7 +25,7 @@ import time
 
 from glogger import logger
 
-def check_output_with_retry(cmd, retries=3, wait=10):
+def check_output_with_retry(cmd, retries=2, wait=10, ignore_fail=False):
     ## @brief Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)
     #  @param cmd list or tuple of command line parameters
     #  @param retries Number of attempts to execute successfully
@@ -41,8 +41,12 @@ def check_output_with_retry(cmd, retries=3, wait=10):
             output = subprocess.check_output(cmd)
             success = True
         except subprocess.CalledProcessError:
+            if ignore_fail:
+                success = True
+                output = ""
+                continue
             logger.warning("Attempt {0} to execute {1} failed".format(tries, cmd))
-            if tries >= retries:
+            if tries > retries:
                 failure = True
             else:
                 time.sleep(wait)
@@ -90,6 +94,35 @@ def get_flattened_git_tag(package, svntag, revision, branch=None):
     if branch:
         git_tag = os.path.join(branch, git_tag)
     return git_tag
+
+
+def changelog_diff(package, staged=False):
+    ## @brief Return a cleaned up ChangeLog diff - this is only as useful as what the developer wrote!
+    #  @param package Path to package
+    #  @param staged Diff for staged files, instead of unstaged changes
+    #  @return ChangeLog diff (truncated if needed) 
+    truncate_lines = 20
+    o_lines = []
+    cl_file = os.path.join(package, 'ChangeLog')
+    if os.path.isfile(cl_file):
+        exists = check_output_with_retry(("git", "ls-tree", "HEAD", cl_file), ignore_fail=True, retries=0)
+        if exists:
+            cmd = ["git", "diff", "-U0"]
+            if staged:
+                cmd.append("--staged")
+            cmd.append(cl_file)
+            o_lines = check_output_with_retry(cmd, retries=1).split("\n")
+            o_lines = [ line.lstrip("+") for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
+            if len(o_lines) > truncate_lines:
+                o_lines = o_lines[:truncate_lines]
+                o_lines.append("...")
+                o_lines.append("(Long ChangeLog diff - truncated)")
+            logger.debug("Found {0} line ChangeLog diff".format(len(o_lines)))
+        else:
+            logger.debug("First package commit - not diffing ChangeLog")
+    else:
+        logger.debug("ChangeLog file {0} not found".format(cl_file))
+    return o_lines
 
 
 def author_string(author):
