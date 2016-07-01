@@ -143,6 +143,16 @@ in SVN, which allows for updating the `master` branch to reflect SVN trunk chang
 (Internally, trunk tags do bookkeeping with a revision number, so this is also
 quite safe to rerun.) 
 
+#### Tagdiff files for CMake nightlies
+
+In the `cmaketags.py` script simply give the name of the nightly branch to parse
+and the different releases to scan, e.g.,
+
+`cmaketags.py rel_1 rel_2 rel_3 rel_4 --nightly 21.0.X`
+
+The default tagdiff file is composed of the nightly branch name, the first
+release and a timestamp, e.g., `21.0.X-VAL_rel_1-2016-06-26T2242.tagdiff`.
+
 
 ### Upload to gitlab/github
 
