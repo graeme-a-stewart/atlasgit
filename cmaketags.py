@@ -23,17 +23,22 @@ import json
 import logging
 import os.path 
 import sys
+import time
 
 from glogger import logger
 from atutils import find_best_arch, diff_release_tags
 
-def find_cmake_release(install_path, release):
+def find_cmake_release(install_path, release, nightly=None):
     ## @brief Find the base path and project sub-path for a CMake release
     #  @param install_path Base release area for CMake installed releases
     #  @param release Athena release number
+    #  @param nightly Nightly series to search (otherwise look for installed release)
     #  @return Tuple with full base release path and project sub-path
-    release_number_elements = release.split(".")
-    base_path = os.path.join(install_path, "{0}.{1}".format(release_number_elements[0], release_number_elements[1]))
+    if nightly:
+        base_path = os.path.join(install_path, nightly)
+    else:
+        release_number_elements = release.split(".")
+        base_path = os.path.join(install_path, "{0}.{1}".format(release_number_elements[0], release_number_elements[1]))
     if not os.path.isdir(base_path):
         logger.error("Directory {0} is missing - cannot find CMake package data".format(base_path))
         sys.exit(1)
@@ -72,8 +77,11 @@ def find_cmake_sample_project(base_path, release):
     return sample_project
 
 
-def get_cmake_release_data(base_path, release, project_path):
-    release_number_elements = release.split(".")
+def get_cmake_release_data(base_path, release, project_path, nightly=None):
+    if nightly:
+        release_number_elements = nightly.split(".")
+    else:
+        release_number_elements = release.split(".")
     series = release_number_elements[0]
     flavour = release_number_elements[1]
     major = release_number_elements[2]
@@ -85,6 +93,7 @@ def get_cmake_release_data(base_path, release, project_path):
         release_type = "cache"
         minor = release_number_elements[3]
         subminor = None
+        
     sample_project = find_cmake_sample_project(base_path, release)
     timestamp = os.stat(os.path.join(base_path, sample_project, release)).st_mtime
     
@@ -99,6 +108,9 @@ def get_cmake_release_data(base_path, release, project_path):
                     "nightly": False,
                     "author": "ATLAS Librarian <alibrari@cern.ch>"
                     }
+    if nightly:
+        release_desc["nightly"] = True
+        release_desc["name"] = "{0}_{1}-{2}".format(nightly, release, time.strftime("%Y-%m-%dT%H%M", time.localtime(timestamp)))
     logger.debug(release_desc)
     return release_desc
     
@@ -153,22 +165,31 @@ def main():
     parser.add_argument('--tagdiff',
                         help="output file for tag evolution between releases (defaults to A.B.X.tagdiff only for single "
                         "base release use case - otherwise must be specified using this option)")
-    parser.add_argument('--installpath', default="/cvmfs/atlas.cern.ch/repo/sw/software/",
+    parser.add_argument('--installpath',
                         help="path to CMake release installation location (defaults to cvfms path "
-                        "/cvmfs/atlas.cern.ch/repo/sw/software)")
+                        "/cvmfs/atlas.cern.ch/repo/sw/software for releases, "
+                        "/afs/cern.ch/atlas/software/builds/nightlies for nightlies)")
+    parser.add_argument('--nightly', help="Generate tag diff for nightly build series (e.g., 21.0.X) "
+                        "instead of a deployed release (in this case 'release' should be, e.g., rel_4)")    
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
+        
+    if not args.installpath:
+        if args.nightly:
+            args.installpath = "/afs/cern.ch/atlas/software/builds/nightlies"
+        else:
+            args.installpath = "/cvmfs/atlas.cern.ch/repo/sw/software"
     
     tags_by_release = {}
     ordered_releases = []
 
     for release in args.release:
-        base_path, project_path = find_cmake_release(args.installpath, release)
-        release_description = get_cmake_release_data(base_path, release, project_path)
+        base_path, project_path = find_cmake_release(args.installpath, release, nightly=args.nightly)
+        release_description = get_cmake_release_data(base_path, release, project_path, nightly=args.nightly)
         logger.debug("Release {0} parsed as {1}/PROJECT/{2}".format(base_path, release, project_path))
         release_tags = find_cmake_tags(base_path, release, project_path)
         tags_by_release[release_description["name"]] = {"release": release_description,
