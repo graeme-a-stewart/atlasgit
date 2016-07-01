@@ -61,7 +61,8 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
         switch_to_branch(branch, orphan=True)
     else:
         parent, commit = parentbranch.split(":")
-        check_output_with_retry(("git", "checkout", parent, commit), retries=1)
+        check_output_with_retry(("git", "checkout", parent), retries=1)
+        check_output_with_retry(("git", "checkout", commit), retries=1)
         check_output_with_retry(("git", "checkout", "-b", branch), retries=1)
 
     for tag_diff_file in tag_diff_files:
