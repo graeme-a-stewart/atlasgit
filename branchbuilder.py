@@ -127,7 +127,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         check_output_with_retry(("git", "add", "-A", pkg_import["package"]))
                         staged = check_output_with_retry(("git", "diff", "--name-only", "--staged"))
                         if len(staged) == 0: # Nothing staged, so skip
-                            logger.info("Package {0} - no changes staged for {1}, skipping".format(pkg_import["package"], release))
+                            logger.info("Package {0} - no changes staged for {1}, skipping".format(pkg_import["package"], release["meta"]["name"]))
                             continue
                         msg = "{0} imported onto {1}".format(pkg_import["package"], branch)
                         if pkg_import["tag"] == "trunk":
