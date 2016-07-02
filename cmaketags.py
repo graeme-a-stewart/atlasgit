@@ -70,7 +70,7 @@ def find_cmake_sample_project(base_path, release):
     #  @param release Athena release number
     #  @return Sample project name
     sample_project = None
-    for project in ("AtlasCore", "AtlasEvent", "AtlasOffline", "AtlasProduction"):
+    for project in ("AtlasCore", "AtlasEvent", "AtlasOffline", "AtlasProduction", "AthSimulationBase", "AthAnalysisBase"):
         if os.path.isdir(os.path.join(base_path, project, release)):
             sample_project = project
             break
