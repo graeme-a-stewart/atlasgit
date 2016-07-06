@@ -120,6 +120,8 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                 for revision in sorted_import_revisions:
                     for pkg_import in import_list[revision]:
                         package_name = os.path.basename(pkg_import["package"])
+                        # Need to wipe out all contents in case files were removed from package
+                        recursive_delete(pkg_import["package"])
                         check_output_with_retry(("git", "checkout", pkg_import["import_tag"], pkg_import["package"]))
                         # Done - now commit and tag
                         if logger.level <= logging.DEBUG:
