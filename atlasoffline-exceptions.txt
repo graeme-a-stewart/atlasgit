@@ -1,0 +1,2 @@
+# VP1 PNG files
+graphics/VP1/VP1Gui/src/images/*.png

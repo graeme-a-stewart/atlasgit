@@ -50,6 +50,7 @@
 #   }
 
 import argparse
+import fnmatch
 import json
 import logging
 import os
@@ -165,7 +166,8 @@ def init_git(gitrepo):
         check_output_with_retry(("git", "init"))
 
 
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None):
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None, 
+                          filter_exceptions=[]):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     msg = "Processing {0} tag {1}".format(package, tag)
     if tag == "trunk":
@@ -182,7 +184,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
     check_output_with_retry(cmd)
 
     # Clean out directory of things we don't want to import
-    svn_cleanup(full_svn_path)
+    svn_cleanup(full_svn_path, svn_co_root=tempdir, filter_exceptions=filter_exceptions)
     
     # Copy to git
     full_git_path = os.path.join(gitrepo, package)
@@ -217,7 +219,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
     # Clean up
     shutil.rmtree(tempdir)
     
-def svn_cleanup(svn_path):
+def svn_cleanup(svn_path, svn_co_root="", filter_exceptions=[]):
     ## @brief Cleanout files we do not want to import into git
     shutil.rmtree(os.path.join(svn_path, ".svn"))
     
@@ -225,6 +227,15 @@ def svn_cleanup(svn_path):
     for root, dirs, files in os.walk(svn_path):
         for name in files:
             filename = os.path.join(root, name)
+            svn_filename = filename[len(svn_co_root)+1:]
+            filter_exception_match = False
+            for filter in filter_exceptions:
+                if fnmatch.fnmatch(svn_filename, filter):
+                    logger.info("{0} imported from matching exception {1}".format(svn_filename, filter))
+                    filter_exception_match = True
+                    break
+            if filter_exception_match:
+                continue
             try:
                 if os.stat(filename).st_size > 100*1024:
                     if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "cpp", "hpp", "hh"):
@@ -295,6 +306,8 @@ def main():
                         help="File containing cache of SVN information - default 'gitrepo.svn.metadata'")
     parser.add_argument('--importtimingfile', metavar="FILE",
                         help="File to dump SVN->git import timing information - default 'gitrepo-timing.json'")
+    parser.add_argument('--svnfilterexceptions', '--sfe', metavar="FILE",
+                        help="File listing path matches to exempt from SVN import filter (one per line, globbing allowed)")    
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
 
@@ -315,6 +328,16 @@ def main():
     start_cwd = os.getcwd()
     start_timestamp_string = time.strftime("%Y%m%dT%H%M.%S")
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
+    
+    # If we have import exception file, load here
+    svn_filter_exceptions = []
+    if args.svnfilterexceptions:
+        with open(args.svnfilterexceptions) as svnfilt:
+            for line in svnfilt:
+                line = line.strip()
+                if line.startswith("#") or line == "":
+                    continue
+                svn_filter_exceptions.append(line)
 
 
     ### Main actions start here
@@ -373,7 +396,8 @@ def main():
             if args.targetbranch == "package":
                 switch_to_branch(os.path.basename(pkg_tag["package"]), orphan=True)
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
-                                  svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev])
+                                  svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev],
+                                  filter_exceptions = svn_filter_exceptions)
             processed_tags += 1
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))
