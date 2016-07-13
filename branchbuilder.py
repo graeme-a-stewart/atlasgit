@@ -79,6 +79,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                 if release_tag in tag_list and not skipreleasetag:
                     logger.info("Release tag {0} already made - skipping".format(release_tag))
                     continue
+                pkg_to_consider = 0
                 
                 # Reconstruct release by adding each tag
                 import_list = {}
@@ -108,6 +109,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         import_element = {"package": package, "import_tag": import_tag, "tag": tag, 
                                           "branch_import_tag": branch_import_tag, "tag_key": tag_index}
                         logger.debug("Will import {0} to {1}".format(import_element, branch))
+                        pkg_to_consider += 1
                         if revision in import_list:
                             import_list[revision].append(import_element)
                         else:
@@ -117,8 +119,10 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                 sorted_import_revisions.sort(cmp=lambda x,y: cmp(int(x), int(y)))
                 
                 pkg_processed = 0
+                pkg_condsidered = 0
                 for revision in sorted_import_revisions:
                     for pkg_import in import_list[revision]:
+                        pkg_condsidered += 1
                         package_name = os.path.basename(pkg_import["package"])
                         # Need to wipe out all contents in case files were removed from package
                         recursive_delete(pkg_import["package"])
@@ -130,7 +134,7 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         check_output_with_retry(("git", "add", "-A", pkg_import["package"]))
                         staged = check_output_with_retry(("git", "diff", "--name-only", "--staged"))
                         if len(staged) == 0: # Nothing staged, so skip
-                            logger.info("Package {0} - no changes staged for {1}, skipping".format(pkg_import["package"], release["meta"]["name"]))
+                            logger.info("Package {0} - no changes staged for {1}, skipping ({2}/{3})".format(pkg_import["package"], release["meta"]["name"], pkg_condsidered, pkg_to_consider))
                             continue
                         msg = "{0} imported onto {1}".format(pkg_import["package"], branch)
                         if pkg_import["tag"] == "trunk":
@@ -149,8 +153,9 @@ def branch_builder(gitrepo, branch, tag_diff_files, svn_metadata_cache, parentbr
                         check_output_with_retry(cmd, retries=1)
                         if pkg_import["branch_import_tag"] not in tag_list:
                             check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1)
-                        logger.info("Committed {0} ({1}) onto {2} for {3}".format(pkg_import["package"], 
-                                                                                  pkg_import["tag"], branch, release["release"]))
+                        logger.info("Committed {0} ({1}) onto {2} for {3} ({4}/{5})".format(pkg_import["package"], 
+                                                                                  pkg_import["tag"], branch, release["release"],
+                                                                                  pkg_condsidered, pkg_to_consider))
                         pkg_processed += 1
 
                 for package in release["diff"]["remove"]:
