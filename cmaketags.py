@@ -123,7 +123,7 @@ def find_cmake_tags(base_path, release, project_path):
     #  @param project_path The path element inside each project where the
     #  project is installed
     release_packages = {}
-    project_directories = [ dir for dir in os.listdir(base_path) if dir.startswith("Atlas") ]
+    project_directories = [ dir for dir in os.listdir(base_path) if dir.startswith("Atlas") or dir == "DetCommon" ]
     for project in project_directories:
         packages_file = os.path.join(base_path, project, release, project_path, "packages.txt")
         if not os.path.exists(packages_file):
