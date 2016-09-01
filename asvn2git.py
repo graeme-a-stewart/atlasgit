@@ -289,9 +289,9 @@ def main():
                         help="Location of svn repository root")
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="Location of git repository")
-    parser.add_argument('--targetbranch', default="import",
+    parser.add_argument('--targetbranch', default="package",
                         help="Target git branch for import. If special value 'package' is given "
-                        "each package is imported onto its own branch (default is single 'import' branch)")
+                        "each package is imported onto its own branch (default is per-package branchs)")
     parser.add_argument('--tagdiff', nargs="+", default=[], required=True,
                         help="Read list of tags to import from ATLAS release tagdiff files. If multiple tagdiffs are given "
                         "all will be scanned to find tags to import.")
