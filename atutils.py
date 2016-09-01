@@ -25,12 +25,17 @@ import time
 
 from glogger import logger
 
-def check_output_with_retry(cmd, retries=2, wait=10, ignore_fail=False):
+def check_output_with_retry(cmd, retries=2, wait=10, ignore_fail=False, dryrun=False):
     ## @brief Multiple attempt wrapper for subprocess.check_call (especially remote SVN commands can bork)
     #  @param cmd list or tuple of command line parameters
     #  @param retries Number of attempts to execute successfully
     #  @param wait Sleep time after an unsuccessful execution attempt
-    #  @return String containing command output 
+    #  @param ignore_fail Do not raise an exception if the command fails
+    #  @param dryrun If @c True do not actually execute the command, only print it and return an empty string
+    #  @return String containing command output
+    if dryrun:
+        logger.info("Dryrun mode: {0}".format(cmd))
+        return ""
     success = failure = False
     tries = 0
     start = time.time()
@@ -94,6 +99,18 @@ def get_flattened_git_tag(package, svntag, revision, branch=None):
     if branch:
         git_tag = os.path.join(branch, git_tag)
     return git_tag
+
+def get_current_package_tag(tag_list, branch_import_tag):
+    ## @brief Return the current package tag corresponding to the about to be
+    #  imported package tag
+    #  @param tag_list List of current git tags
+    #  @param branch_import_tag Package tag about to be imported
+    #  @return Current package import tag or @c None, if no tag exists
+    branch_import_stub = branch_import_tag.split("-")[0]
+    for tag in tag_list:
+        if tag.startswith(branch_import_stub):
+            return tag
+    return None
 
 
 def changelog_diff(package, staged=False):
