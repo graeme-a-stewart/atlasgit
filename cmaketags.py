@@ -26,7 +26,7 @@ import sys
 import time
 
 from glogger import logger
-from atutils import find_best_arch, diff_release_tags
+from atutils import find_best_arch
 
 def find_cmake_releases(install_path, release, nightly=None):
     ## @brief Find the base path and project sub-path for a CMake release
