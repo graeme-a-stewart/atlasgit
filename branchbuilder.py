@@ -70,7 +70,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
             release_data = json.load(tag_file_fh)
 
             tag_list = get_current_git_tags(gitrepo)
-            release_tag_unprocessed = [ tag.rsplit("/", 1)[1].lsplit("-", 1)[0] 
+            release_tag_unprocessed = [ tag.rsplit("/", 1)[1].split("-", 1)[0] 
                                      for tag in tag_list if tag.startswith(os.path.join(branch, "import")) ]
             logger.info("Processing release {0} ({1} current tags)".format(release_data["release"]["name"], len(release_tag_unprocessed)))
             release_tag = os.path.join("release", release_data["release"]["name"])
@@ -163,19 +163,19 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
                                                                               pkg_condsidered, pkg_to_consider))
                     pkg_processed += 1
 
-                for package in release_tag_unprocessed:
-                    logger.info("{0} packages have been removed from the release".format(len(release_tag_unprocessed)))
-                    logger.debug(" ".join(release_tag_unprocessed))
-                    # If this was a cache release then we might have to revert to the base release here, but 
-                    # that is TODO...
-                    logger.info("Removing {0} from {1}".format(package, branch))
-                    if not dryrun:
-                        recursive_delete(package)
-                    check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
-                    cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package, branch)]
-                    check_output_with_retry(cmd, dryrun=dryrun)
-                    check_output_with_retry(("git", "tag", "-d", pkg_import["current_pkg_tag"]), retries=1, dryrun=dryrun)
-                    pkg_processed += 1
+            for package in release_tag_unprocessed:
+                logger.info("{0} packages have been removed from the release".format(len(release_tag_unprocessed)))
+                logger.debug(" ".join(release_tag_unprocessed))
+                # If this was a cache release then we might have to revert to the base release here, but 
+                # that is TODO...
+                logger.info("Removing {0} from {1}".format(package, branch))
+                if not dryrun:
+                    recursive_delete(package)
+                check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
+                cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package, branch)]
+                check_output_with_retry(cmd, dryrun=dryrun)
+                check_output_with_retry(("git", "tag", "-d", pkg_import["current_pkg_tag"]), retries=1, dryrun=dryrun)
+                pkg_processed += 1
 
             if release_data["release"]["type"] != "snapshot" and not skipreleasetag:
                 if release_data["release"]["nightly"]:
