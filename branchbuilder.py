@@ -23,12 +23,13 @@ import json
 import logging
 import os
 import os.path
+import pprint
 import shutil
 import sys
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete
-from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff, get_current_package_tag
+from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff
 
 
 def branch_exists(gitrepo, branch):
@@ -52,8 +53,35 @@ def find_youngest_tag(tag_diff, svn_metadata_cache):
     return yougest_tag
 
 
+def get_current_release_tag_dict(tag_list, branch):
+    ## @brief Return a dictionary, keyed by package name that can be used to keep
+    #  track of unprocessed tags (which will need subsequent removal from the release)
+    #  @param tag_list List of (all) git tags
+    #  @param branch Name of release branch to get tags for
+    #  @return Dictonary of the form {package_name : {'gittag': current_git_tag, 'svntag': svn_tag }, ...}
+    release_tag_dict = {}
+    release_prefix = os.path.join(branch, "import")
+    for tag in tag_list:
+        if not tag.startswith(release_prefix):
+            continue
+        package_tag = os.path.basename(tag)
+        package_name = package_tag.split("-", 1)[0]
+        release_tag_dict[package_name] = {"svntag": package_tag, "gittag": tag}
+    if logger.level <= logging.DEBUG:
+        pprint.pprint(release_tag_dict)
+    return release_tag_dict
+
+
 def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=None, skipreleasetag=False, dryrun=False):
-    '''Main branch builder function'''
+    ## @brief Main branch builder function
+    #  @todo This function is now too big - it should be split up into a few pieces
+    #  @param gitrepo The git repository location
+    #  @param branch The got branch name to work on
+    #  @param tag_files The plain tag content files to process
+    #  @param svn_metadata_cache The standard metadata cache from SVN
+    #  @param parentbranch If creating a new branch, this is the BRANCH:COMMIT_ID of where to make the new branch from
+    #  @param skipreleasetag If @c True then skip creating git tags for each processed release
+    #  @param dryrun If @c True, do nothing except print commands that would have been executed
     os.chdir(gitrepo)
     tag_list = get_current_git_tags(gitrepo)
     if not parentbranch:
@@ -70,8 +98,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
             release_data = json.load(tag_file_fh)
 
             tag_list = get_current_git_tags(gitrepo)
-            release_tag_unprocessed = [ tag.rsplit("/", 1)[1].split("-", 1)[0] 
-                                     for tag in tag_list if tag.startswith(os.path.join(branch, "import")) ]
+            release_tag_unprocessed = get_current_release_tag_dict(tag_list, branch)
             logger.info("Processing release {0} ({1} current tags)".format(release_data["release"]["name"], len(release_tag_unprocessed)))
             release_tag = os.path.join("release", release_data["release"]["name"])
             if release_tag in tag_list and not skipreleasetag:
@@ -79,12 +106,21 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
                 continue
             pkg_to_consider = 0
             
-            # Reconstruct release by adding each tag
+            ## Loop over all package in a release and see if the package
+            # - is missing from the svn metadata cache (so skip)
+            # - is already imported at HEAD (so skip)
+            # - is new or updated (so mark for import)
+            # Final construct is the import_list dictionary
             import_list = {}
             for package, package_data in release_data["tags"].iteritems():
                 package_name = os.path.basename(package)
                 if package_name in release_tag_unprocessed:
-                    release_tag_unprocessed.remove(package_name)
+                    logger.debug("Marking package {0} as processed for this release".format(package_name))
+                    current_pkg_tag = release_tag_unprocessed[package_name]["gittag"]
+                    del release_tag_unprocessed[package_name]
+                else:
+                    current_pkg_tag = None
+                    logger.debug("Package {0} is new for this release".format(package_name))
                 package_tag = package_data["tag"]
                 if package_name not in svn_metadata_cache:
                     logger.debug("Package {0} not found - assuming restricted import".format(package_name))
@@ -99,11 +135,11 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
                         logger.debug("Import tag {0} not found - assuming restricted import".format(import_tag))
                         continue
                     branch_import_tag = get_flattened_git_tag(package, package_tag, revision, branch)
-                    logger.debug("Considering import of {0} to {1} (at revision {2})".format(branch_import_tag, branch, revision))
+                    logger.debug("Considering import of {0} (r{1}) to {2} "
+                                 "for release {3}".format(branch_import_tag, revision, branch, release_data["release"]["name"]))
                     if branch_import_tag in tag_list:
                         logger.info("Import of {0} ({1} r{2}) onto {3} done - skipping".format(package, package_tag, revision, branch))
                         continue
-                    current_pkg_tag = get_current_package_tag(tag_list, branch_import_tag)
                     import_element = {"package": package, "import_tag": import_tag, "tag": package_tag, 
                                       "branch_import_tag": branch_import_tag, "tag_key": tag_index, 
                                       "current_pkg_tag": current_pkg_tag}
@@ -114,14 +150,19 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
                     else:
                         import_list[revision] = [import_element]
 
+            ## Sort the list of tags to be imported by SVN revision number for a
+            #  more or less sensible package by package commit history
             sorted_import_revisions = import_list.keys()
             sorted_import_revisions.sort(cmp=lambda x,y: cmp(int(x), int(y)))
-        
+            
+            ## Now loop over all the packages we have to import and update them
             pkg_processed = 0
             pkg_condsidered = 0
             for revision in sorted_import_revisions:
                 for pkg_import in import_list[revision]:
-                    logger.info("Migrating {0} to {1}...".format(pkg_import["current_pkg_tag"], pkg_import["tag"]))
+                    logger.info("Migrating {0} from {1} to {2} for {3}...".format(pkg_import["package"], 
+                                                                          pkg_import["current_pkg_tag"], 
+                                                                          pkg_import["tag"], release_data["release"]["name"]))
                     pkg_condsidered += 1
                     package_name = os.path.basename(pkg_import["package"])
                     # Need to wipe out all contents in case files were removed from package
@@ -163,20 +204,24 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
                                                                               pkg_condsidered, pkg_to_consider))
                     pkg_processed += 1
 
-            for package in release_tag_unprocessed:
-                logger.info("{0} packages have been removed from the release".format(len(release_tag_unprocessed)))
-                logger.debug(" ".join(release_tag_unprocessed))
-                # If this was a cache release then we might have to revert to the base release here, but 
-                # that is TODO...
-                logger.info("Removing {0} from {1}".format(package, branch))
+            ## After all packages are updated, look for packages which present in the last
+            #  release, but not this one, so they need to be removed
+            logger.info("{0} packages have been removed from the release".format(len(release_tag_unprocessed)))
+            logger.debug(" ".join(release_tag_unprocessed))
+            for removed_package, removed_package_data in release_tag_unprocessed.iteritems():
+                ## If this was a cache release then we might have to revert to the base release here, but 
+                #  that is TODO...
+                logger.info("Removing {0} from {1}".format(removed_package, branch))
                 if not dryrun:
-                    recursive_delete(package)
+                    package_path = os.path.join(svn_metadata_cache[removed_package]["path"], removed_package)
+                    recursive_delete(package_path)
                 check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
-                cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package, branch)]
+                cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package_path, branch)]
                 check_output_with_retry(cmd, dryrun=dryrun)
-                check_output_with_retry(("git", "tag", "-d", pkg_import["current_pkg_tag"]), retries=1, dryrun=dryrun)
+                check_output_with_retry(("git", "tag", "-d", removed_package_data["gittag"]), retries=1, dryrun=dryrun)
                 pkg_processed += 1
 
+            ## Now, finally, tag the release as done
             if release_data["release"]["type"] != "snapshot" and not skipreleasetag:
                 if release_data["release"]["nightly"]:
                     stub = "nightly"

@@ -100,18 +100,6 @@ def get_flattened_git_tag(package, svntag, revision, branch=None):
         git_tag = os.path.join(branch, git_tag)
     return git_tag
 
-def get_current_package_tag(tag_list, branch_import_tag):
-    ## @brief Return the current package tag corresponding to the about to be
-    #  imported package tag
-    #  @param tag_list List of current git tags
-    #  @param branch_import_tag Package tag about to be imported
-    #  @return Current package import tag or @c None, if no tag exists
-    branch_import_stub = branch_import_tag.split("-")[0]
-    for tag in tag_list:
-        if tag.startswith(branch_import_stub):
-            return tag
-    return None
-
 
 def changelog_diff(package, staged=False):
     ## @brief Return a cleaned up ChangeLog diff - this is only as useful as what the developer wrote!
