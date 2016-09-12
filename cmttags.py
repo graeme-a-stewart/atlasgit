@@ -29,7 +29,7 @@ import sys
 import time
 
 from glogger import logger
-from atutils import find_best_arch, diff_release_tags
+from atutils import find_best_arch, release_compare
 
 
 def get_release_name(release_file_path):
@@ -64,25 +64,29 @@ def parse_release_data(release_file_path):
         raise RuntimeError("Weird release: {0}".format(release_name))
     if len(release_elements) == 3:
         rel_type = "base"
+        minor = None
+        subminor = None
         cache_number = 0
     elif len(release_elements) == 4:
         rel_type = "cache"
-        cache_number = release_elements[3]
+        minor = release_elements[3]
+        subminor = None
     major = release_elements[0]
     minor = release_elements[1]
     patch = release_elements[2]
     release_desc = {"name": release_name,
-                    "major": release_elements[0],
-                    "minor": release_elements[1],
-                    "patch": release_elements[2],
-                    "cache": cache_number,
+                    "series": release_elements[0],
+                    "flavour": release_elements[1],
+                    "major": release_elements[2],
+                    "minor": minor,
+                    "subminor": subminor,
                     "type": rel_type,
                     "timestamp": timestamp,
                     "nightly": nightly_flag,
                     "author": "ATLAS Librarian <alibrari@cern.ch>"
                     }
     if nightly_flag:
-        release_desc["name"] += "-{0}".format(time.strftime("%Y-%m-%dT%H%M", time.localtime(timestamp)))
+        release_desc["name"] += "-{0}".format(time.strftime("%Y-%m-%d", time.localtime(timestamp)))
     logger.debug(release_desc)
     return release_desc
 
@@ -142,45 +146,39 @@ def find_nicos_from_base(nicos_path, base_release):
     ## @brief Find base release and cache release tag files when only a base release number
     #  is given
     #  @param nicos_path Base path to NICOS tag file area
-    #  @param base_release Base release number A.B.X (e.g., 21.0.1)
-    #  @return list of tag files for base and caches, in release numbered order
-    tag_files = []
-    if not os.path.isdir(os.path.join(nicos_path, base_release)):
-        logger.error("Searching for NICOS tags from base release {0}, but no NICOS directory for this release was found!")
-        sys.exit(1)
-
-    # Process base release first
-    tag_files.append(get_tag_file(os.path.join(nicos_path, base_release)))
-
-    # Now find the caches and sort them
-    cache_list = []
+    #  @param base_release Base release number A.B or A.B.X (e.g., 21.0[.1])
+    #  @return list of matching tag files, in release numbered order
+    release_list = []
     dir_list = os.listdir(nicos_path)
-    release_match = "{0}\.(\d+)$".format(os.path.basename(base_release).replace(".", r"\."))
+    release_match = "{0}(\.(\d+))*$".format(os.path.basename(base_release).replace(".", r"\."))
+    logger.debug("Matching releases against pattern '{0}'".format(release_match))
     for entry in dir_list:
         if re.match(release_match, entry):
-            cache_list.append(entry)
-    cache_list.sort(cmp=lambda x,y: cmp(int(x.split(".")[3]), int(y.split(".")[3])))
-    logger.debug("Found ordered list of production caches: {0}".format(cache_list))
-    
-    # And get tag files...
-    for cache in cache_list:
-        tag_files.append(get_tag_file(os.path.join(nicos_path, cache)))
+            release_list.append(entry)
+    logger.debug("Matching releases: {0}".format(release_list))
+    # It's not actually necessary to sort the releases, but it does no harm
+    release_list.sort(cmp=release_compare)
+    logger.info("Found ordered list of production caches: {0}".format(release_list))
+
+    tag_files = []
+    for release in release_list:
+        tag_files.append(get_tag_file(os.path.join(nicos_path, release)))
 
     return tag_files
+
 
 def main():
     parser = argparse.ArgumentParser(description='ATLAS tag munger, calculating tag evolution across a releases series')
     parser.add_argument('release', metavar='RELEASE', nargs="+",
-                        help="Files containing tag lists (NICOS format). If a base release is given (e.g., 20.1.3) "
-                        "the script will search for the base release and all caches to build the tagdiff in "
+                        help="Files containing tag lists (NICOS format). If a release series/major is given (e.g., 20.1 or 20.1.5) "
+                        "the script will search for the base release and all caches to build the tag files in "
                         "a simple way, without worrying about the details of the NICOS tag files and paths (N.B. "
                         "in the rare cases when there is more than one tag file for a release, the last one will "
                         "be used).")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
-    parser.add_argument('--tagdiff',
-                        help="output file for tag evolution between releases (defaults to A.B.X.tagdiff only for single "
-                        "base release use case - otherwise must be specified using this option)")
+    parser.add_argument('--tagdir', default="tagdir",
+                        help="output directory for tag files, each release will generate an entry here (default \"tagdir\")")
     parser.add_argument('--nicospath', default="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/",
                         help="path to NICOS tag files (defaults to usual CERN AFS location)")
 
@@ -188,14 +186,9 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    tags_by_release = {}
-    ordered_releases = []
-    
     # Case when a single bese release is given - we have to expand this
-    if len(args.release) == 1 and re.match(r"(\d+)\.(\d+)\.(\d+)$", args.release[0]):
+    if len(args.release) == 1 and re.match(r"(\d+)\.(\d+)(\.(\d+))?$", args.release[0]):
         nicos_paths = find_nicos_from_base(args.nicospath, args.release[0])
-        if not args.tagdiff:
-            args.tagdiff = args.release[0] + ".tagdiff"
     else:
         nicos_paths = []
         for path in args.release:
@@ -206,46 +199,13 @@ def main():
             else:
                 logger.error("Path {0} doesn't exist (even after prepending NICOS path)".format(path))
                 sys.exit(1)
-        if not args.tagdiff:
-            logger.error("When giving specific NICOS file paths the --tagdiff must be specified manually ".format(path))
-            sys.exit(1)
-            
     
     for release in nicos_paths:
         release_description = parse_release_data(release)
-        ordered_releases.append(release_description["name"])
         release_tags = parse_tag_file(release)
-        tags_by_release[release_description["name"]] = {"release": release_description,
-                                                        "tags": release_tags}
-        logger.info("Processed tags for release {0}".format(release_description["name"]))
-
-
-    ## Process releases in order, calculating tag differences
-    if tags_by_release[ordered_releases[0]]["release"]["type"] != "base":
-        logger.error("First release along a series must be a base release (release {0} is {1})".format(ordered_releases[0],
-                                                                                                       tags_by_release[ordered_releases[0]]["release"]["type"]))
-        sys.exit(1)
-    with open(args.tagdiff, "w") as tag_output:
-        last_base_release = ordered_releases[0]
-        last_cache_release = None
-
-        diff = diff_release_tags(None, tags_by_release[last_base_release])
-        release_diff_list = [{"release": last_base_release,
-                              "meta": tags_by_release[last_base_release]["release"],
-                              "diff": diff}]
-        
-        for release in ordered_releases[1:]:
-            if tags_by_release[release]["release"]["type"] == "base":
-                diff = diff_release_tags(tags_by_release[last_base_release], tags_by_release[release], allow_removal=True)
-                last_base_release = release
-                last_cache_release = None
-            else:
-                diff = diff_release_tags(tags_by_release[last_base_release], tags_by_release[release], allow_removal=False)
-                last_cache_release = release
-            release_diff_list.append({"release": release,
-                                      "meta": tags_by_release[release]["release"],
-                                      "diff": diff})
-        json.dump(release_diff_list, tag_output, indent=2)
+        logger.info("Processing tags for release {0}".format(release_description["name"]))
+        with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
+            json.dump({"release": release_description, "tags": release_tags}, tag_output, indent=2)
 
 
 if __name__ == '__main__':

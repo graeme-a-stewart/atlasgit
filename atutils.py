@@ -206,43 +206,24 @@ def find_best_arch(base_path):
     return best_arch
 
 
-def diff_release_tags(old, new, allow_removal=False):
-    ## @brief Return a structured dictionary describing the difference between releases
-    #  @param old Tag lists for older release (can be @c None, in which case all new release
-    #  tags are considered added)
-    #  @param new Tag lists for newer release 
-    #  @param allow_removal If missing tags in the new release are considred to be removed
-    #  packages (@c True) or simply unchanged (@c False). This is set to @True
-    #  for diffing base relesases; for a base to cache comparison it should be @c False 
-    #  @return Dictionary with two keys, @c add and @c remove; @c add dictionary value is a 
-    #  dictionary keyed by package, with value the updated tag; @remove dictionary is
-    #  list of packages that have been removed
-    rel_diff = {"add": {}, "remove": []}
-    if old:
-        logger.debug("Tag difference from {0} to {1} (removal: {2})".format(old["release"]["name"],
-                                                                            new["release"]["name"],
-                                                                            allow_removal))
-    else:
-        logger.debug("Tag base from {0}".format(new["release"]["name"]))
-        
-    if old:
-        for package in new["tags"]:
-            if package in old["tags"]:
-                if new["tags"][package]["tag"] == old["tags"][package]["tag"]:
-                    continue
-                logger.debug("Package {0} changed from tag {1} to {2}".format(package, 
-                                                                              old["tags"][package]["tag"],
-                                                                              new["tags"][package]["tag"]))
-                rel_diff["add"][package] = new["tags"][package]["tag"]
-            else:
-                logger.debug("Package {0} added at tag {1}".format(package, 
-                                                                   new["tags"][package]["tag"]))
-                rel_diff["add"][package] = new["tags"][package]["tag"]
-        if allow_removal:
-            rel_diff["remove"] = list(set(old["tags"].keys()) - set(new["tags"].keys()))
-            logger.debug("These packages removed: {0}".format(rel_diff["remove"]))
-    else:
-        for package in new["tags"]:
-            rel_diff["add"][package] = new["tags"][package]["tag"]
-    return rel_diff
+def release_compare(rel1, rel2):
+    ## @brief Provide a release number comparison (for sort) between A.B.X[.Y] releases
+    #  @param rel1 String with first release name
+    #  @param rel2 String with second release name
+    #  @return -1, 0 or 1 depending on comparison
+    rel1_el = [ int(bit) for bit in rel1.split(".") ]
+    rel2_el = [ int(bit) for bit in rel2.split(".") ]
+    for el in range(0, max(len(rel1_el), len(rel2_el))):
+        try:
+            if rel1_el[el] > rel2_el[el]:
+                return 1
+            elif rel1_el[el] < rel2_el[el]:
+                return -1
+        except IndexError:
+            # One of the releases is 'shorter' than the other, and
+            # we sort that one as first
+            if len(rel1_el) > len(rel2_el):
+                return 1
+            return -1
+    return 0
 
