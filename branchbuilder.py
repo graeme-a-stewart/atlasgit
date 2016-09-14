@@ -72,7 +72,8 @@ def get_current_release_tag_dict(tag_list, branch):
     return release_tag_dict
 
 
-def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=None, skipreleasetag=False, dryrun=False):
+def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=None, baserelease=None,
+                   skipreleasetag=False, dryrun=False):
     ## @brief Main branch builder function
     #  @todo This function is now too big - it should be split up into a few pieces
     #  @param gitrepo The git repository location
@@ -239,11 +240,14 @@ def main():
                         help="Location of git repository")
     parser.add_argument('branchname',
                         help="Git branch name to build")
-    parser.add_argument('--tagfiles', metavar="FILE", nargs="+", default=[], required=True,
+    parser.add_argument('tagfiles', metavar="TAGFILE", nargs="+", 
                         help="Tag files to use to build git branch from")
     parser.add_argument('--parentbranch', metavar="BRANCH:COMMIT",
                         help="If branch does not yet exist, use this BRANCH to make it from at COMMIT "
                         "(otherwise an orphaned branch is created)")
+    parser.add_argument('--baserelease', metavar="FILE",
+                        help="For cache releases, use this tag file as the content of the base release on which "
+                        "the release was a cache")
     parser.add_argument('--svnmetadata', metavar="FILE",
                         help="File with SVN metadata per SVN tag in the git repository. "
                         "By default GITREPO.svn.metadata will be used, if it exists.")
@@ -267,6 +271,13 @@ def main():
     
     if branch == "master":
         args.skipreleasetag = True
+        
+    # If we have a baserelease tag content, then load that here
+    if args.baserelease:
+        with open(args.baserelease) as br_tags_fh:
+            base_tags = json.load(br_tags_fh)
+    else:
+        base_tags = None
     
     # Load SVN metadata cache - this is the fastest way to query the SVN ordering in which tags
     # were made
@@ -281,7 +292,8 @@ def main():
     logger.info("Loaded SVN metadata from {0}".format(args.svnmetadata))
     
     # Main branch reconstruction function
-    branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, args.parentbranch, args.skipreleasetag, args.dryrun)
+    branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, parentbranch=args.parentbranch, 
+                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun)
     
 
 if __name__ == '__main__':

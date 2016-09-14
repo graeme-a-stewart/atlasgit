@@ -291,7 +291,7 @@ def main():
                         help="Location of svn repository root")
     parser.add_argument('gitrepo', metavar='GITDIR',
                         help="Location of git repository")
-    parser.add_argument('tagfiles', nargs="+", 
+    parser.add_argument('tagfiles', nargs="+", metavar='TAGFILE',
                         help="List of release tag content files to process - all tags found in these files will "
                         "be imported (any already imported tags will be skipped)")
     parser.add_argument('--targetbranch', default="package",

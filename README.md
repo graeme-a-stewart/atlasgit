@@ -21,11 +21,8 @@ of CMT built releases to import into git
 `asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on  
 import branch(es)
 
-`branchbuilder.py` - Reconstruct from tag diffs the state of an offline release
-on a git branch
-
-`trunktagdiff.py` - Generates a simple tagdiff file for trunk versions of SVN
-packages; used to update master branch to latest trunk versions 
+`branchbuilder.py` - Reconstruct from release tag content files the state 
+of an offline release on a git branch
 
 ---
 
@@ -36,8 +33,7 @@ a text file that can be imported and plotted into a spreadsheet
 
 `casefilter.sh` - git filter-branch script that resets the case of repository files
 which at some point in their SVN history changed case, causing problems on
-case insensitive file systems. N.B. It is observed that managing the SVN to git
-migration using the git 2.7 client seems to avoid these problems.
+case insensitive file systems.
 
 `glogger.py`, `atutils.py` - module files for shared functions
 
@@ -70,33 +66,33 @@ is available via
 ### Preparing tagdiff files from known releases
 
 Use the `cmttags.py` and/or `cmaketags.py` script the SVN tag content of interesting
-releases and write a few JSON _tagdiff_ files, encapsulating the way that a 
-base release and its caches evolved.
+releases and write a JSON files containing the (SVN) tag content of the releases of
+interest.
 
 By far the easiest way to do this is just to give a base release:
 
-`cmttags.py 20.7.0`
+`cmaketags.py 21.0` or `cmttags.py 20.7`
 
-This takes the base content of release 20.7.0, then finds and parses all the 20.7.0.Y caches
-and produces and internal _diff_ that describes the package tag evolution. The default
-tagdiff file in this case is `20.7.0.tagdiff`.
+This takes the base content of release series 21.0 (or 20.7), then finds and parses all the 
+base releases and caches and produces a file with the package tag evolution. The default
+tag content files are placed in the `tagdir` directory.
 
-Usually one wants to produce tagdiff files for a whole release series (i.e., all 20.7.X(.Y)
-numbered releases), e.g.,
-
-`for X in $(seq 0 7); do cmttags.py 20.7.$X; done`
+Note that CMake and CMT releases can, of course, be combined in any import to git.
 
 ### Import SVN tags into git
 
-Using the `asvn2git.py` script take the tagdiff files prepared above and import them into 
+Using the `asvn2git.py` script take the tag content files prepared above and import them into 
 a fresh git repository.
 
-Positional arguments are SVNREPO and GITREPO and `--tagdiff` files must also be given. e.g.,
+The first two positional arguments are SVNREPO and GITREPO and all remaining ones are tag content
+files (as generated above).
 
-`asvn2git.py file:///data/graemes/atlasoff/ao-mirror Tier0 --tagdiff 20.7.* --targetbranch package`
+ `asvn2git.py file:///data/graemes/atlasoff/ao-mirror aogt tagdir/20.7.*`
 
-In the last case the option `--targetbranch` is used, with the special value `package` to
-import each SVN package onto a separate git branch.
+The default import is performed using a separate branch for each package. This is a clean import
+strategy, however it creates many branches, which gitlab does not like, so it is possible to use
+ a single branch for all imported tags using the `--targetbranch` option (generally, however,
+ there is no need to upload the import branches to gitlab).
 
 Tests of the import procedure can be made using the option `--svnpath PATH` that
 restricts the import to packages that start with `PATH`.   
@@ -111,37 +107,39 @@ tag for every package imported. These are:
 
 `import/Package-rNNNNNN` for package trunk at SVN revision `NNNNNN`
 
-It is better that tagdiff files are processed in roughly historical order,
-which assures a better import history.
+It is better that tag content files are processed in roughly historical order,
+which gives a more reasonable import history (although branch tags may appear muddled,
+but this is not that important).
 
-It is possible to re-run `asvn2git.py` with new or updated tagdiff files. The bookkeeping
-git tags will ensure that no duplicate imports are made.
+It is possible to re-run `asvn2git.py` with new or updated tag content files. The bookkeeping
+git tags will ensure that no duplicate imports are made. If `asvn2git.py` is 
+re-run on the same set of tag content files it will
+_update_ the trunks of each imported package to the latest revision.
 
 ### Construct git branches for numbered releases
 
-Once the main git import has been made, each release branch that is required 
+Once the main git import has been done, each release branch that is required 
 can be reconstructed with `branchbuilder.py`. Git repo and branch name are positional, 
 and `--tagdiff` files are needed. e.g., 
 
-`branchbuilder.py Tier0 20.7 --tagdiff 20.7.*`
+`branchbuilder.py aogt 20.7 tagdir/20.7.*`
 
 As SVN package versions are processed, git tags are created to record each package
-import. In addition a release tag, `release/A.B.X.Y`, is created once a release
+import. In addition a release tag, `release/A.B.X[.Y]`, is created once a release
 is complete, unless the branch being constructed is `master`.
 
 Re-running over the import is perfectly fine, as the git bookkeeping tags are used
 to prevent duplicated imports.
 
+TODO: Descibe how to create and store a patch branch off a base release.
+
 ### Updating
 
-As indicated, the whole process, from tagdiff file creation through importing from SVN
+As indicated, the whole process, from tag content file creation through importing from SVN
 and creating branches, can be re-run multiple times, updating releases as they are made.
 Bookkeeping git tags allow skipping work already done.
 
-The `trunktagdiff.py` script will create a special tagdiff file with the `trunk` path
-in SVN, which allows for updating the `master` branch to reflect SVN trunk changes. 
-(Internally, trunk tags do bookkeeping with a revision number, so this is also
-quite safe to rerun.) 
+TODO: Allow `branchbuilder.py` to update to latest trunk revisions on the master branch.
 
 #### Tagdiff files for CMake nightlies
 
@@ -153,6 +151,7 @@ and the different releases to scan, e.g.,
 The default tagdiff file is composed of the nightly branch name, the first
 release and a timestamp, e.g., `21.0.X-VAL_rel_1-2016-06-26T2242.tagdiff`.
 
+TODO: Fix this, it's broken...
 
 ### Upload to gitlab/github
 
@@ -164,14 +163,14 @@ release and a timestamp, e.g., `21.0.X-VAL_rel_1-2016-06-26T2242.tagdiff`.
 
 ```git remote add origin https://:@gitlab.cern.ch:8443/graemes/aogt.git```
 
-```git remote add origin https://github.com/graeme-a-stewart/atlasofflinesw.git```
+```git remote add origin https://github.com/graeme-a-stewart/aogt.git```
 
-1. Push your import to the new upstream origin:
+1. Push your release branches to the new upstream origin:
 
-```git push --all origin```
+```git push -u origin MY_BRANCH```
 
 Note, if packages were imported on _per-package_ branches it may not be a good idea to
-import all of these small branches. gitlab repositories get rather unweildy when
+import all branches. gitlab repositories get rather unweildy when
 there are many, many branches (indeed, currently there is a bug in gitlab and the
 web interface is broken when there are more than around 1000 branches).
 
@@ -185,5 +184,3 @@ or
 
 Note that in the last case (`--tags`) make sure you _delete_ all tags in `import/`, 
 as these are not needed post-import and they substantially degrade performance.
-
-
