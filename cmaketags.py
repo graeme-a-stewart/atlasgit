@@ -175,15 +175,17 @@ def main():
     parser = argparse.ArgumentParser(description='ATLAS tag munger, calculating tag evolution across '
                                      'a releases series for CMake releases')
     parser.add_argument('release', metavar='RELEASE',
-                        help="Release to build tagdiff files from, e.g., 21.0")
+                        help="Release to build tagdiff files from, e.g., 21.0 or 21.0.6 or 21.0.X")
     parser.add_argument('--tagdir', default="tagdir",
                         help="output directory for tag files, each release will generate an entry here")
     parser.add_argument('--installpath',
                         help="path to CMake release installation location (defaults to cvfms path "
                         "/cvmfs/atlas.cern.ch/repo/sw/software for releases, "
                         "/afs/cern.ch/atlas/software/builds/nightlies for nightlies)")
-    parser.add_argument('--nightly', help="Generate tag diff for nightly build series (e.g., 21.0.X) "
-                        "instead of a deployed release (in this case 'release' should be, e.g., rel_4)")    
+    parser.add_argument('--nightly', help="Generate tag file for the named nightly build in the nightly "
+                        "release series")
+    parser.add_argument('--overwrite', action="store_true", default=False,
+                        help="Overwrite any exisitng configuration files (otherwise, just skip over)")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
@@ -209,9 +211,14 @@ def main():
         release_description = get_cmake_release_data(base_path, args.release, release, project_path, nightly=args.nightly)
         logger.debug("Release {0} parsed as {1}/PROJECT/{2}".format(base_path, release, project_path))
         release_tags = find_cmake_tags(base_path, release, project_path)
-        with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
-            my_release_data = {"release": release_description, "tags": release_tags}
-            json.dump(my_release_data, tag_output, indent=2)
+        output_file = os.path.join(args.tagdir, release_description["name"])
+        if args.overwrite or not os.path.exists(output_file):
+            with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
+                my_release_data = {"release": release_description, "tags": release_tags}
+                json.dump(my_release_data, tag_output, indent=2)
+                logger.info("Wrote {0}".format(output_file))
+        else:
+            logger.info("Skipped writing to {0} - overwrite is false".format(output_file))
 
 if __name__ == '__main__':
     main()
