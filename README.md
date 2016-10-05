@@ -184,3 +184,9 @@ or
 
 Note that in the last case (`--tags`) make sure you _delete_ all tags in `import/`, 
 as these are not needed post-import and they substantially degrade performance.
+
+Final Notes
+---
+
+You should not attempt to push to the upstream reopository
+during the Zombie Apocolypse.
