@@ -58,7 +58,7 @@ def get_current_release_tag_dict(tag_list, branch):
     #  track of unprocessed tags (which will need subsequent removal/revert from the release)
     #  @param tag_list List of (all) git tags
     #  @param branch Name of release branch to get tags for
-    #  @return Dictonary of the form {package_name : {'gittag': current_git_tag, 'svntag': svn_tag }, ...}
+    #  @return Dictonary of the form {package_name : {'git_tag': current_git_tag, 'svn_tag': svn_tag }, ...}
     release_tag_dict = {}
     release_prefix = os.path.join(branch, "import")
     for tag in tag_list:
@@ -66,7 +66,7 @@ def get_current_release_tag_dict(tag_list, branch):
             continue
         package_tag = os.path.basename(tag)
         package_name = package_tag.split("-", 1)[0]
-        release_tag_dict[package_name] = {"svntag": package_tag, "gittag": tag}
+        release_tag_dict[package_name] = {"svn_tag": package_tag, "git_tag": tag}
     if logger.level <= logging.DEBUG:
         pprint.pprint(release_tag_dict)
     return release_tag_dict
@@ -97,14 +97,14 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
             logger.debug("Package {0} not found - assuming restricted import".format(package_name))
             continue
         if package_tag == "trunk":
-            tag_index = "trunk"
+            svn_meta_tag_key = "trunk"
         else:
-            tag_index = os.path.join("tags", package_tag)
+            svn_meta_tag_key = os.path.join("tags", package_tag)
 
-        for revision in svn_metadata_cache[package_name]["svn"][tag_index]:
-            import_tag = get_flattened_git_tag(package, package_tag, revision)
-            if import_tag not in tag_list:
-                logger.debug("Import tag {0} not found - assuming restricted import".format(import_tag))
+        for revision in svn_metadata_cache[package_name]["svn"][svn_meta_tag_key]:
+            git_import_tag = get_flattened_git_tag(package, package_tag, revision)
+            if git_import_tag not in tag_list:
+                logger.debug("Import tag {0} not found - assuming restricted import".format(git_import_tag))
                 continue
             branch_import_tag = get_flattened_git_tag(package, package_tag, revision, branch)
             logger.debug("Considering import of {0} (r{1}) to {2} "
@@ -114,15 +114,18 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
                 continue
             ## @note The structure of the dictionary used to direct the import of a package is:
             #  "package": full package path
-            #  "import_tag": the git import tag that identifies the import of the version of this package
-            #  "tag": the SVN tag corresponding to this package version
+            #  "package_name": package basename (for convenience)
+            #  "git_import_tag": the git import tag that identifies the import of the version of this package
+            #  "svn_tag": the SVN tag corresponding to this package version
             #  "branch_import_tag": the git import tag that will be created to stamp this import as done
-            #  "tag_key": the key used in the SVN metadata dictionary to get SVN metadata
-            #  "current_pkg_tag": the git tag indicating the current version of this package 
-            import_element = {"package": package, "import_tag": import_tag, "tag": package_tag, 
+            #  "svn_meta_tag_key": the key used in the SVN metadata dictionary to get SVN metadata
+            #  "current_branch_import_tag": the git tag indicating the current version of this package 
+            import_element = {"package": package, 
                               "package_name": os.path.basename(package),
-                              "branch_import_tag": branch_import_tag, "tag_key": tag_index, 
-                              "current_pkg_tag": release_tag_unprocessed[package_name]["gittag"] if package_name in release_tag_unprocessed else None}
+                              "git_import_tag": git_import_tag, 
+                              "svn_tag": package_tag, 
+                              "branch_import_tag": branch_import_tag, "svn_meta_tag_key": svn_meta_tag_key, 
+                              "current_branch_import_tag": release_tag_unprocessed[package_name]["git_tag"] if package_name in release_tag_unprocessed else None}
             logger.debug("Will import {0} to {1}".format(import_element, branch))
             if revision in import_list:
                 import_list[revision].append(import_element)
@@ -143,11 +146,11 @@ def do_package_import(pkg_import, svn_metadata_cache, release_name="unknown", br
     #  @param dryrun Boolean, if @c true then don't actually act
     logger.info("Migrating {0} from {1} to {2} for {3}...".format(pkg_import["package"], 
                                                           pkg_import["current_pkg_tag"], 
-                                                          pkg_import["tag"], release_name))
+                                                          pkg_import["svn_tag"], release_name))
     # Need to wipe out all contents in case files were removed from package
     if not dryrun:
         recursive_delete(pkg_import["package"])
-    check_output_with_retry(("git", "checkout", pkg_import["import_tag"], pkg_import["package"]), dryrun=dryrun)
+    check_output_with_retry(("git", "checkout", pkg_import["git_import_tag"], pkg_import["package"]), dryrun=dryrun)
     # Done - now commit and tag
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
@@ -159,26 +162,26 @@ def do_package_import(pkg_import, svn_metadata_cache, release_name="unknown", br
                        "skipping".format(pkg_import["package"], release_name))
         continue
     msg = "{0} imported onto {1}".format(pkg_import["package"], branch)
-    if pkg_import["tag"] == "trunk":
+    if pkg_import["svn_tag"] == "trunk":
         msg += " (trunk r{0})".format(revision)
     else:
-        msg += " ({0})".format(pkg_import["tag"])
+        msg += " ({0})".format(pkg_import["svn_tag"])
     cl_diff = changelog_diff(pkg_import["package"], staged=True)
     if cl_diff:
         msg += "\n\n" + "\n".join(cl_diff)
     cmd = ["git", "commit", "-m", msg]
-    author = author_string(svn_metadata_cache[package_name]["svn"][pkg_import["tag_key"]][revision]["author"])
-    date = author_string(svn_metadata_cache[package_name]["svn"][pkg_import["tag_key"]][revision]["date"])
+    author = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn_tag"][pkg_import["svn_meta_tag_key"]][revision]["author"])
+    date = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn_tag"][pkg_import["svn_meta_tag_key"]][revision]["date"])
     cmd.append("--author='{0}'".format(author))
     cmd.append("--date={0}".format(date))
     os.environ["GIT_COMMITTER_DATE"] = date
     check_output_with_retry(cmd, retries=1, dryrun=dryrun)
     if pkg_import["branch_import_tag"] not in tag_list:
         check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1, dryrun=dryrun)
-    if pkg_import["current_pkg_tag"]:
-        check_output_with_retry(("git", "tag", "-d", pkg_import["current_pkg_tag"]), retries=1, dryrun=dryrun)
+    if pkg_import["current_branch_import_tag"]:
+        check_output_with_retry(("git", "tag", "-d", pkg_import["current_branch_import_tag"]), retries=1, dryrun=dryrun)
     logger.info("Committed {0} ({1}) onto {2} for {3}".format(pkg_import["package"], 
-                                                              pkg_import["tag"], branch, release_name))
+                                                              pkg_import["svn_tag"], branch, release_name))
 
 
 def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=None, baserelease=None,
@@ -251,29 +254,44 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
             #   ...and this package is not in it, it was in the cache, then was removed, so zap it.
             #   ...and this package is in it, then compare the versions and "revert" to the base 
             #      release version if they are different.
-            base_package_version = None
             if baserelease:
+                base_package_version = None
                 for package, base_package_data in baserelease:
                     if base_package_data["package_name"] == package_name:
-                        base_package_data["package"] = package
                         base_package_version = base_package_data
                         break
                 if base_package_version:
-                    if base_package_version["tag"] == old_package_state["svntag"]:
+                    if base_package_version["svn_tag"] == old_package_state["svn_tag"]:
                         logger.debug("Package {0} remains at base release version {1}".format(base_package_data["package"],
-                                                                                              base_package_version["tag"]))
+                                                                                              base_package_version["svn_tag"]))
                         packages_considered.append(package_name) # Flag we dealt this package
                     else:
                         logger.info("Package {0} was removed from cache - reverting to base "
                                     "release version {1}".format(base_package_data["package"],
-                                                     base_package_version["tag"]))
-                        packages_to_revert[package_name] = {}
+                                                     base_package_version["svn_tag"]))
+                        package_name = os.path.basename(package)
+                        svn_meta_tag_key = os.path.join("tags", base_package_version["svn_tag"])
+                        svn_revision = svn_metadata_cache[package_name]["svn"][svn_meta_tag_key].keys()[0]
+                        git_import_tag = get_flattened_git_tag(package, base_package_version["svn_tag"], svn_revision)
+                        packages_to_revert[package_name] = {"package": package,
+                                                            "package_name": os.path.basename(package),
+                                                            "git_import_tag": get_flattened_git_tag(package, base_package_version["svn_tag"], svn_revision),
+                                                            "svn_tag": base_package_version["svn_tag"],
+                                                            "branch_import_tag": get_flattened_git_tag(package, base_package_version["svn_tag"], svn_revision, branch),
+                                                            "svn_meta_tag_key": svn_meta_tag_key,
+                                                            "current_branch_import_tag": current_release_tags[package]["git_tag"]}
                 else:
                     logger.info("Package {0} was removed from the cache and is not in the base release".format(package_name))
                     packages_to_remove.append(package_name)
             else:
                 logger.info("Package {0} has been removed from the release".format(package_name))
                 packages_to_remove.append(package_name)
+        
+        if baserelease:
+            logger.info("{0} packages have been reverted to their base SVN state".format(len(packages_to_revert)))
+            for package_name, revert_data in packages_to_revert.iteritems():
+                do_import_package(revert_data, svn_metadata_cache, release_name=release_data["release"]["name"], 
+                                  branch=branch, dryrun=dryrun)
         
         logger.info("{0} packages have been removed from the release".format(len(packages_to_remove)))
         for package in packages_to_remove:
@@ -284,7 +302,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
             check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
             cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package_path, branch)]
             check_output_with_retry(cmd, dryrun=dryrun)
-            check_output_with_retry(("git", "tag", "-d", current_release_tags[package]["gittag"]), retries=1, dryrun=dryrun)
+            check_output_with_retry(("git", "tag", "-d", current_release_tags[package]["git_tag"]), retries=1, dryrun=dryrun)
             pkg_processed += 1
 
         ## Now, finally, tag the release as done
