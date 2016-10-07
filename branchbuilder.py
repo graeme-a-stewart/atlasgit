@@ -29,7 +29,7 @@ import sys
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete
-from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff
+from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff, package_compare, is_svn_branch_tag
 
 
 def branch_exists(gitrepo, branch):
@@ -72,7 +72,7 @@ def get_current_release_tag_dict(tag_list, branch):
     return release_tag_dict
 
 
-def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache, release_tag_unprocessed):
+def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache, release_tag_unprocessed, only_forward):
     ## @brief Find packages that need updates, comparing release tag content with
     #  git import tags already made
     #  @param release_data Release tag content dictionary
@@ -80,6 +80,7 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
     #  @param branch Git branch being constructed
     #  @param svn_metadata_cache Usual cache data for SVN stuff
     #  @param release_tag_unprocessed Dictionary with current "tag" metadata, useful to mark up import
+    #  @param only_forward If @c True then never revert a package to a previous version or import a branch tag
     #  @return Tuple of tag import dictionary, and a list of all "processed" packages
     
     ## Loop over all packages in a release and see if the package
@@ -112,6 +113,13 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
             if branch_import_tag in tag_list:
                 logger.info("Import of {0} ({1} r{2}) onto {3} done - skipping".format(package, package_tag, revision, branch))
                 continue
+            if only_forward:
+                if is_svn_branch_tag(package_tag):
+                    logger.info("Import of {0} onto {1} is blocked - onlyforward option will not accept branch tags".format(package_tag, branch))
+                    continue
+                if package_name in release_tag_unprocessed and package_compare(release_tag_unprocessed[package_name]["svn_tag"], package_tag) != -1:
+                    logger.info("Import of {0} onto {1} is blocked - onlyforward option will not downgrade tags".format(package_tag, branch))
+                    continue
             ## @note The structure of the dictionary used to direct the import of a package is:
             #  "package": full package path
             #  "package_name": package basename (for convenience)
@@ -185,7 +193,7 @@ def do_package_import(pkg_import, svn_metadata_cache, release_name="unknown", br
 
 
 def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=None, baserelease=None,
-                   skipreleasetag=False, dryrun=False):
+                   skipreleasetag=False, dryrun=False, only_forward=False):
     ## @brief Main branch builder function
     #  @param gitrepo The git repository location
     #  @param branch The git branch to work on
@@ -193,6 +201,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
     #  @param svn_metadata_cache The standard metadata cache from SVN
     #  @param parentbranch If creating a new branch, this is the BRANCH:COMMIT_ID of where to make the new branch from
     #  @param skipreleasetag If @c True then skip creating git tags for each processed release
+    #  @param only_forward If @c True then never revert a package to a previous version or import a branch tag 
     #  @param dryrun If @c True, do nothing except print commands that would have been executed
     
     # Prepare - chdir and then make sure we are on the correct branch
@@ -222,7 +231,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
         
         # Find which packages need updated for this new tag content file
         import_list, packages_considered = find_packages_for_update(release_data, tag_list, branch, 
-                                                                    svn_metadata_cache, current_release_tags)
+                                                                    svn_metadata_cache, current_release_tags, onlyforward)
 
         ## Sort the list of tags to be imported by SVN revision number for a
         #  more or less sensible package by package commit history
@@ -338,6 +347,11 @@ def main():
                         help="Do not create a git tag for this release, nor skip processing if a release tag "
                         "exists - use this option to add packages to a 'secondary' branch from the main "
                         "release branch. Set true by default if the target branch is 'master'.")
+    parser.add_argument('--onlyforward', action="store_true",
+                        help="Process tag files as usual, but (a) never import branch tags and (b) never "
+                        "downgrade a tag to a previous version. This can be used to reconstruct a master branch "
+                        "that only goes forward in revision history (it is very useful for the initial master "
+                        "branch constuction).")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
     parser.add_argument('--dryrun', action="store_true",
@@ -376,7 +390,7 @@ def main():
     
     # Main branch reconstruction function
     branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, parentbranch=args.parentbranch, 
-                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun)
+                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun, onlyforward=args.onlyforward)
     
 
 if __name__ == '__main__':
