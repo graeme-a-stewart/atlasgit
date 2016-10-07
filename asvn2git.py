@@ -302,8 +302,8 @@ def main():
                         "make small scale tests of the import workflow).")
     parser.add_argument('--intermediatetags', action="store_true", default=False,
                         help="Import all tags from oldest release tag found, instead of just release tags")
-    parser.add_argument('--skiptrunk', action="store_true", default=False,
-                        help="Skip package trunk during the import (by default, the trunk will alwaye be processed).")
+    parser.add_argument('--skiptrunk', action="store_true", default=True,
+                        help="Skip package trunk during the import (True by default, the trunk will be skipped).")
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="File containing cache of SVN information - default '[gitrepo].svn.metadata'")
     parser.add_argument('--importtimingfile', metavar="FILE",
