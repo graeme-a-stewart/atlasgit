@@ -135,12 +135,13 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
     return import_list, packages_considered
 
 
-def do_package_import(pkg_import, svn_metadata_cache, release_name="unknown", branch="unknown", dryrun=False):
+def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, release_name="unknown", branch="unknown", dryrun=False):
     ## @brief Import a package's SVN tag onto the current git branch
     #  updating the corresponding git tags
     #  @param pkg_import package import dictionary (see find_packages_for_update for the
     #  structure)
     #  @param svn_metadata_cache The standard metadata cache from SVN
+    #  @param author_metadata_cache Cached author data
     #  @param release_name Name of current release being built (used only for generating log messages)
     #  @param branch Current branch name (used only for generating log messages)
     #  @param dryrun Boolean, if @c true then don't actually act
@@ -170,8 +171,8 @@ def do_package_import(pkg_import, svn_metadata_cache, release_name="unknown", br
     if cl_diff:
         msg += "\n\n" + "\n".join(cl_diff)
     cmd = ["git", "commit", "-m", msg]
-    author = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn_tag"][pkg_import["svn_meta_tag_key"]][revision]["author"])
-    date = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn_tag"][pkg_import["svn_meta_tag_key"]][revision]["date"])
+    author = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn_tag"][pkg_import["svn_meta_tag_key"]][revision]["author"], author_metadata_cache)
+    date = svn_metadata_cache[pkg_import["package_name"]]["svn_tag"][pkg_import["svn_meta_tag_key"]][revision]["date"]
     cmd.append("--author='{0}'".format(author))
     cmd.append("--date={0}".format(date))
     os.environ["GIT_COMMITTER_DATE"] = date
@@ -184,13 +185,15 @@ def do_package_import(pkg_import, svn_metadata_cache, release_name="unknown", br
                                                               pkg_import["svn_tag"], branch, release_name))
 
 
-def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=None, baserelease=None,
+def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metadata_cache,
+                   parentbranch=None, baserelease=None,
                    skipreleasetag=False, dryrun=False):
     ## @brief Main branch builder function
     #  @param gitrepo The git repository location
     #  @param branch The git branch to work on
     #  @param tag_files The plain tag content files to process
     #  @param svn_metadata_cache The standard metadata cache from SVN
+    #  @param author_metadata_cache Cached author data
     #  @param parentbranch If creating a new branch, this is the BRANCH:COMMIT_ID of where to make the new branch from
     #  @param skipreleasetag If @c True then skip creating git tags for each processed release
     #  @param dryrun If @c True, do nothing except print commands that would have been executed
@@ -234,7 +237,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
         for revision in sorted_import_revisions:
             for pkg_import in import_list[revision]:
                 pkg_processed += 1
-                do_import_package(pkg_import, svn_metadata_cache, release_name=release_data["release"]["name"], 
+                do_import_package(pkg_import, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
                                   branch=branch, dryrun=dryrun)
                 logger.info("Processed {0}/{1} revisions".format(pkg_processed, len(import_list)))
 
@@ -290,7 +293,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, parentbranch=
         if baserelease:
             logger.info("{0} packages have been reverted to their base SVN state".format(len(packages_to_revert)))
             for package_name, revert_data in packages_to_revert.iteritems():
-                do_import_package(revert_data, svn_metadata_cache, release_name=release_data["release"]["name"], 
+                do_import_package(revert_data, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
                                   branch=branch, dryrun=dryrun)
         
         logger.info("{0} packages have been removed from the release".format(len(packages_to_remove)))
@@ -334,6 +337,8 @@ def main():
     parser.add_argument('--svnmetadata', metavar="FILE",
                         help="File with SVN metadata per SVN tag in the git repository. "
                         "By default GITREPO.svn.metadata will be used, if it exists.")
+    parser.add_argument('--authorcachefile', metavar='FILE',
+                        help="File containing cache of author name and email information - default '[gitrepo].author.metadata'")
     parser.add_argument('--skipreleasetag', action="store_true",
                         help="Do not create a git tag for this release, nor skip processing if a release tag "
                         "exists - use this option to add packages to a 'secondary' branch from the main "
@@ -374,8 +379,18 @@ def main():
         svn_metadata_cache = json.load(cache_fh)
     logger.info("Loaded SVN metadata from {0}".format(args.svnmetadata))
     
+    # Load author cache info
+    if not args.authorcachefile:
+        args.authorcachefile = args.gitrepo + ".author.metadata"
+    try:
+        with open(args.authorcachefile) as cache_fh:
+            author_metadata_cache = json.load(cache_fh)
+    except OSError:
+        logger.warning("No author metadata found - will proceed without")
+        author_metadata_cache = {}
+    
     # Main branch reconstruction function
-    branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, parentbranch=args.parentbranch, 
+    branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, author_metadata_cache, parentbranch=args.parentbranch, 
                    baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun)
     
 

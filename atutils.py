@@ -130,9 +130,15 @@ def changelog_diff(package, staged=False):
     return o_lines
 
 
-def author_string(author):
+def author_string(author, author_metadata_cache):
     ## @brief Write a formatted commit author string
-    #  @note if we have a valid email keep it as is, but otherwise assume it's a ME@cern.ch address
+    #  @param author SVN author name
+    #  @param author_metadata_cache Dictionary of names and email addresses
+    try:
+        return "{0} <{1}>".format(author_metadata_cache[author]["name"], author_metadata_cache[author]["email"])
+    except KeyError:
+        pass
+    
     if re.search(r"<[a-zA-Z0-9-]+@[a-zA-Z0-9-]+>", author):
         return author
     elif re.match(r"[a-zA-Z0-9]+$", author):
