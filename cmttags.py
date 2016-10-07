@@ -115,7 +115,7 @@ def parse_tag_file(release_file_path):
                 continue
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
             release_package_dict[package] = {"tag": tag, 
-                                             "project": project,}
+                                             "project": project, "package_name": os.path.basename(package)}
     return release_package_dict
 
 

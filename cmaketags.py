@@ -155,6 +155,7 @@ def read_project_packages(packages_file, project = None):
     #  @param packages_file File containing project package tags
     #  @param project Project name
     packages_dict = {}
+    package_name_dict = {}
     with open(packages_file) as pfile:
         for line in pfile:
             line = line.strip()
@@ -165,7 +166,7 @@ def read_project_packages(packages_file, project = None):
                 # These are odd fish, but keep them if they exist...
                 if (package == project + "RunTime" or package == project + "Release") and "/" not in package:
                     package = os.path.join("Projects", package)
-                packages_dict[package] = {"tag": package_tag, "project": project}
+                packages_dict[package] = {"tag": package_tag, "project": project, "package_name": os.path.basename(package)}
             except ValueError, e:
                 logger.warning("Problem splitting line '{0}' into package and package tag".format(line))
     return packages_dict
