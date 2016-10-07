@@ -146,27 +146,27 @@ def author_string(author, author_metadata_cache):
     return author
 
 
-def initialise_svn_metadata(svncachefile):
+def initialise_metadata(cachefile):
     ## @brief Load existing cache file, if it exists, or return empty cache
-    #  @param svncachefile Name of svn cache file (serialised in JSON)
-    if os.path.exists(svncachefile):
-        logger.info("Reloading SVN cache from {0}".format(svncachefile))
-        with file(svncachefile) as md_load:
+    #  @param cachefile Name of  cache file (serialised in JSON)
+    if os.path.exists(cachefile):
+        logger.info("Reloading cache from {0}".format(cachefile))
+        with file(cachefile) as md_load:
             svn_metadata_cache = json.load(md_load)
     else:
         svn_metadata_cache = {}
     return svn_metadata_cache
 
 
-def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_timestamp_string):
+def backup_metadata(svn_metadata_cache, start_cwd, cachefile, start_timestamp_string):
     ## @brief Persistify SVN metadata cache in JSON format
     #  @param svn_metadata_cache SVN metadata cache
     #  @param start_cwd Directory to change to before dumping
     #  @param start_timestamp_string Timestamp backup for previous version of the cache
     os.chdir(start_cwd)
-    if os.path.exists(svncachefile):
-        os.rename(svncachefile, svncachefile+".bak."+start_timestamp_string)
-    with file(svncachefile, "w") as md_dump:
+    if os.path.exists(cachefile):
+        os.rename(cachefile, cachefile+".bak."+start_timestamp_string)
+    with file(cachefile, "w") as md_dump:
         json.dump(svn_metadata_cache, md_dump, indent=2)
 
 

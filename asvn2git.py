@@ -386,15 +386,15 @@ def main():
                 tags.append("trunk")
 
     # Initialise SVN and author metadata cache with any stored values
-    svn_metadata_cache = initialise_svn_metadata(args.svncachefile)
-    author_metadata_cache = initialise_svn_metadata(args.authorcachefile)
+    svn_metadata_cache = initialise_metadata(args.svncachefile)
+    author_metadata_cache = initialise_metadata(args.authorcachefile)
 
     # Prepare package import
     scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, args.intermediatetags)
 
     # Now presistify metadata cache
-    backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
-    backup_svn_metadata(author_metadata_cache, start_cwd, args.authorcachefile, start_timestamp_string)
+    backup_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
+    backup_metadata(author_metadata_cache, start_cwd, args.authorcachefile, start_timestamp_string)
     
     # Setup dictionary for keying by SVN revision number
     svn_cache_revision_dict = svn_cache_revision_dict_init(svn_metadata_cache)
