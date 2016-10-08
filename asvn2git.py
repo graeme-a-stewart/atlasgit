@@ -72,7 +72,7 @@ import xml.etree.ElementTree as eltree
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, switch_to_branch
-from atutils import get_flattened_git_tag, initialise_svn_metadata, backup_svn_metadata, changelog_diff
+from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata, changelog_diff
 
 
 def tag_cmp(tag_x, tag_y):
@@ -151,9 +151,10 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
             }
 
 def author_info_lookup(author_name):
-    # TODO - implement me with some LDAP lookup?
-    raise RuntimeError("Not yet implemented")
-
+    cmd = ["phonebook", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
+    author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
+    return {"name": " ".join(author_info[:2]), "email": author_info[2]}
+    
 def svn_cache_revision_dict_init(svn_metadata_cache):
     ## @brief Build a dictionary keyed by SVN revision and indicating which tags changed there
     #  @param svn_metadata_cache SVN metadata cache
@@ -421,6 +422,7 @@ def main():
                 switch_to_branch(os.path.basename(pkg_tag["package"]), orphan=True)
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev],
+                                  author_metadata_cache,
                                   filter_exceptions = svn_filter_exceptions)
             processed_tags += 1
         elapsed = time.time()-start

@@ -173,7 +173,8 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
     if cl_diff:
         msg += "\n\n" + "\n".join(cl_diff)
     cmd = ["git", "commit", "-m", msg]
-    author = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]["author"])
+    author = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]["author"],
+                           author_metadata_cache)
     date = svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]["date"]
     cmd.append("--author='{0}'".format(author))
     cmd.append("--date={0}".format(date))
@@ -238,7 +239,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         for revision in sorted_import_revisions:
             for pkg_import in import_list[revision]:
                 pkg_processed += 1
-                do_import_package(pkg_import, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
+                do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
                                   branch=branch, dryrun=dryrun)
                 logger.info("Processed {0}/{1} revisions".format(pkg_processed, len(import_list)))
 
