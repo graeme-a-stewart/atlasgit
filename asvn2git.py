@@ -290,13 +290,13 @@ def get_tags(tag_files, svn_path_accept):
                             break
                     if not accept:
                         continue
-                tag = package_info["tag"]
-                if tag != "trunk":
-                    tag = os.path.join("tags", tag)
+                svn_tag = package_info["svn_tag"]
+                if svn_tag != "trunk":
+                    svn_tag = os.path.join("tags", svn_tag)
                 if package in svn_package_tags:
-                    svn_package_tags[package].add(tag)
+                    svn_package_tags[package].add(svn_tag)
                 else:
-                    svn_package_tags[package] = set((tag,))
+                    svn_package_tags[package] = set((svn_tag,))
     # Now convert back to list and sort tags...
     for package in svn_package_tags:
         svn_package_tags[package] = list(svn_package_tags[package])
