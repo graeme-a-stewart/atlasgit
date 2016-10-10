@@ -72,7 +72,7 @@ def get_current_release_tag_dict(tag_list, branch):
     return release_tag_dict
 
 
-def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache, release_tag_unprocessed, only_forward):
+def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache, release_tag_unprocessed, only_forward=False):
     ## @brief Find packages that need updates, comparing release tag content with
     #  git import tags already made
     #  @param release_data Release tag content dictionary
@@ -108,8 +108,8 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
                 logger.debug("Import tag {0} not found - assuming restricted import".format(git_import_tag))
                 continue
             branch_import_tag = get_flattened_git_tag(package, package_tag, revision, branch)
-            logger.debug("Considering import of {0} (r{1}) to {2} "
-                         "for release {3}".format(branch_import_tag, revision, branch, release_data["release"]["name"]))
+            logger.debug("Considering import of {0} ({1}@r{2}) to {3} "
+                         "for release {4}".format(branch_import_tag, package_tag, revision, branch, release_data["release"]["name"]))
             if branch_import_tag in tag_list:
                 logger.info("Import of {0} ({1} r{2}) onto {3} done - skipping".format(package, package_tag, revision, branch))
                 continue
@@ -237,7 +237,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         
         # Find which packages need updated for this new tag content file
         import_list, packages_considered = find_packages_for_update(release_data, tag_list, branch, 
-                                                                    svn_metadata_cache, current_release_tags, onlyforward)
+                                                                    svn_metadata_cache, current_release_tags, only_forward)
 
         ## Sort the list of tags to be imported by SVN revision number for a
         #  more or less sensible package by package commit history
@@ -409,7 +409,7 @@ def main():
     
     # Main branch reconstruction function
     branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, author_metadata_cache, parentbranch=args.parentbranch, 
-                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun, onlyforward=args.onlyforward)
+                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun, only_forward=args.onlyforward)
     
 
 if __name__ == '__main__':
