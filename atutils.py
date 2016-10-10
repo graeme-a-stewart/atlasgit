@@ -237,7 +237,7 @@ def is_svn_branch_tag(svn_tag):
     ## @brief Return true if this tag is a branch tag (i.e., 4 digit)
     #  @param svn_tag tag to test
     #  @return Boolean
-    if len(svn_tag.split("-") > 4):
+    if len(svn_tag.split("-")) > 4:
         return True
     return False
 
@@ -253,14 +253,13 @@ def package_compare(pkg1, pkg2):
         raise RuntimeError("Package comparison called for different packages: {0} and {1}".format(pkg1, pkg2))
     for el in range(1, max(len(pkg1_el), len(pkg2_el))):
         try:
-            if int(rel1_el[el]) > int(rel2_el[el]):
+            if int(pkg1_el[el]) > int(pkg2_el[el]):
                 return 1
-            elif int(rel1_el[el]) < int(rel2_el[el]):
+            elif int(pkg1_el[el]) < int(pkg2_el[el]):
                 return -1
         except IndexError:
-            # One of the releases is 'shorter' than the other, and
-            # we sort that one as first
-            if len(rel1_el) > len(rel2_el):
+            # One of the packages is a branch tag, so we sort that one ahead of the trunk tag
+            if len(pkg1_el) > len(pkg2_el):
                 return 1
             return -1
     return 0
