@@ -131,9 +131,9 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, au
                     try:
                         author_metadata_cache[svn_metadata["author"]] = author_info_lookup(svn_metadata["author"])
                     except RuntimeError, e:
-                        logger.info("Failed to get author information for {0} ({1})".format(svn_metadata["author"], e))
+                        logger.info("Failed to get author information for {0}: {1}".format(package, e))
                         author_metadata_cache[svn_metadata["author"]] = {"name": svn_metadata["author"], 
-                                                                         "email": "{1}@cern.ch".format(svn_metadata["author"])}
+                                                                         "email": "{0}@cern.ch".format(svn_metadata["author"])}
             except RuntimeError:
                 logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
@@ -151,10 +151,14 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
             }
 
 def author_info_lookup(author_name):
-    cmd = ["phonebook", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
-    author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
-    return {"name": " ".join(author_info[:2]), "email": author_info[2]}
-    
+    try:
+        cmd = ["phonebook", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
+        author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
+        return {"name": " ".join(author_info[:2]), "email": author_info[2]}
+    except IndexError:
+        raise RuntimeError("Had a problem decoding phonebook info for '{0}'".format(author_name))
+
+
 def svn_cache_revision_dict_init(svn_metadata_cache):
     ## @brief Build a dictionary keyed by SVN revision and indicating which tags changed there
     #  @param svn_metadata_cache SVN metadata cache
