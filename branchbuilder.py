@@ -313,7 +313,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         for package in packages_to_remove:
             logger.info("Removing {0} from {1}".format(package, branch))
             if not dryrun:
-                package_path = os.path.join(svn_metadata_cache[removed_package]["path"], removed_package)
+                package_path = os.path.join(svn_metadata_cache[package]["path"], package)
                 recursive_delete(package_path)
             check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
             cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package_path, branch)]
