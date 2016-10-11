@@ -219,27 +219,8 @@ def release_compare(rel1, rel2):
     #  @return -1, 0 or 1 depending on comparison
     rel1_el = [ int(bit) for bit in rel1.split(".") ]
     rel2_el = [ int(bit) for bit in rel2.split(".") ]
-    for el in range(0, max(len(rel1_el), len(rel2_el))):
-        try:
-            if rel1_el[el] > rel2_el[el]:
-                return 1
-            elif rel1_el[el] < rel2_el[el]:
-                return -1
-        except IndexError:
-            # One of the releases is 'shorter' than the other, and
-            # we sort that one as first
-            if len(rel1_el) > len(rel2_el):
-                return 1
-            return -1
-    return 0
+    return do_version_compare(rel1_el, rel2_el)
 
-def is_svn_branch_tag(svn_tag):
-    ## @brief Return true if this tag is a branch tag (i.e., 4 digit)
-    #  @param svn_tag tag to test
-    #  @return Boolean
-    if len(svn_tag.split("-")) > 4:
-        return True
-    return False
 
 def package_compare(pkg1, pkg2):
     ## @brief Provide a release number comparison (sortable) between svn package tags
@@ -251,15 +232,36 @@ def package_compare(pkg1, pkg2):
     if pkg1_el[0] != pkg2_el[0]:
         # Not the same package - this is meaningless
         raise RuntimeError("Package comparison called for different packages: {0} and {1}".format(pkg1, pkg2))
-    for el in range(1, max(len(pkg1_el), len(pkg2_el))):
+    pkg1_version_el = [ int(v) for v in pkg1_el[1:] ]
+    pkg2_version_el = [ int(v) for v in pkg2_el[1:] ]
+    return do_version_compare(pkg1_version_el, pkg2_version_el)
+
+
+def do_version_compare(v1, v2):
+    ## @brief Do a comparison between two iterables returning which one is "greater" then the other
+    #  going item by item from the beginning to the end
+    #  @param pkg1 First list
+    #  @param pkg2 Second list
+    #  @return -1, 0 or 1 depending on comparison
+    for el in range(0, max(len(v1), len(v2))):
         try:
-            if int(pkg1_el[el]) > int(pkg2_el[el]):
+            if v1[el] > v2[el]:
                 return 1
-            elif int(pkg1_el[el]) < int(pkg2_el[el]):
+            elif v1[el] < v2[el]:
                 return -1
         except IndexError:
-            # One of the packages is a branch tag, so we sort that one ahead of the trunk tag
-            if len(pkg1_el) > len(pkg2_el):
+            # One of the releases is 'shorter' than the other, and
+            # we sort that one as first
+            if len(v1) > len(v2):
                 return 1
             return -1
-    return 0
+    return 0    
+
+
+def is_svn_branch_tag(svn_tag):
+    ## @brief Return true if this tag is a branch tag (i.e., 4 digit)
+    #  @param svn_tag tag to test
+    #  @return Boolean
+    if len(svn_tag.split("-")) > 4:
+        return True
+    return False
