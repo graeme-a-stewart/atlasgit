@@ -152,7 +152,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
 
 def author_info_lookup(author_name):
     try:
-        cmd = ["phonebook", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
+        cmd = ["phonebook", "--login", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
         author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
         return {"name": " ".join(author_info[:2]), "email": author_info[2]}
     except IndexError:
