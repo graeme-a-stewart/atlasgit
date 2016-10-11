@@ -48,6 +48,14 @@
 #     },
 #     ...
 #   }
+#
+# author_metadata_cache is a dictionary keyed by SVN committer (==SSO username), with a value
+#  as a dictionary containing "email" and "name" keys. e.g.,
+# {
+#   "graemes": {"email": "graeme.andrew.stewart@cern.ch", "name": "Graeme A Stewart"},
+#   "wlampl":  {"email": "Walter.Lampl@cern.ch", "name": "Walter Lampl"},
+#   ...
+# }
 
 import argparse
 import fnmatch
@@ -64,7 +72,7 @@ import xml.etree.ElementTree as eltree
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, switch_to_branch
-from atutils import get_flattened_git_tag, initialise_svn_metadata, backup_svn_metadata, changelog_diff
+from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata, changelog_diff
 
 
 def tag_cmp(tag_x, tag_y):
@@ -75,11 +83,12 @@ def tag_cmp(tag_x, tag_y):
         return -1
     return cmp(tag_x, tag_y)
 
-def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, all_package_tags=False):
+def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, all_package_tags=False):
     ## @brief Get SVN metadata for each of the package tags we're interested in
     #  @param svnroot URL of SVN repository
     #  @param svn_packages Dictionary of packages and tags to process
     #  @param svn_metadata_cache SVN metadata cache
+    #  @param author_metadata_cache author metadata cache with name and email for commits
     #  @param all_package_tags Boolean flag triggering import of all package tags in SVN
  
     # First we establish the list of tags which we need to deal with.
@@ -118,6 +127,13 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, al
                 elif tag not in svn_metadata_cache[package_name]["svn"]:
                     svn_metadata = svn_get_path_metadata(svnroot, package, tag)
                     svn_metadata_cache[package_name]["svn"][tag] = {svn_metadata["revision"]: svn_metadata}
+                if svn_metadata["author"] not in author_metadata_cache:
+                    try:
+                        author_metadata_cache[svn_metadata["author"]] = author_info_lookup(svn_metadata["author"])
+                    except RuntimeError, e:
+                        logger.info("Failed to get author information for {0}: {1}".format(package, e))
+                        author_metadata_cache[svn_metadata["author"]] = {"name": svn_metadata["author"], 
+                                                                         "email": "{0}@cern.ch".format(svn_metadata["author"])}
             except RuntimeError:
                 logger.warning("Failed to get SVN metadata for {0}".format(os.path.join(package, tag)))
 
@@ -133,6 +149,14 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
             "author": tree.find(".//author").text,
             "revision": tree.find(".//commit").attrib['revision'],
             }
+
+def author_info_lookup(author_name):
+    try:
+        cmd = ["phonebook", "--login", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
+        author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
+        return {"name": " ".join(author_info[:2]), "email": author_info[2]}
+    except IndexError:
+        raise RuntimeError("Had a problem decoding phonebook info for '{0}'".format(author_name))
 
 
 def svn_cache_revision_dict_init(svn_metadata_cache):
@@ -166,7 +190,7 @@ def init_git(gitrepo):
         check_output_with_retry(("git", "init"))
 
 
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=None, 
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, author_metadata_cache, branch=None, 
                           filter_exceptions=[]):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     msg = "Processing {0} tag {1}".format(package, tag)
@@ -206,7 +230,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, branch=N
         logger.debug(check_output_with_retry(("git", "status")))
     cmd = ["git", "commit", "--allow-empty", "-m", "{0} - r{1}".format(os.path.join(package, tag), svn_metadata['revision'])]
     if svn_metadata:
-        cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"])), 
+        cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"], author_metadata_cache)),
                     "--date={0}".format(svn_metadata["date"])))
         os.environ["GIT_COMMITTER_DATE"] = svn_metadata["date"]
 
@@ -271,13 +295,13 @@ def get_tags(tag_files, svn_path_accept):
                             break
                     if not accept:
                         continue
-                tag = package_info["tag"]
-                if tag != "trunk":
-                    tag = os.path.join("tags", tag)
+                svn_tag = package_info["svn_tag"]
+                if svn_tag != "trunk":
+                    svn_tag = os.path.join("tags", svn_tag)
                 if package in svn_package_tags:
-                    svn_package_tags[package].add(tag)
+                    svn_package_tags[package].add(svn_tag)
                 else:
-                    svn_package_tags[package] = set((tag,))
+                    svn_package_tags[package] = set((svn_tag,))
     # Now convert back to list and sort tags...
     for package in svn_package_tags:
         svn_package_tags[package] = list(svn_package_tags[package])
@@ -302,10 +326,12 @@ def main():
                         "make small scale tests of the import workflow).")
     parser.add_argument('--intermediatetags', action="store_true", default=False,
                         help="Import all tags from oldest release tag found, instead of just release tags")
-    parser.add_argument('--skiptrunk', action="store_true", default=False,
-                        help="Skip package trunk during the import (by default, the trunk will alwaye be processed).")
+    parser.add_argument('--skiptrunk', action="store_true", default=True,
+                        help="Skip package trunk during the import (True by default, the trunk will be skipped).")
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="File containing cache of SVN information - default '[gitrepo].svn.metadata'")
+    parser.add_argument('--authorcachefile', metavar='FILE',
+                        help="File containing cache of author name and email information - default '[gitrepo].author.metadata'")
     parser.add_argument('--importtimingfile', metavar="FILE",
                         help="File to dump SVN->git import timing information - default '[gitrepo]-timing.json'")
     parser.add_argument('--svnfilterexceptions', '--sfe', metavar="FILE",
@@ -321,6 +347,8 @@ def main():
     # Massage default values
     if not args.svncachefile:
         args.svncachefile = os.path.basename(args.gitrepo) + ".svn.metadata"
+    if not args.authorcachefile:
+        args.authorcachefile = os.path.basename(args.gitrepo) + ".author.metadata"
     if not args.importtimingfile:
         args.importtimingfile = os.path.basename(args.gitrepo) + "-timing.json"
 
@@ -362,14 +390,16 @@ def main():
             if "trunk" not in tags:
                 tags.append("trunk")
 
-    # Initialise SVN metadata cache with any stored values
-    svn_metadata_cache = initialise_svn_metadata(args.svncachefile)
+    # Initialise SVN and author metadata cache with any stored values
+    svn_metadata_cache = initialise_metadata(args.svncachefile)
+    author_metadata_cache = initialise_metadata(args.authorcachefile)
 
     # Prepare package import
-    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, args.intermediatetags)
+    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, args.intermediatetags)
 
     # Now presistify metadata cache
-    backup_svn_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
+    backup_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
+    backup_metadata(author_metadata_cache, start_cwd, args.authorcachefile, start_timestamp_string)
     
     # Setup dictionary for keying by SVN revision number
     svn_cache_revision_dict = svn_cache_revision_dict_init(svn_metadata_cache)
@@ -396,6 +426,7 @@ def main():
                 switch_to_branch(os.path.basename(pkg_tag["package"]), orphan=True)
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev],
+                                  author_metadata_cache,
                                   filter_exceptions = svn_filter_exceptions)
             processed_tags += 1
         elapsed = time.time()-start

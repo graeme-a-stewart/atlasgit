@@ -130,9 +130,15 @@ def changelog_diff(package, staged=False):
     return o_lines
 
 
-def author_string(author):
+def author_string(author, author_metadata_cache):
     ## @brief Write a formatted commit author string
-    #  @note if we have a valid email keep it as is, but otherwise assume it's a ME@cern.ch address
+    #  @param author SVN author name
+    #  @param author_metadata_cache Dictionary of names and email addresses
+    try:
+        return "{0} <{1}>".format(author_metadata_cache[author]["name"], author_metadata_cache[author]["email"])
+    except KeyError:
+        pass
+    
     if re.search(r"<[a-zA-Z0-9-]+@[a-zA-Z0-9-]+>", author):
         return author
     elif re.match(r"[a-zA-Z0-9]+$", author):
@@ -140,27 +146,27 @@ def author_string(author):
     return author
 
 
-def initialise_svn_metadata(svncachefile):
+def initialise_metadata(cachefile):
     ## @brief Load existing cache file, if it exists, or return empty cache
-    #  @param svncachefile Name of svn cache file (serialised in JSON)
-    if os.path.exists(svncachefile):
-        logger.info("Reloading SVN cache from {0}".format(svncachefile))
-        with file(svncachefile) as md_load:
+    #  @param cachefile Name of  cache file (serialised in JSON)
+    if os.path.exists(cachefile):
+        logger.info("Reloading cache from {0}".format(cachefile))
+        with file(cachefile) as md_load:
             svn_metadata_cache = json.load(md_load)
     else:
         svn_metadata_cache = {}
     return svn_metadata_cache
 
 
-def backup_svn_metadata(svn_metadata_cache, start_cwd, svncachefile, start_timestamp_string):
+def backup_metadata(svn_metadata_cache, start_cwd, cachefile, start_timestamp_string):
     ## @brief Persistify SVN metadata cache in JSON format
     #  @param svn_metadata_cache SVN metadata cache
     #  @param start_cwd Directory to change to before dumping
     #  @param start_timestamp_string Timestamp backup for previous version of the cache
     os.chdir(start_cwd)
-    if os.path.exists(svncachefile):
-        os.rename(svncachefile, svncachefile+".bak."+start_timestamp_string)
-    with file(svncachefile, "w") as md_dump:
+    if os.path.exists(cachefile):
+        os.rename(cachefile, cachefile+".bak."+start_timestamp_string)
+    with file(cachefile, "w") as md_dump:
         json.dump(svn_metadata_cache, md_dump, indent=2)
 
 
@@ -213,17 +219,49 @@ def release_compare(rel1, rel2):
     #  @return -1, 0 or 1 depending on comparison
     rel1_el = [ int(bit) for bit in rel1.split(".") ]
     rel2_el = [ int(bit) for bit in rel2.split(".") ]
-    for el in range(0, max(len(rel1_el), len(rel2_el))):
+    return do_version_compare(rel1_el, rel2_el)
+
+
+def package_compare(pkg1, pkg2):
+    ## @brief Provide a release number comparison (sortable) between svn package tags
+    #  @param pkg1 First package
+    #  @param pkg2 Second package
+    #  @return -1, 0 or 1 depending on comparison
+    pkg1_el = pkg1.split("-")
+    pkg2_el = pkg2.split("-")
+    if pkg1_el[0] != pkg2_el[0]:
+        # Not the same package - this is meaningless
+        raise RuntimeError("Package comparison called for different packages: {0} and {1}".format(pkg1, pkg2))
+    pkg1_version_el = [ int(v) for v in pkg1_el[1:] ]
+    pkg2_version_el = [ int(v) for v in pkg2_el[1:] ]
+    return do_version_compare(pkg1_version_el, pkg2_version_el)
+
+
+def do_version_compare(v1, v2):
+    ## @brief Do a comparison between two iterables returning which one is "greater" then the other
+    #  going item by item from the beginning to the end
+    #  @param pkg1 First list
+    #  @param pkg2 Second list
+    #  @return -1, 0 or 1 depending on comparison
+    for el in range(0, max(len(v1), len(v2))):
         try:
-            if rel1_el[el] > rel2_el[el]:
+            if v1[el] > v2[el]:
                 return 1
-            elif rel1_el[el] < rel2_el[el]:
+            elif v1[el] < v2[el]:
                 return -1
         except IndexError:
             # One of the releases is 'shorter' than the other, and
             # we sort that one as first
-            if len(rel1_el) > len(rel2_el):
+            if len(v1) > len(v2):
                 return 1
             return -1
-    return 0
+    return 0    
 
+
+def is_svn_branch_tag(svn_tag):
+    ## @brief Return true if this tag is a branch tag (i.e., 4 digit)
+    #  @param svn_tag tag to test
+    #  @return Boolean
+    if len(svn_tag.split("-")) > 4:
+        return True
+    return False
