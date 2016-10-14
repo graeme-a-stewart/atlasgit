@@ -28,15 +28,31 @@ import shutil
 import sys
 
 from glogger import logger
-from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete
+from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete, branch_exists
 from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff, package_compare, is_svn_branch_tag
 
 
-def branch_exists(gitrepo, branch):
-    branches = get_current_git_tags(gitrepo)
-    if branch in branches:
-        return True
-    return False
+def backskip_filter(tagfiles):
+    ## @brief Reverse order parse a set of tagfiles and reject those
+    #  where procesing would require a backskip in time
+    #  @param tagfiles List of tag files
+    #  #return Filtered list of tagfiles with backskips removed
+    last_timestamp = 0
+    last_release = ""
+    tagfiles_copy = tagfiles[:]
+    tagfiles_copy.reverse()
+    for tagfile in tagfiles_copy:
+        with open(tagfile) as tagfile_fh:
+            release_data = json.load(tagfile_fh)
+        if last_timestamp and release_data["release"]["timestamp"] > last_timestamp:
+            logger.info("Vetoing release {0} (from {1}) because of "
+                        "backskip for {2}".format(release_data["release"]["name"], tagfile, last_release))
+            tagfiles.remove(tagfile)
+            continue
+        last_timestamp = release_data["release"]["timestamp"]
+        last_release = release_data["release"]["name"]
+        logger.info("Accepted release {0} at {1}".format(last_release, last_timestamp))
+    return tagfiles
 
 
 def find_youngest_tag(tag_diff, svn_metadata_cache):
@@ -357,10 +373,11 @@ def main():
                         "exists - use this option to add packages to a 'secondary' branch from the main "
                         "release branch. Set true by default if the target branch is 'master'.")
     parser.add_argument('--onlyforward', action="store_true",
-                        help="Process tag files as usual, but (a) never import branch tags and (b) never "
+                        help="Process tag files as usual, but never "
                         "downgrade a tag to a previous version. This can be used to reconstruct a master branch "
                         "that only goes forward in revision history (it is very useful for the initial master "
-                        "branch constuction).")
+                        "branch constuction). In addition branch series releases that overlap with later releases "
+                        "will not be imported so that (again) the master branch does not go backwards in time.")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
     parser.add_argument('--dryrun', action="store_true",
@@ -384,6 +401,14 @@ def main():
             base_tags = json.load(br_tags_fh)
     else:
         base_tags = None
+        
+    # If the onlyforward option is set, then we need to preprocess the list of tag content
+    # files in order to ensure that we never jump across time to a previous release series 
+    # when making the master branch. This is because the earlier release series will be 
+    # branched off from and the later releases on that series really only make sense 
+    # for the branch
+    if args.onlyforward:
+        args.tagfiles = backskip_filter(args.tagfiles) 
     
     # Load SVN metadata cache - this is the fastest way to query the SVN ordering in which tags
     # were made

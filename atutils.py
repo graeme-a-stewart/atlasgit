@@ -265,3 +265,15 @@ def is_svn_branch_tag(svn_tag):
     if len(svn_tag.split("-")) > 4:
         return True
     return False
+
+
+def branch_exists(gitrepo, branch):
+    ## @brief Return a boolean if a branch of said name exists
+    #  @param gitrepo Git repository location
+    #  @param branch Branch name to query
+    #  @return Boolean (@c True if branch does exist)
+    branches = get_current_git_tags(gitrepo)
+    if branch in branches:
+        return True
+    return False
+
