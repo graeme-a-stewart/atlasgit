@@ -114,9 +114,6 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
                 logger.info("Import of {0} ({1} r{2}) onto {3} done - skipping".format(package, package_tag, revision, branch))
                 continue
             if only_forward:
-                if is_svn_branch_tag(package_tag):
-                    logger.info("Import of {0} onto {1} is blocked - onlyforward option will not accept branch tags".format(package_tag, branch))
-                    continue
                 if package_name in release_tag_unprocessed and package_compare(release_tag_unprocessed[package_name]["svn_tag"], package_tag) != -1:
                     logger.info("Import of {0} onto {1} is blocked - onlyforward option will not downgrade tags".format(package_tag, branch))
                     continue
