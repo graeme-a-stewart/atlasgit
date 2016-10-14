@@ -172,7 +172,7 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
         # Nothing staged, so skip doing any commit, but do make the import tag for this branch
         # so that we don't repeat this step again
         logger.warning("Package {0} - no changes staged for {1}, " 
-                       "skipping".format(pkg_import["package"], release_name))
+                       "git tagging and skipping commit".format(pkg_import["package"], release_name))
         check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1, dryrun=dryrun)
         return
     msg = "{0} imported onto {1}".format(pkg_import["package"], branch)

@@ -127,6 +127,8 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, au
                 elif tag not in svn_metadata_cache[package_name]["svn"]:
                     svn_metadata = svn_get_path_metadata(svnroot, package, tag)
                     svn_metadata_cache[package_name]["svn"][tag] = {svn_metadata["revision"]: svn_metadata}
+                else:
+                    svn_metadata = svn_metadata_cache[package_name]["svn"][tag].values()[0]
                 if svn_metadata["author"] not in author_metadata_cache:
                     try:
                         author_metadata_cache[svn_metadata["author"]] = author_info_lookup(svn_metadata["author"])
