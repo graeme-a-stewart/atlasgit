@@ -42,7 +42,6 @@ def main():
 
     summary = []
     by_series = {}
-    max = min = -1.0
     for release in args.tagfiles:
         with open(release) as release_fh:
             release_data = json.load(release_fh)
@@ -53,13 +52,9 @@ def main():
         s = mini_dict["series"]
         if s not in by_series:
             by_series[s] = {"x": [], "y": [], "name": []}
-        by_series[s]["x"].append(mini_dict["timestamp"])
+        by_series[s]["x"].append(datetime.date.fromtimestamp(mini_dict["timestamp"]))
         by_series[s]["y"].append(float(mini_dict["series"]))
         by_series[s]["name"].append(".".join(mini_dict["name"].split(".")[2:]))
-        if max < 0.0 or mini_dict["timestamp"] > max:
-            max = mini_dict["timestamp"] 
-        if min < 0.0 or mini_dict["timestamp"] < min:
-            min = mini_dict["timestamp"]
 
     if args.text:
         for r in summary:
@@ -68,11 +63,13 @@ def main():
     # Now arrange by release...
     for series, data in by_series.iteritems():
         print data
-        plt.plot(data["x"], data["y"], 'ro')
-        plt.text(data['x'][0]-2000000, data['y'][0]+0.1, series)
-        for x, y, n in zip(data['x'], data['y'], data['name']):
+        plt.plot(data["x"], data["y"], "ro")
+        plt.text(data["x"][0]-datetime.timedelta(21), data["y"][0]+0.1, series)
+        for x, y, n in zip(data["x"], data["y"], data["name"]):
             plt.text(x, y+0.1, "."+n)
-    plt.xlim((min-860000, max+860000))
+    plt.xlabel("Date")
+    plt.ylabel("Release Series")
+    plt.title("Base Release Build Dates")
     plt.show()
 
 if __name__ == '__main__':
