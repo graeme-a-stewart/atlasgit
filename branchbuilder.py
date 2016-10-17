@@ -287,20 +287,20 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
             #      release version if they are different.
             if baserelease:
                 base_package_version = None
-                for package, base_package_data in baserelease:
+                for package, base_package_data in baserelease["tags"].iteritems():
                     if base_package_data["package_name"] == package_name:
                         base_package_version = base_package_data
                         break
                 if base_package_version:
                     if base_package_version["svn_tag"] == old_package_state["svn_tag"]:
-                        logger.debug("Package {0} remains at base release version {1}".format(base_package_data["package"],
+                        logger.debug("Package {0} remains at base release version {1}".format(base_package_data["package_name"],
                                                                                               base_package_version["svn_tag"]))
                         packages_considered.append(package_name) # Flag we dealt this package
                     else:
                         logger.info("Package {0} was removed from cache - reverting to base "
-                                    "release version {1}".format(base_package_data["package"],
+                                    "release version {1}".format(base_package_data["package_name"],
                                                      base_package_version["svn_tag"]))
-                        package_name = os.path.basename(package)
+                        package_name = base_package_data["package_name"]
                         svn_meta_tag_key = os.path.join("tags", base_package_version["svn_tag"])
                         svn_revision = svn_metadata_cache[package_name]["svn"][svn_meta_tag_key].keys()[0]
                         git_import_tag = get_flattened_git_tag(package, base_package_version["svn_tag"], svn_revision)
@@ -311,7 +311,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
                                                             "svn_revision": svn_revision,
                                                             "branch_import_tag": get_flattened_git_tag(package, base_package_version["svn_tag"], svn_revision, branch),
                                                             "svn_meta_tag_key": svn_meta_tag_key,
-                                                            "current_branch_import_tag": current_release_tags[package]["git_tag"]}
+                                                            "current_branch_import_tag": current_release_tags[package_name]["git_tag"]}
                 else:
                     logger.info("Package {0} was removed from the cache and is not in the base release".format(package_name))
                     packages_to_remove.append(package_name)
@@ -322,7 +322,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         if baserelease:
             logger.info("{0} packages have been reverted to their base SVN state".format(len(packages_to_revert)))
             for package_name, revert_data in packages_to_revert.iteritems():
-                do_import_package(revert_data, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
+                do_package_import(revert_data, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
                                   branch=branch, dryrun=dryrun)
 
         logger.info("{0} packages have been removed from the release".format(len(packages_to_remove)))
