@@ -318,13 +318,13 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
             else:
                 logger.info("Package {0} has been removed from the release".format(package_name))
                 packages_to_remove.append(package_name)
-        
+
         if baserelease:
             logger.info("{0} packages have been reverted to their base SVN state".format(len(packages_to_revert)))
             for package_name, revert_data in packages_to_revert.iteritems():
                 do_import_package(revert_data, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
                                   branch=branch, dryrun=dryrun)
-        
+
         logger.info("{0} packages have been removed from the release".format(len(packages_to_remove)))
         for package in packages_to_remove:
             logger.info("Removing {0} from {1}".format(package, branch))
@@ -340,10 +340,12 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         ## Now, finally, tag the release as done
         if release_data["release"]["type"] != "snapshot" and not skipreleasetag:
             if release_data["release"]["nightly"]:
-                stub = "nightly"
+                check_output_with_retry(("git", "tag", os.path.join("nightly", release_data["release"]["name"])), retries=1, dryrun=dryrun)
             else:
-                stub = "release"
-            check_output_with_retry(("git", "tag", os.path.join(stub, release_data["release"]["name"])), retries=1, dryrun=dryrun)
+                os.environ["GIT_COMMITTER_DATE"] = "{0:.0f}".format(release_data["release"]["timestamp"])
+                check_output_with_retry(("git", "tag", os.path.join("release", release_data["release"]["name"]), "-a",
+                                         "-m", "Tagging release {0}".format(release_data["release"]["name"])), 
+                                        retries=1, dryrun=dryrun)
             logger.info("Tagged release {0} ({1} packages processed)".format(release_data["release"]["name"], pkg_processed))
         else:
             logger.info("Processed release {0} (no tag; {1} packages processed)".format(release_data["release"]["name"], pkg_processed))
