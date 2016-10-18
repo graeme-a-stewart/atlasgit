@@ -243,6 +243,11 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         if not branch_exists(branch):
             parent, commit = parentbranch.split(":")
             check_output_with_retry(("git", "checkout", parent), retries=1, dryrun=dryrun) # needed?
+            if commit.startswith("@"):
+                timestamp = commit[1:]
+                commit = check_output_with_retry(["git", "log", "--until", str(timestamp), "-n1", "--pretty=format:%H"],
+                                                 retries=1).strip()
+                logger.info("Mapped timestamp {0} to commit {1}".format(timestamp, commit))
             check_output_with_retry(("git", "checkout", commit), retries=1, dryrun=dryrun)
             check_output_with_retry(("git", "checkout", "-b", branch), retries=1, dryrun=dryrun)
         else:
@@ -374,9 +379,10 @@ def main():
                         help="Git branch name to build")
     parser.add_argument('tagfiles', metavar="TAGFILE", nargs="+", 
                         help="Tag files to use to build git branch from")
-    parser.add_argument('--parentbranch', metavar="BRANCH:COMMIT",
+    parser.add_argument('--parentbranch', metavar="BRANCH:COMMIT or BRANCH:@TIMESTAMP",
                         help="If branch does not yet exist, use this BRANCH to make it from at COMMIT "
-                        "(otherwise an orphaned branch is created)")
+                        "(otherwise an orphaned branch is created). The syntax BRANCH:@TIMESTAMP will "
+                        "find the commit closest to the given TIMESTAMP.")
     parser.add_argument('--baserelease', metavar="FILE",
                         help="For cache releases, use this tag file as the content of the base release on which "
                         "the release was a cache")
