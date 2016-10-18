@@ -234,8 +234,6 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, author_m
     if svn_metadata:
         cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"], author_metadata_cache)),
                     "--date={0}".format(svn_metadata["date"])))
-        os.environ["GIT_COMMITTER_DATE"] = svn_metadata["date"]
-
     if cl_diff:
         cmd.extend(("-m","Diff in ChangeLog:\n" + '\n'.join(cl_diff)))
     check_output_with_retry(cmd)

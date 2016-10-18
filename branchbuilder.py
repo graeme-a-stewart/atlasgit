@@ -158,7 +158,8 @@ def find_packages_for_update(release_data, tag_list, branch, svn_metadata_cache,
     return import_list, packages_considered
 
 
-def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, release_name="unknown", branch="unknown", dryrun=False):
+def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, release_name="unknown", branch="unknown", 
+                      dryrun=False, commit_date="now"):
     ## @brief Import a package's SVN tag onto the current git branch
     #  updating the corresponding git tags
     #  @param pkg_import package import dictionary (see find_packages_for_update for the
@@ -168,6 +169,7 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
     #  @param release_name Name of current release being built (used only for generating log messages)
     #  @param branch Current branch name (used only for generating log messages)
     #  @param dryrun Boolean, if @c true then don't actually act
+    #  @param commit_date Choices for setting committer date 
     logger.info("Migrating {0} from {1} to {2} for {3}...".format(pkg_import["package"], 
                                                           pkg_import["current_branch_import_tag"], 
                                                           pkg_import["svn_tag"], release_name))
@@ -202,8 +204,13 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
     date = svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]["date"]
     cmd.append("--author='{0}'".format(author))
     cmd.append("--date={0}".format(date))
-    os.environ["GIT_COMMITTER_DATE"] = date
+    
+    if commit_date == "author":
+        os.environ["GIT_COMMITTER_DATE"] = date
     check_output_with_retry(cmd, retries=1, dryrun=dryrun)
+    if commit_date == "author":
+        del os.environ["GIT_COMMITTER_DATE"]
+    
     check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1, dryrun=dryrun)
     if pkg_import["current_branch_import_tag"]:
         check_output_with_retry(("git", "tag", "-d", pkg_import["current_branch_import_tag"]), retries=1, dryrun=dryrun)
@@ -214,7 +221,7 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
 
 def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metadata_cache,
                    parentbranch=None, baserelease=None,
-                   skipreleasetag=False, dryrun=False, only_forward=False):
+                   skipreleasetag=False, dryrun=False, only_forward=False, commit_date="now"):
     ## @brief Main branch builder function
     #  @param gitrepo The git repository location
     #  @param branch The git branch to work on
@@ -223,22 +230,27 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
     #  @param author_metadata_cache Cached author data
     #  @param parentbranch If creating a new branch, this is the BRANCH:COMMIT_ID of where to make the new branch from
     #  @param skipreleasetag If @c True then skip creating git tags for each processed release
-    #  @param only_forward If @c True then never revert a package to a previous version or import a branch tag 
     #  @param dryrun If @c True, do nothing except print commands that would have been executed
+    #  @param only_forward If @c True then never revert a package to a previous version or import a branch tag 
+    #  @param commit_date Choice for commit date when building branches
     
     # Prepare - chdir and then make sure we are on the correct branch
     os.chdir(gitrepo)    
     if not parentbranch:
-        # @todo This should be a lot smarter and take a branch point from master...
         logger.info("Switching to branch {0}".format(branch))
         switch_to_branch(branch, orphan=True)
     else:
-        parent, commit = parentbranch.split(":")
-        check_output_with_retry(("git", "checkout", parent), retries=1, dryrun=dryrun) # needed?
-        check_output_with_retry(("git", "checkout", commit), retries=1, dryrun=dryrun)
-        check_output_with_retry(("git", "checkout", "-b", branch), retries=1, dryrun=dryrun)
+        if not branch_exists(branch):
+            parent, commit = parentbranch.split(":")
+            check_output_with_retry(("git", "checkout", parent), retries=1, dryrun=dryrun) # needed?
+            check_output_with_retry(("git", "checkout", commit), retries=1, dryrun=dryrun)
+            check_output_with_retry(("git", "checkout", "-b", branch), retries=1, dryrun=dryrun)
+        else:
+            check_output_with_retry(("git", "checkout", branch), retries=1, dryrun=dryrun)
+            
 
     # Main loop starts here, with one pass for each tag file we are processing
+    print tag_files
     for tag_file in tag_files:
         with open(tag_file) as tag_file_fh:
             release_data = json.load(tag_file_fh)
@@ -250,6 +262,10 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         if release_tag in tag_list and not skipreleasetag:
             logger.info("Release tag {0} already made - skipping".format(release_tag))
             continue
+
+        if commit_date == "release":
+            logger.info("Setting committer date to {0:.0f}".format(release_data["release"]["timestamp"]))
+            os.environ["GIT_COMMITTER_DATE"] = "{0:.0f}".format(release_data["release"]["timestamp"])
         
         # Find which packages need updated for this new tag content file
         import_list, packages_considered = find_packages_for_update(release_data, tag_list, branch, 
@@ -266,7 +282,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
             for pkg_import in import_list[revision]:
                 pkg_processed += 1
                 do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
-                                  branch=branch, dryrun=dryrun)
+                                  branch=branch, dryrun=dryrun, commit_date=commit_date)
                 logger.info("Processed {0}/{1} revisions".format(pkg_processed, len(import_list)))
 
 
@@ -323,7 +339,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
             logger.info("{0} packages have been reverted to their base SVN state".format(len(packages_to_revert)))
             for package_name, revert_data in packages_to_revert.iteritems():
                 do_package_import(revert_data, svn_metadata_cache, author_metadata_cache, release_name=release_data["release"]["name"], 
-                                  branch=branch, dryrun=dryrun)
+                                  branch=branch, dryrun=dryrun, commit_date=commit_date)
 
         logger.info("{0} packages have been removed from the release".format(len(packages_to_remove)))
         for package in packages_to_remove:
@@ -342,7 +358,6 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
             if release_data["release"]["nightly"]:
                 check_output_with_retry(("git", "tag", os.path.join("nightly", release_data["release"]["name"])), retries=1, dryrun=dryrun)
             else:
-                os.environ["GIT_COMMITTER_DATE"] = "{0:.0f}".format(release_data["release"]["timestamp"])
                 check_output_with_retry(("git", "tag", os.path.join("release", release_data["release"]["name"]), "-a",
                                          "-m", "Tagging release {0}".format(release_data["release"]["name"])), 
                                         retries=1, dryrun=dryrun)
@@ -380,6 +395,10 @@ def main():
                         "that only goes forward in revision history (it is very useful for the initial master "
                         "branch constuction). In addition branch series releases that overlap with later releases "
                         "will not be imported so that (again) the master branch does not go backwards in time.")
+    parser.add_argument("--commitdate", choices=["now", "release", "author"],
+                        help="Strategy for setting git committer date: now - leave as current time; "
+                        "release - set to time of the current release being processed; author - "
+                        "set to author date, as found from SVN (default %(default)s)", default = "release")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
     parser.add_argument('--dryrun', action="store_true",
@@ -392,6 +411,16 @@ def main():
         
     gitrepo = os.path.abspath(args.gitrepo)
     branch = args.branchname
+    
+    # If the onlyforward option is set, then we need to preprocess the list of tag content
+    # files in order to ensure that we never jump across time to a previous release series 
+    # when making the master branch. This is because the earlier release series will be 
+    # branched off from and the later releases on that series really only make sense 
+    # for the branch
+    if args.onlyforward:
+        print args.tagfiles
+        args.tagfiles = backskip_filter(args.tagfiles)
+        print args.tagfiles    
     tag_files = [ os.path.abspath(fname) for fname in args.tagfiles ]
     
     if branch == "master":
@@ -404,14 +433,6 @@ def main():
     else:
         base_tags = None
         
-    # If the onlyforward option is set, then we need to preprocess the list of tag content
-    # files in order to ensure that we never jump across time to a previous release series 
-    # when making the master branch. This is because the earlier release series will be 
-    # branched off from and the later releases on that series really only make sense 
-    # for the branch
-    if args.onlyforward:
-        args.tagfiles = backskip_filter(args.tagfiles) 
-    
     # Load SVN metadata cache - this is the fastest way to query the SVN ordering in which tags
     # were made
     if not args.svnmetadata and os.access(args.gitrepo + ".svn.metadata", os.R_OK):
@@ -436,7 +457,8 @@ def main():
     
     # Main branch reconstruction function
     branch_builder(gitrepo, args.branchname, tag_files, svn_metadata_cache, author_metadata_cache, parentbranch=args.parentbranch, 
-                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun, only_forward=args.onlyforward)
+                   baserelease=base_tags, skipreleasetag=args.skipreleasetag, dryrun=args.dryrun, only_forward=args.onlyforward,
+                   commit_date=args.commitdate)
     
 
 if __name__ == '__main__':
