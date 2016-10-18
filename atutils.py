@@ -176,7 +176,7 @@ def switch_to_branch(branch, orphan=False):
     #  @param orphan If @c Ture then create branch as an orphan and delete all current files
     current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
     if branch != current_branch:
-        all_branches = [ line.lstrip(" *").rstrip() for line in check_output_with_retry(("git", "branch", "-l")).split("\n") ]
+        all_branches = [ line.lstrip(" *") for line in check_output_with_retry(("git", "branch", "-l")).splitlines() ]
         if branch in all_branches:
             check_output_with_retry(("git", "checkout", branch))
         elif not orphan:
@@ -267,13 +267,12 @@ def is_svn_branch_tag(svn_tag):
     return False
 
 
-def branch_exists(gitrepo, branch):
+def branch_exists(branch):
     ## @brief Return a boolean if a branch of said name exists
-    #  @param gitrepo Git repository location
     #  @param branch Branch name to query
     #  @return Boolean (@c True if branch does exist)
-    branches = get_current_git_tags(gitrepo)
-    if branch in branches:
+    all_branches = [ line.lstrip(" *") for line in check_output_with_retry(("git", "branch", "-l")).splitlines() ]
+    if branch in all_branches:
         return True
     return False
 
