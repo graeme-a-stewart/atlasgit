@@ -69,6 +69,37 @@ def find_youngest_tag(tag_diff, svn_metadata_cache):
     return yougest_tag
 
 
+def prepare_branch_point(branch, parentbranch=None):
+    ## @brief Using information about the target branch and any parent
+    #  switch to the correct point in history to start/continue
+    #  @param branch Target branch name
+    #  @param parentbranch If creating a new branch, this is the @c BRANCH:COMMIT_ID of 
+    #  where to make the new branch from; syntax @c BRANCH:@FILE and @c BRANCH:@TIMESTAMP
+    #  is also supported, where the timestamp will be used to find the branch directly
+    #  (and can be taken from @c JSON release data in @c FILE) 
+    if not parentbranch or branch_exists(branch):
+        logger.info("Switching to branch {0}".format(branch))
+        switch_to_branch(branch, orphan=True)
+    else:
+        parent, commit = parentbranch.split(":")
+        check_output_with_retry(("git", "checkout", parent), retries=1) # needed?
+        if commit.startswith("@"):
+            timestamp = commit[1:]
+            # If this maps to a file, try to open it as a release JSON, otherwise treat it as
+            # a plain timestamp
+            if os.access(timestamp, os.F_OK):
+                logger.info("Taking branching timestamp from file {0}".format(timestamp))
+                with open(timestamp) as fh:
+                    branch_point_release = json.load(fh)
+                timestamp = branch_point_release["release"]["timestamp"]
+            logger.info("Using timestamp {0} for branch point".format(timestamp))
+            commit = check_output_with_retry(["git", "log", "--until", str(timestamp), "-n1", "--pretty=format:%H"],
+                                             retries=1).strip()
+            logger.info("Mapped timestamp {0} to commit {1}".format(timestamp, commit))
+        check_output_with_retry(("git", "checkout", commit), retries=1)
+        check_output_with_retry(("git", "checkout", "-b", branch), retries=1)
+
+
 def get_current_release_tag_dict(tag_list, branch):
     ## @brief Return a dictionary, keyed by package name that can be used to keep
     #  track of unprocessed tags (which will need subsequent removal/revert from the release)
@@ -235,24 +266,8 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
     #  @param commit_date Choice for commit date when building branches
     
     # Prepare - chdir and then make sure we are on the correct branch
-    os.chdir(gitrepo)    
-    if not parentbranch:
-        logger.info("Switching to branch {0}".format(branch))
-        switch_to_branch(branch, orphan=True)
-    else:
-        if not branch_exists(branch):
-            parent, commit = parentbranch.split(":")
-            check_output_with_retry(("git", "checkout", parent), retries=1, dryrun=dryrun) # needed?
-            if commit.startswith("@"):
-                timestamp = commit[1:]
-                commit = check_output_with_retry(["git", "log", "--until", str(timestamp), "-n1", "--pretty=format:%H"],
-                                                 retries=1).strip()
-                logger.info("Mapped timestamp {0} to commit {1}".format(timestamp, commit))
-            check_output_with_retry(("git", "checkout", commit), retries=1, dryrun=dryrun)
-            check_output_with_retry(("git", "checkout", "-b", branch), retries=1, dryrun=dryrun)
-        else:
-            check_output_with_retry(("git", "checkout", branch), retries=1, dryrun=dryrun)
-            
+    os.chdir(gitrepo)
+    prepare_branch_point(branch, parentbranch)            
 
     # Main loop starts here, with one pass for each tag file we are processing
     print tag_files

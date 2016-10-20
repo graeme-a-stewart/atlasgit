@@ -173,7 +173,7 @@ def backup_metadata(svn_metadata_cache, start_cwd, cachefile, start_timestamp_st
 def switch_to_branch(branch, orphan=False):
     ## @brief Switch to branch, creating it if necessary
     #  @param branch Branch to switch to or create
-    #  @param orphan If @c Ture then create branch as an orphan and delete all current files
+    #  @param orphan If @c True then create branch as an orphan and delete all current files
     current_branch = check_output_with_retry(("git", "symbolic-ref", "HEAD", "--short"))
     if branch != current_branch:
         all_branches = [ line.lstrip(" *") for line in check_output_with_retry(("git", "branch", "-l")).splitlines() ]
