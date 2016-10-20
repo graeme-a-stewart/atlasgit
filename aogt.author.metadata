@@ -1,8 +1,4 @@
 {
-  "iliadis": {
-    "name": "Dimitrios Iliadis", 
-    "email": "Dimitrios.Iliadis@cern.ch"
-  }, 
   "kkreutzf": {
     "name": "Kristof Kreutzfeldt", 
     "email": "kristof.kreutzfeldt@cern.ch"
@@ -11,25 +7,29 @@
     "name": "James Robinson", 
     "email": "james.robinson@cern.ch"
   }, 
-  "iriu": {
-    "name": "Imma Riu", 
-    "email": "Imma.Riu@cern.ch"
-  }, 
   "gwatts": {
     "name": "Gordon Watts", 
     "email": "gwatts@uw.edu"
   }, 
-  "sprince": {
-    "name": "Sebastien Prince", 
-    "email": "Sebastien.Prince@cern.ch"
+  "sgeorge": {
+    "name": "Simon George", 
+    "email": "s.george@rhul.ac.uk"
+  }, 
+  "tbold": {
+    "name": "Tomasz Bold", 
+    "email": "tomasz.bold@gmail.com"
   }, 
   "mkohler": {
     "name": "Markus Kohler", 
     "email": "markus.konrad.kohler@cern.ch"
   }, 
+  "smolande": {
+    "name": "Simon Elof Molander", 
+    "email": "simon.molander@fysik.su.se"
+  }, 
   "leite": {
-    "name": "Sara Isabel Braga Giesteira Leite", 
-    "email": "sara.isabel.braga.giesteira.leite@cern.ch"
+    "name": "Marco Lisboa Leite", 
+    "email": "marco.leite@cern.ch"
   }, 
   "bouhova": {
     "name": "Eva Bouhova-Thacker", 
@@ -40,12 +40,12 @@
     "email": "miles.wu@cern.ch"
   }, 
   "toshi": {
-    "name": "Satoshi Hasegawa", 
-    "email": "Satoshi.Hasegawa@cern.ch"
+    "name": "Toshi Sumida", 
+    "email": "Toshi.Sumida@cern.ch"
   }, 
-  "hwilkens": {
-    "name": "Henric Wilkens", 
-    "email": "Henric.Wilkens@cern.ch"
+  "hma": {
+    "name": "Hong Ma", 
+    "email": "hong.ma@cern.ch"
   }, 
   "spiwoks": {
     "name": "Ralf Spiwoks", 
@@ -60,8 +60,8 @@
     "email": "Thibault.Guillemin@cern.ch"
   }, 
   "tavares": {
-    "name": "Paco Calvino Tavares", 
-    "email": "francisco.calvino@upc.edu"
+    "name": "Ademar Tavares Delgado", 
+    "email": "ademar.tavares.delgado@cern.ch"
   }, 
   "vimartin": {
     "name": "Verena Ingrid Martinez Outschoorn", 
@@ -72,8 +72,12 @@
     "email": "nils.erik.krumnack@cern.ch"
   }, 
   "solodkov": {
-    "name": "Alexander Solodkov", 
-    "email": "Alexander.Solodkov@cern.ch"
+    "name": "Sanya Solodkov", 
+    "email": "Sanya.Solodkov@cern.ch"
+  }, 
+  "ztarem": {
+    "name": "Zvi Tarem", 
+    "email": "Zvi.Tarem@cern.ch"
   }, 
   "mbauce": {
     "name": "Matteo Bauce", 
@@ -83,9 +87,9 @@
     "name": "Christian Limbach", 
     "email": "limbach@physik.uni-bonn.de"
   }, 
-  "laforge": {
-    "name": "Bertrand Laforge", 
-    "email": "laforge@lpnhe.in2p3.fr"
+  "mskinner": {
+    "name": "Malcolm Bruce Skinner", 
+    "email": "malcolm.bruce.skinner@cern.ch"
   }, 
   "abasalae": {
     "name": "Artem Basalaev", 
@@ -93,7 +97,7 @@
   }, 
   "nectar": {
     "name": "Nectarios Benekos", 
-    "email": "benekos@cern.ch"
+    "email": "Nectarios.Benekos@cern.ch"
   }, 
   "spagan": {
     "name": "Simone Pagan Griso", 
@@ -115,29 +119,33 @@
     "name": "Geng-Yuan Jeng", 
     "email": "Geng-Yuan.Jeng@cern.ch"
   }, 
+  "nihartma": {
+    "name": "Nikolai Hartmann", 
+    "email": "nikolai.marcel.hartmann@cern.ch"
+  }, 
   "sawebb": {
     "name": "Samuel Webb", 
     "email": "samuel.webb@cern.ch"
   }, 
   "ruslan": {
-    "name": "Ruslan Akhunzyanov", 
-    "email": "ruslan.akhunzyanov@cern.ch"
+    "name": "Ruslan Mashinistov", 
+    "email": "Ruslan.Mashinistov@cern.ch"
   }, 
   "fpastore": {
     "name": "Francesca Pastore", 
     "email": "Francesca.Pastore@cern.ch"
   }, 
+  "ejansen": {
+    "name": "Eric Jansen", 
+    "email": "ejansen@cern.ch"
+  }, 
   "markowen": {
     "name": "Mark Andrew Owen", 
     "email": "mark.andrew.owen@cern.ch"
   }, 
-  "rlangenb": {
-    "name": "Robert Johannes Langenberg", 
-    "email": "robert.langenberg@cern.ch"
-  }, 
   "oda": {
-    "name": "Slobodan Backovic", 
-    "email": "backo@rc.pmf.cg.ac.yu"
+    "name": "Susumu Oda", 
+    "email": "Susumu.Oda@cern.ch"
   }, 
   "ynagai": {
     "name": "Yoshikazu Nagai", 
@@ -147,9 +155,13 @@
     "name": "Nick Barlow", 
     "email": "nick.barlow@cern.ch"
   }, 
-  "tsaito": {
-    "name": "Tomoyuki Saito", 
-    "email": "tomoyuki.saito@cern.ch"
+  "kmotohas": {
+    "name": "Kazuki Motohashi", 
+    "email": "kazuki.motohashi@cern.ch"
+  }, 
+  "will": {
+    "name": "Will Buttinger", 
+    "email": "William.Buttinger@cern.ch"
   }, 
   "cheny": {
     "name": "Ye Chen", 
@@ -171,13 +183,9 @@
     "name": "Philipp Mogg", 
     "email": "philipp.mogg@cern.ch"
   }, 
-  "qbuat": {
-    "name": "Quentin Buat", 
-    "email": "quentin.buat@cern.ch"
-  }, 
-  "dkirchme": {
-    "name": "David Kirchmeier", 
-    "email": "david.kirchmeier@cern.ch"
+  "fgravili": {
+    "name": "Francesco Giuseppe Gravili", 
+    "email": "francesco.giuseppe.gravili@cern.ch"
   }, 
   "binet": {
     "name": "Sebastien Binet", 
@@ -199,6 +207,10 @@
     "name": "Sami Kama", 
     "email": "Sami.Kama@cern.ch"
   }, 
+  "flowerde": {
+    "name": "Michael James Flowerdew", 
+    "email": "mikeflowerdew@gmail.com"
+  }, 
   "dkrasnop": {
     "name": "Dimitrii Krasnopevtsev", 
     "email": "Dimitriy.Krasnopevtsev@cern.ch"
@@ -213,7 +225,7 @@
   }, 
   "wengler": {
     "name": "Thorsten Wengler", 
-    "email": "Thorsten.Wengler@cern.ch"
+    "email": "wengler@cern.ch"
   }, 
   "gwilliam": {
     "name": "Carl Bryan Gwilliam", 
@@ -224,20 +236,20 @@
     "email": "steven.farrell@cern.ch"
   }, 
   "anjos": {
-    "name": "Andre Dos Anjos", 
-    "email": "andre.dos.anjos@gmail.com"
+    "name": "Nuno Miguel Goncalves Dos Anjos", 
+    "email": "Nuno.Anjos@cern.ch"
   }, 
   "janus": {
-    "name": "Janusz Brzychczyk", 
-    "email": "Janusz.Brzychczyk@cern.ch"
+    "name": "Michel Janus", 
+    "email": "Michel.Janus@cern.ch"
   }, 
   "djama": {
-    "name": "Djamal Boukhers", 
-    "email": "dboukher@cern.ch"
+    "name": "Fares Djama", 
+    "email": "djama@cppm.in2p3.fr"
   }, 
   "giacinto": {
-    "name": "Giacinto De Cataldo", 
-    "email": "gfoxtrot@cern.ch"
+    "name": "Giacinto Piacquadio", 
+    "email": "giacinto.piacquadio@cern.ch"
   }, 
   "pjfaulkn": {
     "name": "Peter John William Faulkner", 
@@ -275,9 +287,9 @@
     "name": "Camilla Maiani", 
     "email": "Camilla.Maiani@cern.ch"
   }, 
-  "morrisj": {
-    "name": "John Morris", 
-    "email": "j.d.morris@qmul.ac.uk"
+  "mcfayden": {
+    "name": "Josh McFayden", 
+    "email": "joshua.angus.mcfayden@cern.ch"
   }, 
   "dyallup": {
     "name": "David Paul Yallup", 
@@ -300,16 +312,16 @@
     "email": "Maximilian.Goblirsch-Kolb@cern.ch"
   }, 
   "rbianchi": {
-    "name": "Rbianchi Svnlibrarian", 
-    "email": "rbianchi.svnlibrarian@cern.ch"
+    "name": "Riccardo Maria Bianchi", 
+    "email": "riccardo.maria.bianchi@cern.ch"
   }, 
   "andr": {
     "name": "Andrea Abba", 
     "email": "andrea.abba@cern.ch"
   }, 
   "reznicek": {
-    "name": "Manuel Delfino Reznicek", 
-    "email": "delfino@pic.es"
+    "name": "Pavel Reznicek", 
+    "email": "Pavel.Reznicek@cern.ch"
   }, 
   "jcosta": {
     "name": "Joao Goncalves Pinto Firmino Da Costa", 
@@ -324,8 +336,8 @@
     "email": "yun.sang.chow@cern.ch"
   }, 
   "borisov": {
-    "name": "Kiril Biserov Borisov", 
-    "email": "kiril.biserov.borisov@cern.ch"
+    "name": "Guennadi Borissov", 
+    "email": "gennady.borisov@cern.ch"
   }, 
   "piyali": {
     "name": "Piyali Banerjee", 
@@ -336,20 +348,24 @@
     "email": "Stephane.Willocq@cern.ch"
   }, 
   "ward": {
-    "name": "Charles Edward Armijo", 
-    "email": "charles.edward.armijo@cern.ch"
+    "name": "Patricia Ward", 
+    "email": "cpw1@hep.phy.cam.ac.uk"
   }, 
   "gbesjes": {
     "name": "Geert Jan Besjes", 
     "email": "Geert-Jan.Besjes@cern.ch"
   }, 
-  "rhinman": {
-    "name": "Rachel Reisner Hinman", 
-    "email": "rachel.reisner.hinman@cern.ch"
+  "kotanski": {
+    "name": "Jan Kotanski", 
+    "email": "kotanski@cern.ch"
   }, 
   "fbuehrer": {
     "name": "Felix Buhrer", 
     "email": "felix.buehrer@cern.ch"
+  }, 
+  "mbarison": {
+    "name": "Marcello Barisonzi", 
+    "email": "marcello.barisonzi@cern.ch"
   }, 
   "elmsheus": {
     "name": "Johannes Elmsheuser", 
@@ -364,16 +380,16 @@
     "email": "phansen@nbi.dk"
   }, 
   "todorova": {
-    "name": "Zornitsa Todorova", 
-    "email": "zornitsa.todorova@cern.ch"
+    "name": "Sarka Todorova", 
+    "email": "todorova@cern.ch"
   }, 
   "uysasmaz": {
     "name": "Uygar Sasmaz", 
     "email": "uygar.sasmaz@cern.ch"
   }, 
   "petersen": {
-    "name": "Knud Dahlerup-Petersen", 
-    "email": "Knud.Dahlerup-Petersen@cern.ch"
+    "name": "Troels Petersen", 
+    "email": "Troels.Petersen@cern.ch"
   }, 
   "qzeng": {
     "name": "Qi Zeng", 
@@ -383,17 +399,13 @@
     "name": "Domizia Orestano", 
     "email": "domizia@cern.ch"
   }, 
-  "lyubushk": {
-    "name": "Vladimir Lyubushkin", 
-    "email": "libna61s@cern.ch"
-  }, 
   "guindon": {
     "name": "Stefan Guindon", 
     "email": "Stefan.Guindon@cern.ch"
   }, 
-  "ludovica": {
-    "name": "Ludovica Aperio Bella", 
-    "email": "ludovica.aperio.bella@cern.ch"
+  "neldik": {
+    "name": "Niels Van Eldik", 
+    "email": "niels.van.eldik@cern.ch"
   }, 
   "watsona": {
     "name": "Alan Watson", 
@@ -407,9 +419,9 @@
     "name": "Li Yuan", 
     "email": "li.yuan@cern.ch"
   }, 
-  "sanchezj": {
-    "name": "Javier Sanchez", 
-    "email": "javier.sanchez@cern.ch"
+  "apolici": {
+    "name": "Antonio Policicchio", 
+    "email": "Antonio.Policicchio@cern.ch"
   }, 
   "jpthomas": {
     "name": "Juergen Thomas", 
@@ -427,13 +439,13 @@
     "name": "Leszek Adamczyk", 
     "email": "leszek.adamczyk@agh.edu.pl"
   }, 
-  "dzhang": {
-    "name": "Dongliang Zhang", 
-    "email": "Dongliang.Zhang@cern.ch"
+  "hohlfeld": {
+    "name": "hohlfeld", 
+    "email": "hohlfeld@physik.uni-bonn.de"
   }, 
-  "ssnyder": {
-    "name": "Scott Snyder", 
-    "email": "scott.snyder@cern.ch"
+  "gartoni": {
+    "name": "Giacomo Artoni", 
+    "email": "Giacomo.Artoni@cern.ch"
   }, 
   "amincer": {
     "name": "Allen Irving Mincer", 
@@ -455,13 +467,13 @@
     "name": "Michael Duehrssen-Debling", 
     "email": "michael.duehrssen@cern.ch"
   }, 
-  "beallen": {
-    "name": "Benjamin William Allen", 
-    "email": "benjamin.william.allen@cern.ch"
+  "ndegroot": {
+    "name": "Nicolo De Groot", 
+    "email": "nicolo.de.groot@cern.ch"
   }, 
-  "jtseng": {
-    "name": "Jeffrey Tseng", 
-    "email": "jeff.tseng@physics.ox.ac.uk"
+  "junpei": {
+    "name": "Junpei Maeda", 
+    "email": "junpei.maeda@cern.ch"
   }, 
   "stefspa": {
     "name": "Stefania Spagnolo", 
@@ -470,10 +482,6 @@
   "lidiaz": {
     "name": "Lidija Zivkovic", 
     "email": "Lidija.Zivkovic@cern.ch"
-  }, 
-  "fredlu": {
-    "name": "Fred Luehring", 
-    "email": "luehring@indiana.edu"
   }, 
   "whiteson": {
     "name": "Daniel Whiteson", 
@@ -487,17 +495,17 @@
     "name": "Simone Michele Mazza", 
     "email": "simone.michele.mazza@cern.ch"
   }, 
-  "ponyisi": {
-    "name": "Peter Onyisi", 
-    "email": "ponyisi@utexas.edu"
+  "cmcnicol": {
+    "name": "Christopher John Mcnicol", 
+    "email": "christopher.john.mcnicol@cern.ch"
   }, 
   "mrudolph": {
     "name": "Matthew Scott Rudolph", 
     "email": "msrudolp@syr.edu"
   }, 
   "ghl": {
-    "name": "Salim Bouleghlimat", 
-    "email": "Salim.Bouleghlimat@cern.ch"
+    "name": "George Herbert Lewis", 
+    "email": "george.herbert.lewis@cern.ch"
   }, 
   "mdyndal": {
     "name": "Mateusz Dyndal", 
@@ -507,9 +515,9 @@
     "name": "James William Walder", 
     "email": "james.william.walder@cern.ch"
   }, 
-  "ncalace": {
-    "name": "Noemi Calace", 
-    "email": "noemi.calace@cern.ch"
+  "escalier": {
+    "name": "Marc Achille Escalier", 
+    "email": "escalier@lal.in2p3.fr"
   }, 
   "spousta": {
     "name": "Martin Spousta", 
@@ -520,12 +528,12 @@
     "email": "alex.christopher.martyniuk@cern.ch"
   }, 
   "salnikov": {
-    "name": "Andrii Salnikov", 
-    "email": "andrii.salnikov@cern.ch"
+    "name": "Andy Salnikov", 
+    "email": "salnikov@slac.stanford.edu"
   }, 
   "rustem": {
-    "name": "Rustem Dzhelyadin", 
-    "email": "Rustem.Djeliadine@cern.ch"
+    "name": "Rustem Ospanov", 
+    "email": "Rustem.Ospanov@cern.ch"
   }, 
   "gvolpi": {
     "name": "Guido Volpi", 
@@ -568,8 +576,8 @@
     "email": "andrew.beddall@cern.ch"
   }, 
   "stephen": {
-    "name": "Stephen Thomas Bell", 
-    "email": "s.bell@cern.ch"
+    "name": "Stephen Weber", 
+    "email": "stephen.albert.weber@cern.ch"
   }, 
   "pmalecki": {
     "name": "Pawel Malecki", 
@@ -595,9 +603,13 @@
     "name": "Jike Wang", 
     "email": "Jike.Wang@cern.ch"
   }, 
-  "hohlfeld": {
-    "name": "Marc Hohlfeld", 
-    "email": "hohlfeld@physik.uni-bonn.de"
+  "dzhang": {
+    "name": "Dongliang Zhang", 
+    "email": "Dongliang.Zhang@cern.ch"
+  }, 
+  "ddivalen": {
+    "name": "David Divalentino", 
+    "email": "david.di.valentino@cern.ch"
   }, 
   "norap": {
     "name": "Nora Emilia Pettersson", 
@@ -631,9 +643,9 @@
     "name": "Mahsana Haleem", 
     "email": "Mahsana.Ahsan@cern.ch"
   }, 
-  "gartoni": {
-    "name": "Giacomo Artoni", 
-    "email": "Giacomo.Artoni@cern.ch"
+  "ssnyder": {
+    "name": "Scott Snyder", 
+    "email": "scott.snyder@cern.ch"
   }, 
   "vchristo": {
     "name": "Valentinos Christodoulou", 
@@ -653,11 +665,11 @@
   }, 
   "trocme": {
     "name": "Benjamin Trocme", 
-    "email": "atlmadm@cern.ch"
+    "email": "benjamin.trocme@lpsc.in2p3.fr"
   }, 
-  "mbaak": {
-    "name": "Max Baak", 
-    "email": "mbaak@cern.ch"
+  "dellasta": {
+    "name": "Lidia Dell'Asta", 
+    "email": "Lidia.Dell'Asta@cern.ch"
   }, 
   "mavogel": {
     "name": "Marcelo Vogel", 
@@ -674,10 +686,6 @@
   "demelian": {
     "name": "Dmitry Emeliyanov", 
     "email": "dmitry.emeliyanov@stfc.ac.uk"
-  }, 
-  "solans": {
-    "name": "Carlos Solans Sanchez", 
-    "email": "carlos.solans@cern.ch"
   }, 
   "vacavant": {
     "name": "Laurent Vacavant", 
@@ -696,8 +704,8 @@
     "email": "Sofia.Vallecorsa@cern.ch"
   }, 
   "ewelina": {
-    "name": "Marta Ewelina Babicz", 
-    "email": "marta.ewelina.babicz@cern.ch"
+    "name": "Ewelina Maria Lobodzinska", 
+    "email": "ewelina.maria.lobodzinska@cern.ch"
   }, 
   "gunal": {
     "name": "Guillaume Unal", 
@@ -712,8 +720,8 @@
     "email": "claudia.beatriz.glasman.kuguel@cern.ch"
   }, 
   "ruthmann": {
-    "name": "ruthmann service", 
-    "email": "ruthmann.service@cern.ch"
+    "name": "Nils Ruthmann", 
+    "email": "nils.ruthmann@cern.ch"
   }, 
   "giordani": {
     "name": "Mapo Giordani", 
@@ -739,9 +747,9 @@
     "name": "Aliaksandr Pranko", 
     "email": "Aliaksandr.Pranko@cern.ch"
   }, 
-  "flowerde": {
-    "name": "Michael James Flowerdew", 
-    "email": "mikeflowerdew@gmail.com"
+  "brendlin": {
+    "name": "Kurt Brendlinger", 
+    "email": "kurt.brendlinger@cern.ch"
   }, 
   "tcorneli": {
     "name": "Thijs Cornelissen", 
@@ -755,17 +763,13 @@
     "name": "Daniel Hayden", 
     "email": "danhayden0@gmail.com"
   }, 
-  "jfrost": {
-    "name": "James Frost", 
-    "email": "frost@hep.phy.cam.ac.uk"
-  }, 
   "anlionti": {
     "name": "Anthony Lionti", 
     "email": "anthony.eric.lionti@cern.ch"
   }, 
   "aranzazu": {
-    "name": "Aranzazu Maira Vidal", 
-    "email": "aranzazu.maira.vidal@cern.ch"
+    "name": "Aranzazu Ruiz Martinez", 
+    "email": "aranzazu.ruiz.martinez@cern.ch"
   }, 
   "maklein": {
     "name": "Matthew Henry Klein", 
@@ -777,7 +781,7 @@
   }, 
   "sfyrla": {
     "name": "Anna Sfyrla", 
-    "email": "trigmenu@cern.ch"
+    "email": "Anna.Sfyrla@cern.ch"
   }, 
   "mdelmast": {
     "name": "Marco Delmastro", 
@@ -795,21 +799,25 @@
     "name": "Oleg Bulekov", 
     "email": "Oleg.Bulekov@cern.ch"
   }, 
+  "jansen": {
+    "name": "Hendrik Jansen", 
+    "email": "Hendrik.Jansen@cern.ch"
+  }, 
   "tcuhadar": {
     "name": "Tulay Cuhadar Donszelmann", 
     "email": "tulay.cuhadar.donszelmann@cern.ch"
   }, 
-  "junpei": {
-    "name": "Junpei Maeda", 
-    "email": "junpei.maeda@cern.ch"
+  "jtseng": {
+    "name": "Jeffrey Tseng", 
+    "email": "jeff.tseng@physics.ox.ac.uk"
   }, 
   "wolter": {
     "name": "Marcin Wolter", 
     "email": "Marcin.Wolter@cern.ch"
   }, 
-  "ndegroot": {
-    "name": "Nicolo De Groot", 
-    "email": "nicolo.de.groot@cern.ch"
+  "beallen": {
+    "name": "Benjamin William Allen", 
+    "email": "benjamin.william.allen@cern.ch"
   }, 
   "lheinric": {
     "name": "Lukas Alexander Heinrich", 
@@ -818,10 +826,6 @@
   "tgillam": {
     "name": "Thomas Gillam", 
     "email": "thomas.gillam@cern.ch"
-  }, 
-  "kotanski": {
-    "name": "Jan Kotanski", 
-    "email": "kotanski@cern.ch"
   }, 
   "mdiamond": {
     "name": "Miriam Deborah Joy Diamond", 
@@ -860,12 +864,16 @@
     "email": "paul.james.laycock@cern.ch"
   }, 
   "dhall": {
-    "name": "Fahim Dhalla", 
-    "email": "fahim.dhalla@cern.ch"
+    "name": "David Christopher Hall", 
+    "email": "David.Hall@cern.ch"
   }, 
-  "mrybar": {
-    "name": "Martin Rybar", 
-    "email": "Martin.Rybar@cern.ch"
+  "gbrooijm": {
+    "name": "Gustaaf Brooijmans", 
+    "email": "gustaaf.brooijmans@cern.ch"
+  }, 
+  "lhauswal": {
+    "name": "Lorenz Hauswald", 
+    "email": "lorenz.hauswald@cern.ch"
   }, 
   "mtanaka": {
     "name": "Masahiro Tanaka", 
@@ -899,21 +907,29 @@
     "name": "Christian Gumpert", 
     "email": "Christian.Gumpert@cern.ch"
   }, 
-  "huu": {
-    "name": "Mika Huhtinen", 
-    "email": "Mika.Huhtinen@cern.ch"
+  "wliebig": {
+    "name": "Wolfgang Liebig", 
+    "email": "wliebig@cern.ch"
+  }, 
+  "emmat": {
+    "name": "Emma Torro Pastor", 
+    "email": "emma.torro.pastor@cern.ch"
   }, 
   "salvator": {
-    "name": "Salvatore Aiola", 
-    "email": "salvatore.aiola@cern.ch"
+    "name": "Fabrizio Salvatore", 
+    "email": "p.fabrizio.salvatore@googlemail.com"
   }, 
-  "rauscher": {
-    "name": "Thomas Rauscher", 
-    "email": "thomas.rauscher@cern.ch"
+  "jloyal": {
+    "name": "Joshua Daniel Loyal", 
+    "email": "Joshua.Loyal@cern.ch"
   }, 
-  "damazio": {
-    "name": "Denis Oliveira Damazio", 
-    "email": "Denis.Oliveira.Damazio@cern.ch"
+  "lacuesta": {
+    "name": "Vicente Lacuesta Miquel", 
+    "email": "vicente.lacuesta.miquel@cern.ch"
+  }, 
+  "adye": {
+    "name": "Tim Adye", 
+    "email": "Tim.Adye@cern.ch"
   }, 
   "ecelebi": {
     "name": "Emre Celebi", 
@@ -935,9 +951,9 @@
     "name": "Rainer Bartoldus", 
     "email": "rainer.bartoldus@cern.ch"
   }, 
-  "roberth": {
-    "name": "Robert Harrington", 
-    "email": "robert.duane.harrington.jr@cern.ch"
+  "kwhalen": {
+    "name": "Kate Whalen", 
+    "email": "kate.whalen@cern.ch"
   }, 
   "craucheg": {
     "name": "Christoph Rauchegger", 
@@ -976,8 +992,8 @@
     "email": "alejandro.alonso@cern.ch"
   }, 
   "masahiro": {
-    "name": "Masahiro Hirano", 
-    "email": "mhirano@cern.ch"
+    "name": "Masahiro Morii", 
+    "email": "morii@g.harvard.edu"
   }, 
   "tkeck": {
     "name": "Thomas Keck", 
@@ -987,17 +1003,17 @@
     "name": "Peter Kluit", 
     "email": "s01@nikhef.nl"
   }, 
+  "jpanduro": {
+    "name": "William Panduro Vazquez", 
+    "email": "j.panduro.vazquez@cern.ch"
+  }, 
   "gerbaudo": {
     "name": "Davide Gerbaudo", 
-    "email": "b32sa18@cern.ch"
-  }, 
-  "filthaut": {
-    "name": "Frank Filthaut", 
-    "email": "f.filthaut@science.ru.nl"
+    "email": "Davide.Gerbaudo@cern.ch"
   }, 
   "keener": {
     "name": "Paul Keener", 
-    "email": "rd6@cern.ch"
+    "email": "keener@hep.upenn.edu"
   }, 
   "nrbern": {
     "name": "Nathan Rogers Bernard", 
@@ -1015,21 +1031,21 @@
     "name": "Andrea Di Simone", 
     "email": "Andrea.Di.Simone@cern.ch"
   }, 
-  "hartj": {
-    "name": "Frederik Hartjes", 
-    "email": "f.hartjes@nikhef.nl"
+  "oabouzei": {
+    "name": "Hass Abouzeid", 
+    "email": "hass.abouzeid@cern.ch"
   }, 
   "sherwood": {
-    "name": "Sherwood Ira Parker", 
-    "email": "sher@slac.stanford.edu"
+    "name": "Peter Sherwood", 
+    "email": "sherwood@cern.ch"
   }, 
   "dblackbu": {
     "name": "Daniel Ryan Blackburn", 
     "email": "daniel.blackburn@cern.ch"
   }, 
   "lily": {
-    "name": "Lily Asquith", 
-    "email": "lilyasquith@gmail.com"
+    "name": "Ljiljana Morvaj", 
+    "email": "Ljiljana.Morvaj@cern.ch"
   }, 
   "mspangen": {
     "name": "Martin Spangenberg", 
@@ -1039,21 +1055,21 @@
     "name": "Nicola Louise Abraham", 
     "email": "nicola.abraham@cern.ch"
   }, 
-  "cmcnicol": {
-    "name": "Christopher John Mcnicol", 
-    "email": "christopher.john.mcnicol@cern.ch"
+  "ponyisi": {
+    "name": "Peter Onyisi", 
+    "email": "ponyisi@utexas.edu"
   }, 
   "khamano": {
     "name": "Kenji Hamano", 
     "email": "kenji.hamano@cern.ch"
   }, 
-  "pjiang": {
-    "name": "pjiang", 
-    "email": "pjiang@cern.ch"
+  "dyamaguc": {
+    "name": "Daiki Yamaguchi", 
+    "email": "daiki.yamaguchi@cern.ch"
   }, 
   "khoo": {
-    "name": "Dylan Matthew Khoo", 
-    "email": "dylan.matthew.khoo@cern.ch"
+    "name": "Teng Jian Khoo", 
+    "email": "teng.jian.khoo@cern.ch"
   }, 
   "ychiu": {
     "name": "Yu Him Justin Chiu", 
@@ -1067,9 +1083,9 @@
     "name": "Jean-Francois Laporte", 
     "email": "laport@hep.saclay.cea.fr"
   }, 
-  "emmat": {
-    "name": "Emma Torro Pastor", 
-    "email": "emma.torro.pastor@cern.ch"
+  "huu": {
+    "name": "Mika Huhtinen", 
+    "email": "Mika.Huhtinen@cern.ch"
   }, 
   "wovanden": {
     "name": "Wouter Van Den Wollenberg", 
@@ -1103,9 +1119,13 @@
     "name": "Graham John Cree", 
     "email": "graham.cree@cern.ch"
   }, 
-  "sgeorge": {
-    "name": "Simon George", 
-    "email": "s.george@rhul.ac.uk"
+  "tomoe": {
+    "name": "Tomoe Kishimoto", 
+    "email": "Tomoe.Kishimoto@cern.ch"
+  }, 
+  "sprince": {
+    "name": "Sebastien Prince", 
+    "email": "Sebastien.Prince@cern.ch"
   }, 
   "yaqin": {
     "name": "Yang Qin", 
@@ -1131,9 +1151,9 @@
     "name": "James William Howarth", 
     "email": "james.william.howarth@cern.ch"
   }, 
-  "lacuesta": {
-    "name": "Vicente Lacuesta Miquel", 
-    "email": "vicente.lacuesta.miquel@cern.ch"
+  "damazio": {
+    "name": "Denis Oliveira Damazio", 
+    "email": "Denis.Oliveira.Damazio@cern.ch"
   }, 
   "tkharlam": {
     "name": "Tatyana Kharlamova", 
@@ -1151,9 +1171,9 @@
     "name": "Semen Turchikhin", 
     "email": "Semen.Turchikhin@cern.ch"
   }, 
-  "mcfayden": {
-    "name": "Josh McFayden", 
-    "email": "mcfayde2@cern.ch"
+  "morrisj": {
+    "name": "John Morris", 
+    "email": "j.d.morris@qmul.ac.uk"
   }, 
   "lorenzi": {
     "name": "Francesco De Lorenzi", 
@@ -1178,6 +1198,10 @@
   "wsfreund": {
     "name": "Werner Spolidoro Freund", 
     "email": "werner.spolidoro.freund@cern.ch"
+  }, 
+  "rwhite": {
+    "name": "Ryan Mackenzie White", 
+    "email": "ryan.white@cern.ch"
   }, 
   "mishitsu": {
     "name": "Masaki Ishitsuka", 
@@ -1228,28 +1252,32 @@
     "email": "javier.montejo.berlingen@cern.ch"
   }, 
   "vsorin": {
-    "name": "Veronica Sorin", 
+    "name": "vsorin", 
     "email": "vsorin@cern.ch"
   }, 
   "vkost": {
     "name": "Vadim Kostyukhin", 
     "email": "vkost@cern.ch"
   }, 
-  "kwhalen": {
-    "name": "Kate Whalen", 
-    "email": "kate.whalen@cern.ch"
+  "xella": {
+    "name": "Stefania Xella", 
+    "email": "xella@nbi.dk"
   }, 
   "rsmith": {
     "name": "Russell Woods Smith", 
     "email": "russell.smith@cern.ch"
   }, 
-  "lhauswal": {
-    "name": "Lorenz Hauswald", 
-    "email": "lorenz.hauswald@cern.ch"
+  "mrybar": {
+    "name": "Martin Rybar", 
+    "email": "Martin.Rybar@cern.ch"
   }, 
-  "jloyal": {
-    "name": "Joshua Daniel Loyal", 
-    "email": "Joshua.Loyal@cern.ch"
+  "rhinman": {
+    "name": "Rachel Reisner Hinman", 
+    "email": "rachel.reisner.hinman@cern.ch"
+  }, 
+  "rauscher": {
+    "name": "Felix Rauscher", 
+    "email": "Felix.Rauscher@cern.ch"
   }, 
   "mrammens": {
     "name": "Michael Christian Rammensee", 
@@ -1292,16 +1320,16 @@
     "email": "f.bernlochner@cern.ch"
   }, 
   "pavol": {
-    "name": "Pavol Bartos", 
-    "email": "Pavol.Bartos@cern.ch"
+    "name": "Pavol Strizenec", 
+    "email": "Pavol.Strizenec@cern.ch"
   }, 
   "jmonk": {
     "name": "James William Monk", 
     "email": "james.william.monk@cern.ch"
   }, 
   "baines": {
-    "name": "Stephanie Baines", 
-    "email": "stephanie.baines@cern.ch"
+    "name": "John Baines", 
+    "email": "john.baines@stfc.ac.uk"
   }, 
   "vscharf": {
     "name": "Veit Lorenz Scharf", 
@@ -1315,10 +1343,6 @@
     "name": "Alex Kastanas", 
     "email": "Alex.Kastanas@cern.ch"
   }, 
-  "sthenkel": {
-    "name": "Steffen Henkelmann", 
-    "email": "steffen.henkelmann@cern.ch"
-  }, 
   "hrivnac": {
     "name": "Julius Hrivnac", 
     "email": "Julius.Hrivnac@cern.ch"
@@ -1330,6 +1354,10 @@
   "avishek": {
     "name": "Avishek Chatterjee", 
     "email": "avishek@cern.ch"
+  }, 
+  "thrynova": {
+    "name": "Tetiana Hryn'Ova", 
+    "email": "Tetiana.Hryn'Ova@cern.ch"
   }, 
   "drauch": {
     "name": "Daniel Rauch", 
@@ -1356,8 +1384,8 @@
     "email": "dimitris.varouchas@cern.ch"
   }, 
   "mann": {
-    "name": "Georg Karlheinz Ackermann", 
-    "email": "georg.karlheinz.ackermann@cern.ch"
+    "name": "Alexander Mann", 
+    "email": "amann@uni-goettingen.de"
   }, 
   "olszewsk": {
     "name": "Andrzej Olszewski", 
@@ -1372,8 +1400,8 @@
     "email": "wiedenat@cern.ch"
   }, 
   "pop": {
-    "name": "Shared Mailbox - POPS-B Magnetic Comps", 
-    "email": "popsbmagnetics.popsb@cern.ch"
+    "name": "Alan Poppleton", 
+    "email": "Alan.Poppleton@cern.ch"
   }, 
   "bernius": {
     "name": "Catrin Bernius", 
@@ -1412,12 +1440,12 @@
     "email": "moritz.backes@cern.ch"
   }, 
   "shima": {
-    "name": "Shimaa Abdelwahed Abuzeid Hassan", 
-    "email": "Shimaa.AbuZeid@cern.ch"
+    "name": "Shima Shimizu Noda", 
+    "email": "Shima.Shimizu@cern.ch"
   }, 
   "mark": {
-    "name": "Mark Raymond Adams", 
-    "email": "mark.raymond.adams@cern.ch"
+    "name": "Mark Stockton", 
+    "email": "mark.stockton@cern.ch"
   }, 
   "nkanaya": {
     "name": "Naoko.kanaya Omachi", 
@@ -1455,9 +1483,9 @@
     "name": "Jonathan Bossio", 
     "email": "jonathan.bossio@cern.ch"
   }, 
-  "hma": {
-    "name": "David Abdurachmanov", 
-    "email": "David.Abdurachmanov@cern.ch"
+  "hwilkens": {
+    "name": "Henric Wilkens", 
+    "email": "Henric.Wilkens@cern.ch"
   }, 
   "leejr": {
     "name": "Lawrence Lee Jr", 
@@ -1468,20 +1496,20 @@
     "email": "Sergei.CHEKANOV@cern.ch"
   }, 
   "soumya": {
-    "name": "Soumya Shankar Ghosh", 
-    "email": "soumya.shankar.ghosh@cern.ch"
+    "name": "Soumya Mohapatra", 
+    "email": "Soumya.Mohapatra@cern.ch"
   }, 
-  "mskinner": {
-    "name": "Malcolm Bruce Skinner", 
-    "email": "malcolm.bruce.skinner@cern.ch"
+  "laforge": {
+    "name": "Bertrand Laforge", 
+    "email": "laforge@lpnhe.in2p3.fr"
   }, 
   "nakahama": {
     "name": "Yu Nakahama Higuchi", 
     "email": "Yu.Nakahama@cern.ch"
   }, 
-  "will": {
-    "name": "William Andros Adamson", 
-    "email": "william.andros.adamson@cern.ch"
+  "tsaito": {
+    "name": "Tomoyuki Saito", 
+    "email": "tomoyuki.saito@cern.ch"
   }, 
   "mcorradi": {
     "name": "Massimo Corradi", 
@@ -1499,10 +1527,6 @@
     "name": "Katharine Leney", 
     "email": "Katharine.Leney@cern.ch"
   }, 
-  "zmarshal": {
-    "name": "Zachary Louis Marshall", 
-    "email": "zach.marshall@cern.ch"
-  }, 
   "tkittel": {
     "name": "Thomas Kittelmann", 
     "email": "kittel@nbi.dk"
@@ -1511,17 +1535,21 @@
     "name": "Oleg Kuprash", 
     "email": "oleg.kuprash@cern.ch"
   }, 
-  "neldik": {
-    "name": "Niels Van Eldik", 
-    "email": "niels.van.eldik@cern.ch"
+  "iouri": {
+    "name": "Iouri Smirnov", 
+    "email": "iouri.smirnov@cern.ch"
+  }, 
+  "ludovica": {
+    "name": "Ludovica Aperio Bella", 
+    "email": "ludovica.aperio.bella@cern.ch"
   }, 
   "rticseto": {
     "name": "Royer Edson Ticse Torres", 
     "email": "royer.ticseto@cern.ch"
   }, 
-  "bernardo": {
-    "name": "Bernardo Adeva Andany", 
-    "email": "bernardo.adeva@usc.es"
+  "jblack": {
+    "name": "James Emmett Black", 
+    "email": "James.Black@cern.ch"
   }, 
   "tothj": {
     "name": "Jozsef Toth", 
@@ -1532,15 +1560,15 @@
     "email": "hawkings@cern.ch"
   }, 
   "fabrizio": {
-    "name": "Fabrizio Alberti", 
-    "email": "fabrizio.alberti@mi.infn.it"
+    "name": "Fabrizio Petrucci", 
+    "email": "Fabrizio.Petrucci@cern.ch"
   }, 
   "stelzer": {
     "name": "Joerg Stelzer", 
     "email": "joerg.stelzer@cern.ch"
   }, 
   "jhenders": {
-    "name": "James Henderson", 
+    "name": "jhenders", 
     "email": "jhenders@cern.ch"
   }, 
   "jraine": {
@@ -1576,8 +1604,8 @@
     "email": "Gaetano.Barone@cern.ch"
   }, 
   "tuna": {
-    "name": "Mine Altunay Cheung", 
-    "email": "mine.altunay.cheung@cern.ch"
+    "name": "Alexander Naip Tuna", 
+    "email": "alexander.tuna@cern.ch"
   }, 
   "mdaneri": {
     "name": "Maria Florencia Daneri", 
@@ -1591,29 +1619,29 @@
     "name": "Valerio Ippolito", 
     "email": "valerio.ippolito@cern.ch"
   }, 
-  "adye": {
-    "name": "Tim Adye", 
-    "email": "Tim.Adye@cern.ch"
+  "mehlhase": {
+    "name": "Sascha Mehlhase", 
+    "email": "Sascha.Mehlhase@cern.ch"
   }, 
   "johnda": {
     "name": "John Alison", 
     "email": "johnda102@gmail.com"
   }, 
   "boudreau": {
-    "name": "Michelle Boudreau", 
-    "email": "Michelle.Boudreau@cern.ch"
+    "name": "Joseph Boudreau", 
+    "email": "Joseph.Boudreau@cern.ch"
   }, 
-  "oabouzei": {
-    "name": "Hass Abouzeid", 
-    "email": "hass.abouzeid@cern.ch"
+  "hartj": {
+    "name": "Julie Hart Kirk", 
+    "email": "julie.kirk@stfc.ac.uk"
   }, 
   "magdac": {
     "name": "Magda Anna Chelstowska", 
     "email": "magda.anna.chelstowska@cern.ch"
   }, 
-  "dyamaguc": {
-    "name": "Daiki Yamaguchi", 
-    "email": "daiki.yamaguchi@cern.ch"
+  "pjiang": {
+    "name": "Peng Jiang", 
+    "email": "peng.jiang@cern.ch"
   }, 
   "fmeloni": {
     "name": "Federico Meloni", 
@@ -1652,16 +1680,20 @@
     "email": "dcasper@uci.edu"
   }, 
   "griffith": {
-    "name": "Peter Noel Griffith", 
-    "email": "peter.griffith@cern.ch"
+    "name": "Justin Griffiths", 
+    "email": "justin.adam.griffiths@cern.ch"
   }, 
-  "ztarem": {
-    "name": "Zvi Tarem", 
-    "email": "Zvi.Tarem@cern.ch"
+  "lyubushk": {
+    "name": "Vladimir Lyubushkin", 
+    "email": "Vladimir.Lyubushkin@cern.ch"
   }, 
   "nsherafa": {
     "name": "Nima Sherafati", 
     "email": "nima.sherafati@cern.ch"
+  }, 
+  "xhoad": {
+    "name": "Xanthe Hoad", 
+    "email": "xanthe.hoad@cern.ch"
   }, 
   "pataraia": {
     "name": "Sophio Pataraia", 
@@ -1672,8 +1704,8 @@
     "email": "olivier.arnaez@cern.ch"
   }, 
   "olya": {
-    "name": "Anastasia Dolya", 
-    "email": "Anastasia.Dolya@cern.ch"
+    "name": "Olga Igonkina", 
+    "email": "Olga.Igonkina@cern.ch"
   }, 
   "dimattia": {
     "name": "Sandro Di Mattia", 
@@ -1699,17 +1731,17 @@
     "name": "Stefano Rosati", 
     "email": "Stefano.Rosati@cern.ch"
   }, 
-  "ddivalen": {
-    "name": "David Divalentino", 
-    "email": "david.di.valentino@cern.ch"
+  "rlangenb": {
+    "name": "Robert Johannes Langenberg", 
+    "email": "robert.langenberg@cern.ch"
   }, 
   "mtesta": {
     "name": "Marianna Testa", 
     "email": "marianna.testa@lnf.infn.it"
   }, 
-  "jblack": {
-    "name": "James Emmett Black", 
-    "email": "James.Black@cern.ch"
+  "bernardo": {
+    "name": "Bernardo Sotto-Maior Peralva", 
+    "email": "bernardo.sotto-maior.peralva@cern.ch"
   }, 
   "felixf": {
     "name": "Felix Friedrich", 
@@ -1740,8 +1772,8 @@
     "email": "douglas.davis@cern.ch"
   }, 
   "sutt": {
-    "name": "Fabio Cossutti", 
-    "email": "cossutti@cern.ch"
+    "name": "Mark Sutton", 
+    "email": "mark.sutton@cern.ch"
   }, 
   "inomidis": {
     "name": "Ioannis Nomidis", 
@@ -1783,6 +1815,10 @@
     "name": "Elisabetta Pianori", 
     "email": "elisabetta.pianori@cern.ch"
   }, 
+  "edfarina": {
+    "name": "Edoardo Maria Farina", 
+    "email": "edoardo.maria.farina@cern.ch"
+  }, 
   "crangel": {
     "name": "Camila Jose Rangel Smith", 
     "email": "Camila.Rangel.Smith@cern.ch"
@@ -1793,7 +1829,7 @@
   }, 
   "cristinz": {
     "name": "Markus Cristinziani", 
-    "email": "mcristin@cern.ch"
+    "email": "markus.cristinziani@cern.ch"
   }, 
   "mgenest": {
     "name": "Marie-Helene Genest", 
@@ -1820,8 +1856,8 @@
     "email": "Kazuya.Mochizuki@cern.ch"
   }, 
   "amete": {
-    "name": "Safe Machine Parameters System", 
-    "email": "Smp.System@cern.ch"
+    "name": "Alaettin Serhan Mete", 
+    "email": "alaettin.serhan.mete@cern.ch"
   }, 
   "atnight": {
     "name": "Atlas Nightlybuild", 
@@ -1840,8 +1876,8 @@
     "email": "rob.fletcher@cern.ch"
   }, 
   "gsedov": {
-    "name": "gsedov", 
-    "email": "gsedov@cern.ch"
+    "name": "George Sedov", 
+    "email": "george.sedov@desy.de"
   }, 
   "mnegrini": {
     "name": "Matteo Negrini", 
@@ -1851,25 +1887,25 @@
     "name": "Arttu Klemettila", 
     "email": "arttu.klemettila@cern.ch"
   }, 
-  "ejansen": {
-    "name": "Eric Jansen", 
-    "email": "ejansen@cern.ch"
+  "zmarshal": {
+    "name": "Zachary Louis Marshall", 
+    "email": "zach.marshall@cern.ch"
   }, 
   "campanel": {
     "name": "Mario Campanelli", 
     "email": "Mario.Campanelli@cern.ch"
   }, 
-  "fgravili": {
-    "name": "Francesco Giuseppe Gravili", 
-    "email": "francesco.giuseppe.gravili@cern.ch"
+  "qbuat": {
+    "name": "Quentin Buat", 
+    "email": "quentin.buat@cern.ch"
   }, 
   "bcarlson": {
     "name": "Benjamin Taylor Carlson", 
     "email": "benjamin.taylor.carlson@cern.ch"
   }, 
   "kristin": {
-    "name": "Kristina Bakutyte", 
-    "email": "kristina.bakutyte@cern.ch"
+    "name": "Kristin Lohwasser", 
+    "email": "Kristin.Lohwasser@cern.ch"
   }, 
   "amorley": {
     "name": "Anthony Morley", 
@@ -1880,20 +1916,20 @@
     "email": "mkaneda@cern.ch"
   }, 
   "schaffer": {
-    "name": "Carl Schaffer", 
-    "email": "carl.schaffer@cern.ch"
+    "name": "R D Schaffer", 
+    "email": "R.D.Schaffer@cern.ch"
   }, 
-  "rwhite": {
-    "name": "Ryan Mackenzie White", 
-    "email": "ryan.white@cern.ch"
+  "iriu": {
+    "name": "Imma Riu", 
+    "email": "Imma.Riu@cern.ch"
   }, 
   "harkusha": {
     "name": "Siarhei Harkusha", 
     "email": "Siarhei.Harkusha@cern.ch"
   }, 
-  "apolici": {
-    "name": "Antonio Policicchio", 
-    "email": "Antonio.Policicchio@cern.ch"
+  "sanchezj": {
+    "name": "Javier Sanchez", 
+    "email": "javier.sanchez@cern.ch"
   }, 
   "vcairo": {
     "name": "Valentina Cairo", 
@@ -1907,9 +1943,9 @@
     "name": "Alberto Belloni", 
     "email": "Alberto.Belloni@cern.ch"
   }, 
-  "escalier": {
-    "name": "Marc Achille Escalier", 
-    "email": "escalier@lal.in2p3.fr"
+  "ncalace": {
+    "name": "Noemi Calace", 
+    "email": "noemi.calace@cern.ch"
   }, 
   "wlampl": {
     "name": "Walter Lampl", 
@@ -1933,7 +1969,7 @@
   }, 
   "czodrows": {
     "name": "Patrick Karl Czodrowski", 
-    "email": "czodrow2@cern.ch"
+    "email": "patrick.czodrowski@cern.ch"
   }, 
   "igrabows": {
     "name": "Iwona Grabowska-Bold", 
@@ -1943,9 +1979,13 @@
     "name": "Weimin Song", 
     "email": "weimin.song@cern.ch"
   }, 
-  "jpanduro": {
-    "name": "William Panduro Vazquez", 
-    "email": "j.panduro.vazquez@cern.ch"
+  "bstamas": {
+    "name": "Brianna Stamas", 
+    "email": "brianna.lynn.stamas@cern.ch"
+  }, 
+  "iliadis": {
+    "name": "Dimitrios Iliadis", 
+    "email": "Dimitrios.Iliadis@cern.ch"
   }, 
   "openc": {
     "name": "Ondrej Penc", 
@@ -1965,11 +2005,15 @@
   }, 
   "karolos": {
     "name": "Karolos Potamianos", 
-    "email": "kpotamia@cern.ch"
+    "email": "karolos.potamianos@cern.ch"
   }, 
-  "mbarison": {
-    "name": "Marcello Barisonzi", 
-    "email": "marcello.barisonzi@cern.ch"
+  "sthenkel": {
+    "name": "Steffen Henkelmann", 
+    "email": "steffen.henkelmann@cern.ch"
+  }, 
+  "patricia": {
+    "name": "Patricia Fernandez Martinez", 
+    "email": "patricia.fernandez.martinez@cern.ch"
   }, 
   "dellacqu": {
     "name": "Andrea Dell'Acqua", 
@@ -1979,17 +2023,17 @@
     "name": "Igor Gavrilenko", 
     "email": "Igor.Gavrilenko@cern.ch"
   }, 
-  "mehlhase": {
-    "name": "Sascha Mehlhase", 
-    "email": "Sascha.Mehlhase@cern.ch"
+  "jfrost": {
+    "name": "James Frost", 
+    "email": "frost@hep.phy.cam.ac.uk"
   }, 
-  "wliebig": {
-    "name": "Wolfgang Liebig", 
-    "email": "wliebig@cern.ch"
+  "mbaak": {
+    "name": "Max Baak", 
+    "email": "mbaak@cern.ch"
   }, 
   "chevalie": {
-    "name": "Nicolas Remi Chevalier", 
-    "email": "nicolas.remi.chevalier@cern.ch"
+    "name": "Laurent Chevalier", 
+    "email": "laurent.chevalier@cern.ch"
   }, 
   "fwinkl": {
     "name": "Frank Winklmeier", 
@@ -2027,13 +2071,17 @@
     "name": "Andreas Salzburger", 
     "email": "salzburg@cern.ch"
   }, 
+  "roberth": {
+    "name": "Robert Harrington", 
+    "email": "robert.duane.harrington.jr@cern.ch"
+  }, 
   "jveatch": {
     "name": "Jason Robert Veatch", 
     "email": "Jason.Veatch@cern.ch"
   }, 
   "weiming": {
-    "name": "Weiming Qian", 
-    "email": "Weiming.Qian@cern.ch"
+    "name": "Wei-Ming Yao", 
+    "email": "weiming.yao@cern.ch"
   }, 
   "jchapman": {
     "name": "John Derek Chapman", 
@@ -2059,9 +2107,9 @@
     "name": "Edward Moyse", 
     "email": "Edward.Moyse@cern.ch"
   }, 
-  "mborodin": {
-    "name": "Misha Borodin", 
-    "email": "Mikhail.Borodin@cern.ch"
+  "torrence": {
+    "name": "Eric Torrence", 
+    "email": "Eric.Torrence@cern.ch"
   }, 
   "giraudpf": {
     "name": "Pierre-Francois Giraud", 
@@ -2071,16 +2119,16 @@
     "name": "Pierfrancesco Butti", 
     "email": "pierfrancesco.butti@cern.ch"
   }, 
-  "nagano": {
-    "name": "Kunihiro Nagano", 
-    "email": "Kunihiro.Nagano@cern.ch"
+  "tsulaia": {
+    "name": "Vakhtang Tsulaia", 
+    "email": "Vakhtang.Tsulaia@cern.ch"
   }, 
   "kalghade": {
     "name": "Khedeejah Al Ghadeer", 
     "email": "kalghade@cern.ch"
   }, 
   "graemes": {
-    "name": "Graeme A Stewart", 
+    "name": "Graeme Stewart", 
     "email": "graemes.cern@gmail.com"
   }, 
   "lchytka": {
@@ -2111,9 +2159,9 @@
     "name": "Matthew Beckingham", 
     "email": "Matthew.Beckingham@cern.ch"
   }, 
-  "smolande": {
-    "name": "Simon Elof Molander", 
-    "email": "simon.molander@fysik.su.se"
+  "filthaut": {
+    "name": "Frank Filthaut", 
+    "email": "f.filthaut@science.ru.nl"
   }, 
   "christos": {
     "name": "Christos Anastopoulos", 
@@ -2129,23 +2177,23 @@
   }, 
   "fedin": {
     "name": "Oleg Fedin", 
-    "email": "fedine@cern.ch"
+    "email": "Oleg.Fedine@cern.ch"
   }, 
   "cchau": {
     "name": "Chav Chhiv Chau", 
     "email": "chav.chhiv.chau@cern.ch"
   }, 
   "leveque": {
-    "name": "Thuy Huong Leveque", 
-    "email": "thuy.huong.leveque@cern.ch"
+    "name": "Jessica Leveque", 
+    "email": "leveque@lapp.in2p3.fr"
   }, 
   "mbeattie": {
     "name": "Michael David Beattie", 
     "email": "michael.beattie@cern.ch"
   }, 
   "tomoya": {
-    "name": "Tomoya Hoshino", 
-    "email": "Tomoya.Hoshino@cern.ch"
+    "name": "Tomoya Iizawa", 
+    "email": "Tomoya.Iizawa@cern.ch"
   }, 
   "jhofmann": {
     "name": "Julia Isabell Djuvsland", 
@@ -2155,29 +2203,33 @@
     "name": "Francisco Alonso", 
     "email": "Francisco.Alonso@cern.ch"
   }, 
-  "jansen": {
-    "name": "Hendrik Jansen", 
-    "email": "Hendrik.Jansen@cern.ch"
+  "dkirchme": {
+    "name": "David Kirchmeier", 
+    "email": "david.kirchmeier@cern.ch"
   }, 
-  "tbold": {
-    "name": "Tomasz Bold", 
-    "email": "tomasz.bold@gmail.com"
+  "solans": {
+    "name": "Carlos Solans Sanchez", 
+    "email": "carlos.solans@cern.ch"
   }, 
   "pjurgiel": {
     "name": "Pawel Jurgielewicz", 
     "email": "pawel.jurgielewicz@cern.ch"
   }, 
+  "rrosten": {
+    "name": "Rachel Christine Rosten", 
+    "email": "rachel.rosten@cern.ch"
+  }, 
   "ntekas": {
-    "name": "Dimitrios Bantekas", 
-    "email": "dimitrios.bantekas@cern.ch"
+    "name": "Konstantinos Ntekas", 
+    "email": "Konstantinos.Ntekas@cern.ch"
   }, 
-  "torrence": {
-    "name": "Eric Torrence", 
-    "email": "Eric.Torrence@cern.ch"
+  "mborodin": {
+    "name": "Misha Borodin", 
+    "email": "Mikhail.Borodin@cern.ch"
   }, 
-  "tsulaia": {
-    "name": "Vakhtang Tsulaia", 
-    "email": "Vakhtang.Tsulaia@cern.ch"
+  "nagano": {
+    "name": "Kunihiro Nagano", 
+    "email": "Kunihiro.Nagano@cern.ch"
   }, 
   "sawyer": {
     "name": "Lee Sawyer", 
@@ -2187,12 +2239,12 @@
     "name": "Libor Nozicka", 
     "email": "nozicka@cern.ch"
   }, 
-  "tomoe": {
-    "name": "Tomoe Kishimoto", 
-    "email": "Tomoe.Kishimoto@cern.ch"
+  "fredlu": {
+    "name": "Fred Luehring", 
+    "email": "luehring@indiana.edu"
   }, 
   "ritsch": {
-    "name": "Florian Andritsch", 
-    "email": "Florian.Andritsch@cern.ch"
+    "name": "Elmar Ritsch", 
+    "email": "Elmar.Ritsch@cern.ch"
   }
 }
