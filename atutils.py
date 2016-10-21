@@ -276,3 +276,16 @@ def branch_exists(branch):
         return True
     return False
 
+
+def git_release_tag(release_desc, branch=None):
+    ## @brief Return the correct git tag for a release
+    #  @param release_desc The "release" description dictionary
+    #  @return String with git tag
+    if release_desc["nightly"]:
+        if not branch:
+            branch = release_desc["name"].split(".")[:2]
+        timestamp = time.strftime("%Y-%m-%dT%H%M", time.localtime(release_desc["timestamp"]))
+        tag = os.path.join("nightly", branch, timestamp)
+    else:
+        tag = os.path.join("release", release_desc["name"])
+    return tag

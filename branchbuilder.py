@@ -30,7 +30,7 @@ import sys
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, recursive_delete, branch_exists
 from atutils import switch_to_branch, get_flattened_git_tag, changelog_diff, package_compare, is_svn_branch_tag
-
+from atutils import git_release_tag
 
 def backskip_filter(tagfiles):
     ## @brief Reverse order parse a set of tagfiles and reject those
@@ -278,7 +278,7 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
         tag_list = get_current_git_tags(gitrepo)
         current_release_tags = get_current_release_tag_dict(tag_list, branch) # Markers for which packages have been processed
         logger.info("Processing release {0} ({1} current tags)".format(release_data["release"]["name"], len(current_release_tags)))
-        release_tag = os.path.join("release", release_data["release"]["name"])
+        release_tag = git_release_tag(release_data["release"], branch)
         if release_tag in tag_list and not skipreleasetag:
             logger.info("Release tag {0} already made - skipping".format(release_tag))
             continue
@@ -374,14 +374,16 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
             pkg_processed += 1
 
         ## Now, finally, tag the release as done
-        if release_data["release"]["type"] != "snapshot" and not skipreleasetag:
+        if not skipreleasetag:
             if release_data["release"]["nightly"]:
-                check_output_with_retry(("git", "tag", os.path.join("nightly", release_data["release"]["name"])), retries=1, dryrun=dryrun)
+                check_output_with_retry(("git", "tag", release_tag), retries=1, dryrun=dryrun)
             else:
-                check_output_with_retry(("git", "tag", os.path.join("release", release_data["release"]["name"]), "-a",
+                check_output_with_retry(("git", "tag", release_tag, "-a",
                                          "-m", "Tagging release {0}".format(release_data["release"]["name"])), 
                                         retries=1, dryrun=dryrun)
-            logger.info("Tagged release {0} ({1} packages processed)".format(release_data["release"]["name"], pkg_processed))
+            logger.info("Tagged release {0} as {1} "
+                        "({2} packages processed)".format(release_data["release"]["name"],
+                                                          release_tag, pkg_processed))
         else:
             logger.info("Processed release {0} (no tag; {1} packages processed)".format(release_data["release"]["name"], pkg_processed))
 
@@ -408,8 +410,8 @@ def main():
                         help="File containing cache of author name and email information - default '[gitrepo].author.metadata'")
     parser.add_argument('--skipreleasetag', action="store_true",
                         help="Do not create a git tag for this release, nor skip processing if a release tag "
-                        "exists - use this option to add packages to a 'secondary' branch from the main "
-                        "release branch. Set true by default if the target branch is 'master'.")
+                        "exists - use this option to add packages to a branch encapsulating an entire "
+                        "release series, like 'master'.")
     parser.add_argument('--onlyforward', action="store_true",
                         help="Process tag files as usual, but never "
                         "downgrade a tag to a previous version. This can be used to reconstruct a master branch "
@@ -444,9 +446,6 @@ def main():
         print args.tagfiles    
     tag_files = [ os.path.abspath(fname) for fname in args.tagfiles ]
     
-    if branch == "master":
-        args.skipreleasetag = True
-        
     # If we have a baserelease tag content, then load that here
     if args.baserelease:
         with open(args.baserelease) as br_tags_fh:
@@ -458,7 +457,6 @@ def main():
     # were made
     if not args.svnmetadata and os.access(args.gitrepo + ".svn.metadata", os.R_OK):
         args.svnmetadata = args.gitrepo + ".svn.metadata"
-        logger.info("Found SVN metadata cache here: {0}".format(args.svnmetadata))
     else:
         logger.error("No SVN metadata cache found - cannot proceed")
         sys.exit(1)
