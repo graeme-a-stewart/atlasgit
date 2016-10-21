@@ -324,10 +324,10 @@ def main():
     parser.add_argument('--svnpath', metavar='PATH', nargs='+', default=[],
                         help="Restrict actions to this list of paths in the SVN tree (use to "
                         "make small scale tests of the import workflow).")
-    parser.add_argument('--intermediatetags', action="store_true", default=False,
+    parser.add_argument('--intermediatetags', action="store_true",
                         help="Import all tags from oldest release tag found, instead of just release tags")
-    parser.add_argument('--skiptrunk', action="store_true", default=True,
-                        help="Skip package trunk during the import (True by default, the trunk will be skipped).")
+    parser.add_argument('--processtrunk', action="store_true",
+                        help="Update trunk versions during the import (False by default, the trunk will be skipped).")
     parser.add_argument('--svncachefile', metavar='FILE',
                         help="File containing cache of SVN information - default '[gitrepo].svn.metadata'")
     parser.add_argument('--authorcachefile', metavar='FILE',
@@ -385,7 +385,7 @@ def main():
     # at this point, otherwise the tag list is empty.
     svn_packages = get_tags(args.tagfiles, args.svnpath)
     # Add "trunk" packages, if required
-    if args.skiptrunk is False:
+    if args.processtrunk:
         for package, tags in svn_packages.iteritems():
             if "trunk" not in tags:
                 tags.append("trunk")

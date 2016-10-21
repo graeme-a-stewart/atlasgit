@@ -15,11 +15,11 @@ Main scripts:
 `cmaketags.py` - Parses a CMake release to obtain the SVN tag content
 for importing into git. 
 
-`cmttags.py` - Parses NICOS tag files to understand the SVN tag content
+`cmttags.py` - Parses NICOS tag files to obtain the SVN tag content
 of CMT built releases to import into git
 
 `asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on  
-import branch(es)
+special import branch(es)
 
 `branchbuilder.py` - Reconstruct from release tag content files the state 
 of an offline release on a git branch
@@ -33,7 +33,10 @@ a text file that can be imported and plotted into a spreadsheet
 
 `casefilter.sh` - git filter-branch script that resets the case of repository files
 which at some point in their SVN history changed case, causing problems on
-case insensitive file systems.
+case insensitive file systems (it's not proposed to use this, but it's kept for
+archival interest)
+
+`releasedate.py` - plots release dates using matplotlib
 
 `glogger.py`, `atutils.py` - module files for shared functions
 
@@ -87,15 +90,15 @@ a fresh git repository.
 The first two positional arguments are SVNREPO and GITREPO and all remaining ones are tag content
 files (as generated above).
 
- `asvn2git.py file:///data/graemes/atlasoff/ao-mirror aogt tagdir/20.7.*`
+ `asvn2git.py file:///data/graemes/atlasoff/ao-mirror aogt tagdir/{19,20,21}.?.?`
 
 The default import is performed using a separate branch for each package. This is a clean import
-strategy, however it creates many branches, which gitlab does not like, so it is possible to use
- a single branch for all imported tags using the `--targetbranch` option (generally, however,
- there is no need to upload the import branches to gitlab).
+strategy, however it creates many branches, which gitlab does not like, so do not push these
+many import branches and tags to gitlab! It is possible to use a single branch for all imported 
+tags using the `--targetbranch` option, but this is no longer well tested ;-)
 
 Tests of the import procedure can be made using the option `--svnpath PATH` that
-restricts the import to packages that start with `PATH`.   
+restricts the import to packages that start with `PATH`.
 
 `asvn2git.py` will query SVN for revision numbers are make sure that it 
 imports from SVN in SVN commit order. Thus the import history is fairly sane.
@@ -114,79 +117,103 @@ but this is not that important).
 It is possible to re-run `asvn2git.py` with new or updated tag content files. The bookkeeping
 git tags will ensure that no duplicate imports are made. If `asvn2git.py` is 
 re-run on the same set of tag content files it will
-_update_ the trunks of each imported package to the latest revision.
+_update_ the trunks of each imported package to the latest revision if the `--processtrunk` option
+is given (by default it is not - only tagged packages are imported).
 
-### Construct git branches for numbered releases
+### Construct a master branch
 
-Once the main git import has been done, each release branch that is required 
-can be reconstructed with `branchbuilder.py`. Git repo and branch name are positional, 
-and `--tagdiff` files are needed. e.g., 
+This step is optional, but a fairly complete historical import is performed if
+a master branch, encapsulating the entire release history, is constructed first.
 
-`branchbuilder.py aogt 20.7 tagdir/20.7.*`
+Here just run `branchbuilder.py` with all the releases of interest, but use these options:
 
-As SVN package versions are processed, git tags are created to record each package
-import. In addition a release tag, `release/A.B.X[.Y]`, is created once a release
-is complete, unless the branch being constructed is `master`.
+`branchbuilder.py aogt master $(ls -v tagdir/{19,20,21}.?.?) --skipreleasetag --onlyforward`
 
-Re-running over the import is perfectly fine, as the git bookkeeping tags are used
-to prevent duplicated imports.
+* `--skipreleasetag` will not make tagged releases for this master branch (these should be made
+on the release branches themselves - see next section)
 
-TODO: Descibe how to create and store a patch branch off a base release.
+* `--onlyforward` will prevent any tag from being downgraded on the master branch and will 
+preprocess the list of releases to ensure that the master branch never skips backwards
+to an earlier release in time (see https://its.cern.ch/jira/browse/ATLINFR-1306 for
+a discussion why this is sensible) 
 
-### Updating
+Use `ls -v` to make sure the releases are given to the script in _release_ order and not 
+alphabetically. Note also that cache releases should not be imported into master (tune your
+`ls` command to ensure this!).
+
+
+### Construct git branches for base releases
+
+Once the master branch has been constructed, each release branch can be made. There is
+only one tricky option:
+
+`branchbuilder.py aogt 20.1 $(ls -v tagdir/21.0.?) --parentbranch master:@$(pwd)/tagdir/21.0.0`
+
+The `parentbranch` option instructs the script to branch from `master` using the commot time
+corresponding to when the `21.0.0` release was made. Using this option means the
+git repository contains a sensible ancestry between the release branches. (Because the script
+will change working directory this has to be an absolute path, hence the `$(pwd)`.)
+
+Obviously the parent branch can be anything known to the repository, e.g., one could branch
+the HLT release from an appropriate commit on the Tier-0 branch. 
+
+Internally, git tags are created so that the import repository knows which SVN tags are
+current on the HEAD of each branch. (This allows the script to update when new releases
+are processed.) As each of the base releases is processed a release tag is made, e.g.
+`release/21.0.2`.
+
+#### Construct patch release branches
+
+If it's desired to recreate a series of patch releases use, e.g., this command
+
+`branchbuilder.py aogt 20.11.0 $(ls -v tagdir/20.11.0.*) --parentbranch 20.11:release/20.11.0`
+
+Note that this time we branch from an exisiting release tag, not from a release timestamp.
+
+### Updating and nighty builds
 
 As indicated, the whole process, from tag content file creation through importing from SVN
 and creating branches, can be re-run multiple times, updating releases as they are made.
 Bookkeeping git tags allow skipping work already done.
 
-TODO: Allow `branchbuilder.py` to update to latest trunk revisions on the master branch.
+The tag content files for a nightly release are quite simple to get:
 
-#### Tagdiff files for CMake nightlies
+`cmaketags.py 21.0.X-VAL --nightly rel_5`
 
-In the `cmaketags.py` script simply give the name of the nightly branch to parse
-and the different releases to scan, e.g.,
+The name of the tag content file is a bit different, e.g., `21.0.X-VAL-2016-10-20-rel_5` 
+but it is used just the same as before (i.e., `asvn2git` to git import any
+missing SVN package tags, then `branchbuilder.py` to make the file changes
+on the desired release branch).  
 
-`cmaketags.py rel_1 rel_2 rel_3 rel_4 --nightly 21.0.X`
+Note that when a nightly is imported the git release tag will look like
 
-The default tagdiff file is composed of the nightly branch name, the first
-release and a timestamp, e.g., `21.0.X-VAL_rel_1-2016-06-26T2242.tagdiff`.
+`nightly/21.0/2016-10-20T2213`
 
-TODO: Fix this, it's broken...
+This encodes the branch on which the tag was made and the time when it was made. 
+Nightly tags are always lightweight as it is not intended to keep them forever.
+
 
 ### Upload to gitlab/github
 
-1. Create an empty repository in the social coding site of your choice.
+Finally, when a good import has been made, the repository should be exported. 
 
-1. Add the repository to your imported repository, e.g., as one of:
+1. Create an empty repository in the social coding site of your choice (for 
+ATLAS this should of course always be CERN GitLab!).
 
-```git remote add origin https://gitlab.cern.ch/graemes/aogt.git```
+1. Add the upload repository to your local repository, e.g., like this:
 
 ```git remote add origin https://:@gitlab.cern.ch:8443/graemes/aogt.git```
 
-```git remote add origin https://github.com/graeme-a-stewart/aogt.git```
-
-1. Push your release branches to the new upstream origin:
+1. Push your _release_ branches to the new upstream origin:
 
 ```git push -u origin MY_BRANCH```
 
-Note, if packages were imported on _per-package_ branches it may not be a good idea to
-import all branches. gitlab repositories get rather unweildy when
-there are many, many branches (indeed, currently there is a bug in gitlab and the
-web interface is broken when there are more than around 1000 branches).
+There is no need to push the special per-package import branches and, in fact,
+doing so will cause problems in gitlab (which baulks at more than ~1000 branches).
 
 1. Push up tags that you care about
 
 ```git push origin MY_TAG```
 
-or 
+Tags you care about usually means `git tag -l release/* nightly/*`.
 
-```git push --tags origin```
-
-Note that in the last case (`--tags`) make sure you _delete_ all tags in `import/`, 
-as these are not needed post-import and they substantially degrade performance.
-
-Final Notes
----
-
-You should not attempt to push to the upstream reopository
-during the Zombie Apocolypse.
