@@ -149,7 +149,7 @@ only one tricky option:
 
 `branchbuilder.py aogt 20.1 $(ls -v tagdir/21.0.?) --parentbranch master:@$(pwd)/tagdir/21.0.0`
 
-The `parentbranch` option instructs the script to branch from `master` using the commot time
+The `parentbranch` option instructs the script to branch from `master` using the commit time
 corresponding to when the `21.0.0` release was made. Using this option means the
 git repository contains a sensible ancestry between the release branches. (Because the script
 will change working directory this has to be an absolute path, hence the `$(pwd)`.)
@@ -181,7 +181,7 @@ The tag content files for a nightly release are quite simple to get:
 `cmaketags.py 21.0.X-VAL --nightly rel_5`
 
 The name of the tag content file is a bit different, e.g., `21.0.X-VAL-2016-10-20-rel_5` 
-but it is used just the same as before (i.e., `asvn2git` to git import any
+but it is used just the same as before (i.e., `asvn2git.py` to git import any
 missing SVN package tags, then `branchbuilder.py` to make the file changes
 on the desired release branch).  
 
