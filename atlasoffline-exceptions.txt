@@ -5,3 +5,4 @@ Trigger/TrigConfiguration/TrigDb/external/*.jar
 Trigger/TrigConfiguration/TriggerTool/external/*.jar
 Trigger/TrigConfiguration/TriggerTool/external/doc/*.jar
 Trigger/TrigConfiguration/TriggerTool/external/doc/*.zip
+DetectorDescription/IdDictParser/data/*.xml
