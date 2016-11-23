@@ -2,8 +2,12 @@
 # + file   : always import even if file exceeds size limit
 # - file   : never import
 
-# VPN graphics
+# hwaf files
+- */hscript.yml
+# VP1 graphics
 + graphics/VP1/VP1Gui/src/images/*.png
+# RTT/ATN test configuration
++ */test/*_TestConfiguration.xml
 # TriggerTool files (ATR-13306)
 + Trigger/TrigConfiguration/TrigDb/share/*.sql
 + Trigger/TrigConfiguration/TrigDb/external/*.jar
@@ -14,8 +18,6 @@
 - Trigger/TrigConfiguration/TriggerMenuCompiler/*
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
-# RTT/ATN test configuration
-+ */test/*_TestConfiguration.xml
 # Streamer info for trigger BS decoding
 + Trigger/TrigDataAccess/TrigSerializeResult/share/bs-streamerinfos.root
 # L1 trigger menu XML files
