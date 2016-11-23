@@ -1,16 +1,18 @@
-## Exceptions for atlasoff git migration
-## + file   : always import even if file exceeds size limit
-## - file   : never import
+# Exceptions for atlasoff git migration
+# + file   : always import even if file exceeds size limit
+# - file   : never import
 
-##
-# Always import
-##
+# VPN graphics
 + graphics/VP1/VP1Gui/src/images/*.png
+# TriggerTool files (ATR-13306)
 + Trigger/TrigConfiguration/TrigDb/share/*.sql
 + Trigger/TrigConfiguration/TrigDb/external/*.jar
 + Trigger/TrigConfiguration/TriggerTool/external/*.jar
 + Trigger/TrigConfiguration/TriggerTool/external/doc/*.jar
 + Trigger/TrigConfiguration/TriggerTool/external/doc/*.zip
+# Moved to different repo (ATR-13307)
+- Trigger/TrigConfiguration/TriggerMenuCompiler/*
+# ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
 # RTT/ATN test configuration
 + */test/*_TestConfiguration.xml
@@ -31,9 +33,3 @@
 + Trigger/TrigAlgorithms/TrigL2MuonSA/share/*.lut
 # TriggerPanel jar file
 + HLT/Trigger/TrigConfiguration/TriggerPanel/external/l1ct-06-01-01/L1CTISData.jar
-
-##
-# Never import
-##
-# Moved to different repo (ATR-13307)
-- Trigger/TrigConfiguration/TriggerMenuCompiler/*
