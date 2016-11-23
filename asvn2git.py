@@ -193,7 +193,7 @@ def init_git(gitrepo):
 
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, author_metadata_cache, branch=None, 
-                          filter_exceptions=[]):
+                          filter_exceptions=[], filter_reject=[]):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     msg = "Processing {0} tag {1}".format(package, tag)
     if tag == "trunk":
@@ -210,7 +210,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, author_m
     check_output_with_retry(cmd)
 
     # Clean out directory of things we don't want to import
-    svn_cleanup(full_svn_path, svn_co_root=tempdir, filter_exceptions=filter_exceptions)
+    svn_cleanup(full_svn_path, svn_co_root=tempdir, 
+                filter_exceptions=filter_exceptions, filter_reject=filter_reject)
     
     # Copy to git
     full_git_path = os.path.join(gitrepo, package)
@@ -243,7 +244,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, author_m
     # Clean up
     shutil.rmtree(tempdir)
     
-def svn_cleanup(svn_path, svn_co_root="", filter_exceptions=[]):
+def svn_cleanup(svn_path, svn_co_root="", filter_exceptions=[], filter_reject=[]):
     ## @brief Cleanout files we do not want to import into git
     shutil.rmtree(os.path.join(svn_path, ".svn"))
     
@@ -272,6 +273,13 @@ def svn_cleanup(svn_path, svn_co_root="", filter_exceptions=[]):
                 if name.startswith("."):
                     logger.warning("File {0} starts with a '.' - not importing".format(filename))
                     os.remove(filename)
+
+                # Rejection always overrides the above
+                for filter in filter_reject:
+                    if fnmatch.fnmatch(svn_filename, filter):
+                        logger.info("{0} not imported due to {1} filter".format(svn_filename, filter))
+                        os.remove(filename)
+
             except OSError, e:
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
 
@@ -361,13 +369,17 @@ def main():
     
     # If we have import exception file, load here
     svn_filter_exceptions = []
+    svn_filter = []
     if args.svnfilterexceptions:
         with open(args.svnfilterexceptions) as svnfilt:
             for line in svnfilt:
                 line = line.strip()
                 if line.startswith("#") or line == "":
                     continue
-                svn_filter_exceptions.append(line)
+                if line.startswith("-"):
+                    svn_filter.append(line.lstrip("- "))
+                else:
+                    svn_filter_exceptions.append(line.lstrip("+ "))
 
 
     ### Main actions start here
@@ -427,7 +439,8 @@ def main():
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev],
                                   author_metadata_cache,
-                                  filter_exceptions = svn_filter_exceptions)
+                                  filter_exceptions = svn_filter_exceptions,
+                                  filter_reject = svn_filter)
             processed_tags += 1
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))
