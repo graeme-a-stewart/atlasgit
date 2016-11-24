@@ -192,9 +192,18 @@ def init_git(gitrepo):
         check_output_with_retry(("git", "init"))
 
 
-def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata, author_metadata_cache, branch=None, 
+def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
                           filter_exceptions=[], filter_reject=[]):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
+    #  @param svnroot Base path to SVN repository
+    #  @param gitrepo Path to git repository to import to
+    #  @param package Path to package root (in git and svn)
+    #  @param tag Package tag to import (i.e., path after base package path)
+    #  @param svn_metadata SVN metadata cache
+    #  @param author_metadata_cache Author name/email cache
+    #  @param branch Git branch to switch to before import
+    #  @param filter_exceptions Paths to force import to git
+    #  @param filter_reject Paths to force reject from the import
     msg = "Processing {0} tag {1}".format(package, tag)
     if tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])
