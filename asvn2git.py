@@ -73,7 +73,8 @@ import xml.etree.ElementTree as eltree
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, author_string, switch_to_branch
 from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata, changelog_diff
-from svnutils import scan_svn_tags_and_get_metadata, svn_get_path_metadata, svn_co_tag_and_commit, svn_cleanup
+from svnutils import scan_svn_tags_and_get_metadata, svn_get_path_metadata, svn_co_tag_and_commit
+from svnutils import svn_cleanup, load_svn_path_exceptions
 
 
 def tag_cmp(tag_x, tag_y):
@@ -184,7 +185,9 @@ def main():
     parser.add_argument('--importtimingfile', metavar="FILE",
                         help="File to dump SVN->git import timing information - default '[gitrepo]-timing.json'")
     parser.add_argument('--svnfilterexceptions', '--sfe', metavar="FILE",
-                        help="File listing path matches to exempt from SVN import filter (one per line, globbing allowed)")    
+                        help="File listing path globs to exempt from SVN import filter (lines with '+PATH') or "
+                        "to always reject (lines with '-PATH'); default %(default)s. Use NONE to have no exceptions.",
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlasoffline-exceptions.txt"))
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
 
@@ -208,20 +211,8 @@ def main():
     start_timestamp_string = time.strftime("%Y%m%dT%H%M.%S")
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
     
-    # If we have import exception file, load here
-    svn_filter_exceptions = []
-    svn_filter = []
-    if args.svnfilterexceptions:
-        with open(args.svnfilterexceptions) as svnfilt:
-            for line in svnfilt:
-                line = line.strip()
-                if line.startswith("#") or line == "":
-                    continue
-                if line.startswith("-"):
-                    svn_filter.append(line.lstrip("- "))
-                else:
-                    svn_filter_exceptions.append(line.lstrip("+ "))
-
+    # Load exception globs
+    svn_path_accept, svn_path_reject = load_svn_path_exceptions(args.svnfilterexceptions)
 
     ### Main actions start here
     # Setup the git repository
@@ -280,8 +271,8 @@ def main():
             svn_co_tag_and_commit(svnroot, gitrepo, pkg_tag["package"], pkg_tag["tag"], 
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev],
                                   author_metadata_cache,
-                                  filter_exceptions = svn_filter_exceptions,
-                                  filter_reject = svn_filter)
+                                  svn_path_accept=svn_path_accept,
+                                  svn_path_reject=svn_path_reject)
             processed_tags += 1
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))

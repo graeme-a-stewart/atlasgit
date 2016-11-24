@@ -35,3 +35,6 @@
 + Trigger/TrigAlgorithms/TrigL2MuonSA/share/*.lut
 # TriggerPanel jar file
 + HLT/Trigger/TrigConfiguration/TriggerPanel/external/l1ct-06-01-01/L1CTISData.jar
+
+# Changelogs...
++ */ChangeLog
