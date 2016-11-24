@@ -17,6 +17,16 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import fnmatch
+import os
+import os.path
+import re
+import shutil
+import sys
+import tempfile
+
+from glogger import logger
+from atutils import check_output_with_retry
 
 def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, all_package_tags=False):
     # # @brief Get SVN metadata for each of the package tags we're interested in
@@ -88,7 +98,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
             }
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
-                          filter_exceptions=[], filter_reject=[]):
+                          svn_path_accept=[], svn_path_reject=[], commit=True):
     # # @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     #  @param svnroot Base path to SVN repository
     #  @param gitrepo Path to git repository to import to
@@ -97,10 +107,10 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param svn_metadata SVN metadata cache
     #  @param author_metadata_cache Author name/email cache
     #  @param branch Git branch to switch to before import
-    #  @param filter_exceptions Paths to force import to git
-    #  @param filter_reject Paths to force reject from the import
+    #  @param svn_path_accept Paths to force import to git
+    #  @param svn_path_reject Paths to force reject from the import
     msg = "Processing {0} tag {1}".format(package, tag)
-    if tag == "trunk":
+    if svn_metadata and tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])
     logger.info(msg)
 
@@ -110,12 +120,15 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
 
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
-    cmd = ["svn", "checkout", "-r", str(svn_metadata["revision"]), os.path.join(svnroot, package, tag), os.path.join(tempdir, package)]
+    cmd = ["svn", "checkout"]
+    if svn_metadata:
+        cmd.extend(["-r", svn_metadata["revision"]])
+    cmd.extend([os.path.join(svnroot, package, tag), os.path.join(tempdir, package)])
     check_output_with_retry(cmd)
 
     # Clean out directory of things we don't want to import
     svn_cleanup(full_svn_path, svn_co_root=tempdir,
-                filter_exceptions=filter_exceptions, filter_reject=filter_reject)
+                svn_path_accept=svn_path_accept, svn_path_reject=svn_path_reject)
 
     # Copy to git
     full_git_path = os.path.join(gitrepo, package)
@@ -128,50 +141,55 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
         pass
     shutil.move(full_svn_path, package_root)
 
-    # get ChangeLog diff
-    cl_diff = changelog_diff(package)
+    if commit:
+        # get ChangeLog diff
+        cl_diff = changelog_diff(package)
 
-    # Commit
-    check_output_with_retry(("git", "add", "-A", package))
-    if logger.level <= logging.DEBUG:
-        logger.debug(check_output_with_retry(("git", "status")))
-    cmd = ["git", "commit", "--allow-empty", "-m", "{0} - r{1}".format(os.path.join(package, tag), svn_metadata['revision'])]
-    if svn_metadata:
-        cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"], author_metadata_cache)),
-                    "--date={0}".format(svn_metadata["date"])))
-    if cl_diff:
-        cmd.extend(("-m", "Diff in ChangeLog:\n" + '\n'.join(cl_diff)))
-    check_output_with_retry(cmd)
-    cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag, svn_metadata["revision"]), "-m", ""]
-    check_output_with_retry(cmd)
+        # Commit
+        check_output_with_retry(("git", "add", "-A", package))
+        if logger.level <= logging.DEBUG:
+            logger.debug(check_output_with_retry(("git", "status")))
+        cmd = ["git", "commit", "--allow-empty", "-m", "{0} - r{1}".format(os.path.join(package, tag), svn_metadata['revision'])]
+        if svn_metadata:
+            cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"], author_metadata_cache)),
+                        "--date={0}".format(svn_metadata["date"])))
+        if cl_diff:
+            cmd.extend(("-m", "Diff in ChangeLog:\n" + '\n'.join(cl_diff)))
+        check_output_with_retry(cmd)
+        cmd = ["git", "tag", "-a", get_flattened_git_tag(package, tag, svn_metadata["revision"]), "-m", ""]
+        check_output_with_retry(cmd)
 
     # Clean up
     shutil.rmtree(tempdir)
 
-def svn_cleanup(svn_path, svn_co_root="", filter_exceptions=[], filter_reject=[]):
+def svn_cleanup(svn_path, svn_co_root="", svn_path_accept=[], svn_path_reject=[]):
     # # @brief Cleanout files we do not want to import into git
-    shutil.rmtree(os.path.join(svn_path, ".svn"))
+    #  @param svn_path Full path to checkout of SVN package
+    #  @param svn_co_root Base directory of SVN checkout
+    #  @param svn_path_accept List of file path globs to always import to git
+    #  @param svn_path_reject List of file path globs to never import to git
 
     # File size veto
     for root, dirs, files in os.walk(svn_path):
+        if ".svn" in dirs:
+            shutil.rmtree(os.path.join(root, ".svn"))
+            dirs.remove(".svn")
         for name in files:
             filename = os.path.join(root, name)
             svn_filename = filename[len(svn_co_root) + 1:]
-            filter_exception_match = False
-            for filter in filter_exceptions:
+            path_accept_match = False
+            for filter in svn_path_accept:
                 if fnmatch.fnmatch(svn_filename, filter):
-                    logger.info("{0} imported from matching exception {1}".format(svn_filename, filter))
-                    filter_exception_match = True
+                    logger.info("{0} imported from globbed exception {1}".format(svn_filename, filter))
+                    path_accept_match = True
                     break
-            if filter_exception_match:
+            if path_accept_match:
                 continue
             try:
                 if os.stat(filename).st_size > 100 * 1024:
                     if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "cpp",
                                                                   "hpp", "hh", "f", "F"):
                         logger.info("Source file {0} is too large, but importing anyway".format(filename))
-                    elif name in ("ChangeLog"):
-                        logger.info("Repo file {0} is too large, but importing anyway".format(filename))
                     else:
                         logger.warning("File {0} is too large - not importing".format(filename))
                         os.remove(filename)
@@ -180,10 +198,32 @@ def svn_cleanup(svn_path, svn_co_root="", filter_exceptions=[], filter_reject=[]
                     os.remove(filename)
 
                 # Rejection always overrides the above
-                for filter in filter_reject:
+                for filter in svn_path_reject:
                     if fnmatch.fnmatch(svn_filename, filter):
                         logger.info("{0} not imported due to {1} filter".format(svn_filename, filter))
                         os.remove(filename)
 
             except OSError, e:
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
+
+
+def load_svn_path_exceptions(filename):
+    # # @brief Parse and return SVN import exceptions file
+    #  @param filename File containing exceptions
+    #  @return Tuple of path globs to always accept and globs to always reject
+    svn_path_accept = []
+    svn_path_reject = []
+    if filename != "NONE":
+        with open(filename) as svnfilt:
+            logger.info("Loaded import exceptions from {0}".format(filename))
+            for line in svnfilt:
+                line = line.strip()
+                if line.startswith("#") or line == "":
+                    continue
+                if line.startswith("-"):
+                    svn_path_reject.append(line.lstrip("- "))
+                else:
+                    svn_path_accept.append(line.lstrip("+ "))
+    logger.debug("Glob accept: {0}".format(svn_path_accept))
+    logger.debug("Glob reject: {0}".format(svn_path_reject))
+    return svn_path_accept, svn_path_reject
