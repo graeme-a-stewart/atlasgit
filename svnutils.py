@@ -18,15 +18,36 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import fnmatch
+import logging
 import os
 import os.path
 import re
 import shutil
 import sys
 import tempfile
+import xml.etree.ElementTree as eltree
 
 from glogger import logger
-from atutils import check_output_with_retry
+from atutils import check_output_with_retry, changelog_diff, author_string, get_flattened_git_tag
+
+
+def author_info_lookup(author_name):
+    try:
+        cmd = ["phonebook", "--login", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
+        author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
+        return {"name": " ".join(author_info[:2]), "email": author_info[2]}
+    except IndexError:
+        raise RuntimeError("Had a problem decoding phonebook info for '{0}'".format(author_name))
+
+
+def svn_tag_cmp(tag_x, tag_y):
+    # # @brief Special sort for svn paths, which always places trunk after any tags
+    if tag_x == "trunk":
+         return 1
+    elif tag_y == "trunk":
+        return -1
+    return cmp(tag_x, tag_y)
+
 
 def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, all_package_tags=False):
     # # @brief Get SVN metadata for each of the package tags we're interested in
@@ -49,7 +70,7 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, au
                 sys.exit(1)
         # We need to now sort the package tags and remove any duplicates
         ordered_tags = list(set(package_tags))
-        ordered_tags.sort(cmp=tag_cmp)
+        ordered_tags.sort(cmp=svn_tag_cmp)
         svn_packages[package] = ordered_tags
 
     # Now iterate over the required tags and ensure we have the necessary metadata

@@ -58,41 +58,16 @@
 # }
 
 import argparse
-import fnmatch
 import json
 import logging
-import os
 import os.path
-import re
-import shutil
-import sys
-import tempfile
 import time
-import xml.etree.ElementTree as eltree
 
 from glogger import logger
-from atutils import check_output_with_retry, get_current_git_tags, author_string, switch_to_branch
-from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata, changelog_diff
+from atutils import check_output_with_retry, get_current_git_tags, switch_to_branch
+from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata
 from svnutils import scan_svn_tags_and_get_metadata, svn_get_path_metadata, svn_co_tag_and_commit
 from svnutils import svn_cleanup, load_svn_path_exceptions
-
-
-def tag_cmp(tag_x, tag_y):
-    ## @brief Special sort for svn paths, which always places trunk after any tags 
-    if tag_x=="trunk":
-         return 1
-    elif tag_y=="trunk":
-        return -1
-    return cmp(tag_x, tag_y)
-
-
-def author_info_lookup(author_name):
-    try:
-        cmd = ["phonebook", "--login", author_name, "--terse", "firstname", "--terse", "surname", "--terse", "email"]
-        author_info = check_output_with_retry(cmd, retries=1).strip().split(";")
-        return {"name": " ".join(author_info[:2]), "email": author_info[2]}
-    except IndexError:
-        raise RuntimeError("Had a problem decoding phonebook info for '{0}'".format(author_name))
 
 
 def svn_cache_revision_dict_init(svn_metadata_cache):
