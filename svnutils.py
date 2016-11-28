@@ -130,7 +130,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param branch Git branch to switch to before import
     #  @param svn_path_accept Paths to force import to git
     #  @param svn_path_reject Paths to force reject from the import
-    msg = "Processing {0} tag {1}".format(package, tag)
+    msg = "Importing SVN path {0}/{1} to {0}".format(package, tag)
     if svn_metadata and tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])
     logger.info(msg)
@@ -145,7 +145,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     if svn_metadata:
         cmd.extend(["-r", svn_metadata["revision"]])
     cmd.extend([os.path.join(svnroot, package, tag), os.path.join(tempdir, package)])
-    check_output_with_retry(cmd)
+    check_output_with_retry(cmd, retries=1, wait=3)
 
     # Clean out directory of things we don't want to import
     svn_cleanup(full_svn_path, svn_co_root=tempdir,
@@ -210,7 +210,7 @@ def svn_cleanup(svn_path, svn_co_root="", svn_path_accept=[], svn_path_reject=[]
                 if os.stat(filename).st_size > 100 * 1024:
                     if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "cpp",
                                                                   "hpp", "hh", "f", "F"):
-                        logger.info("Source file {0} is too large, but importing anyway".format(filename))
+                        logger.info("Source file {0} is too large, but importing anyway (source files always imported)".format(filename))
                     else:
                         logger.warning("File {0} is too large - not importing".format(filename))
                         os.remove(filename)
