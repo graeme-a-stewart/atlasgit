@@ -221,23 +221,23 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
                        "git tagging and skipping commit".format(pkg_import["package"], release_name))
         check_output_with_retry(("git", "tag", pkg_import["branch_import_tag"]), retries=1, dryrun=dryrun)
         return
-    msg = "{0} imported onto {1}".format(pkg_import["package"], branch)
+
+    rev_meta = svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]
+    msg = rev_meta["msg"]
     if pkg_import["svn_tag"] == "trunk":
-        msg += " (trunk r{0})".format(revision)
+        msg += " (trunk r{0})".format(rev_meta["revision"])
     else:
         msg += " ({0})".format(pkg_import["svn_tag"])
     cl_diff = changelog_diff(pkg_import["package"], staged=True)
     if cl_diff:
         msg += "\n\n" + "\n".join(cl_diff)
     cmd = ["git", "commit", "-m", msg]
-    author = author_string(svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]["author"],
-                           author_metadata_cache)
-    date = svn_metadata_cache[pkg_import["package_name"]]["svn"][pkg_import["svn_meta_tag_key"]][pkg_import["svn_revision"]]["date"]
+    author = author_string(rev_meta["author"], author_metadata_cache)
     cmd.append("--author='{0}'".format(author))
-    cmd.append("--date={0}".format(date))
+    cmd.append("--date={0}".format(rev_meta["date"]))
     
     if commit_date == "author":
-        os.environ["GIT_COMMITTER_DATE"] = date
+        os.environ["GIT_COMMITTER_DATE"] = rev_meta["date"]
     check_output_with_retry(cmd, retries=1, dryrun=dryrun)
     if commit_date == "author":
         del os.environ["GIT_COMMITTER_DATE"]

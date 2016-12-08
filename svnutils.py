@@ -112,11 +112,16 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     cmd = ["svn", "info", os.path.join(svnroot, package, package_path), "--xml"]
     svn_info = check_output_with_retry(cmd)
     tree = eltree.fromstring(svn_info)
-    return {
-            "date": tree.find(".//date").text.rsplit(".", 1)[0],  # Strip off sub-second part
+    info = {"date": tree.find(".//date").text.rsplit(".",1)[0], # Strip off sub-second part
             "author": tree.find(".//author").text,
-            "revision": tree.find(".//commit").attrib['revision'],
-            }
+            "revision": tree.find(".//commit").attrib['revision']}
+
+    cmd = ["svn", "log", os.path.join(svnroot, package, package_path), "-r", info["revision"], "--xml"]
+    svn_log = check_output_with_retry(cmd)
+    tree = eltree.fromstring(svn_log)
+    info["msg"] = tree.find(".//msg").text.strip()
+    return info
+
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
                           svn_path_accept=[], svn_path_reject=[], commit=True):
@@ -170,7 +175,10 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
         check_output_with_retry(("git", "add", "-A", package))
         if logger.level <= logging.DEBUG:
             logger.debug(check_output_with_retry(("git", "status")))
-        cmd = ["git", "commit", "--allow-empty", "-m", "{0} - r{1}".format(os.path.join(package, tag), svn_metadata['revision'])]
+
+
+        cmd = ["git", "commit", "--allow-empty", "-m", "{0} ({1} - r{2})".
+               format(svn_metadata['msg'], tag.replace('tags/','',1), svn_metadata['revision'])]
         if svn_metadata:
             cmd.extend(("--author='{0}'".format(author_string(svn_metadata["author"], author_metadata_cache)),
                         "--date={0}".format(svn_metadata["date"])))
