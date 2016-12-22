@@ -34,6 +34,7 @@
 #       "tags/PyJobTransformsCore-00-09-43": {
 #         "735942": {
 #           "date": "2016-04-08T16:35:02",
+#           "msg" : "'CMakeLists.txt'",
 #           "revision": 735942,
 #           "author": "alibrari"
 #         }
@@ -41,6 +42,7 @@
 #       "trunk": {
 #         "735943": {
 #           "date": "2016-04-08T16:35:05",
+#           "msg" : "'CMakeLists.txt'",
 #           "revision": 735943,
 #           "author": "alibrari"
 #         }
@@ -66,8 +68,8 @@ import time
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, switch_to_branch
 from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata
-from svnutils import scan_svn_tags_and_get_metadata, svn_get_path_metadata, svn_co_tag_and_commit
-from svnutils import svn_cleanup, load_svn_path_exceptions
+from svnutils import scan_svn_tags_and_get_metadata, svn_co_tag_and_commit
+from svnutils import load_svn_path_exceptions
 
 
 def svn_cache_revision_dict_init(svn_metadata_cache):
