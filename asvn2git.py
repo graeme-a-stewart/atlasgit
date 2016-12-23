@@ -165,6 +165,10 @@ def main():
                         help="File listing path globs to exempt from SVN import filter (lines with '+PATH') or "
                         "to always reject (lines with '-PATH'); default %(default)s. Use NONE to have no exceptions.",
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlasoffline-exceptions.txt"))
+    parser.add_argument('--licensefile', metavar="FILE", help="License file to add to source code files (default "
+                        "is not to add a license file)")
+    parser.add_argument('--licenseexceptions', metavar="FILE", help="List of glob matches which will exclude files "
+                        "from having the license file attached")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
 
@@ -190,6 +194,13 @@ def main():
     
     # Load exception globs
     svn_path_accept, svn_path_reject = load_svn_path_exceptions(args.svnfilterexceptions)
+
+    # License file loading
+    if args.licensefile:
+        with open(args.licensefile) as lfh:
+            license_text = [ line.rstrip() for line in lfh.readlines() ]
+    else:
+        license_text = None
 
     ### Main actions start here
     # Setup the git repository
@@ -249,7 +260,8 @@ def main():
                                   svn_metadata_cache[os.path.basename(pkg_tag["package"])]["svn"][pkg_tag["tag"]][rev],
                                   author_metadata_cache,
                                   svn_path_accept=svn_path_accept,
-                                  svn_path_reject=svn_path_reject)
+                                  svn_path_reject=svn_path_reject,
+                                  license_text=license_text)
             processed_tags += 1
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))
