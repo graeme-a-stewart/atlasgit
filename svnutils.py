@@ -125,7 +125,8 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
                           svn_path_accept=[], svn_path_reject=[], commit=True,
-                          license_text=None, license_path_accept=[], license_path_reject=[]):
+                          license_text=None, license_path_accept=[], license_path_reject=[],
+                          uncrustify_config=None):
     # # @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     #  @param svnroot Base path to SVN repository
     #  @param gitrepo Path to git repository to import to
@@ -141,6 +142,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  license file is added)
     #  @param license_path_accept Paths to force include in license file addition
     #  @param license_path_reject Paths to exclude from license file addition
+    #  @param uncrustify_config Uncrustify configuration file
     msg = "Importing SVN path {0}/{1} to {0}".format(package, tag)
     if svn_metadata and tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])
@@ -166,6 +168,10 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     if license_text:
         svn_license_injector(full_svn_path, svn_co_root=tempdir, license_text=license_text,
                              license_path_accept=license_path_accept, license_path_reject=license_path_reject)
+
+    # Pass C++ sources through uncrustify
+    if uncrustify_config:
+        uncrustify_sources(full_svn_path, uncrustify_config)
 
     # Copy to git
     full_git_path = os.path.join(gitrepo, package)
@@ -313,6 +319,17 @@ def inject_py_license(filename, license_text):
         for line in ifh:
             ofh.write(line)
     os.rename(target_filename, filename)
+
+
+def uncrustify_sources(svn_path, uncrustify_config):
+    for root, dirs, files in os.walk(svn_path):
+        for name in files:
+            filename = os.path.join(root, name)
+            extension = filename.rsplit(".", 1)[1] if "." in filename else ""
+            if extension in ("cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh"):
+                logger.debug("Uncrustifying {0}".format(filename))
+                cmd = ("/afs/cern.ch/atlas/offline/external/uncrustify/bin/uncrustify", "-c", uncrustify_config, "--no-backup", filename)
+                check_output_with_retry(cmd, retries=0)
 
 
 def load_exceptions_file(filename):
