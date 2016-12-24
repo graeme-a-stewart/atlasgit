@@ -24,6 +24,10 @@ special import branch(es)
 `branchbuilder.py` - Reconstruct from release tag content files the state 
 of an offline release on a git branch
 
+`svnpull.py` - Script to pull arbitrary SVN package versions and import them
+into an already checked out git repository (use `svnpull.py --help` for more
+details)
+
 ---
 
 Auxiliary files:
@@ -38,14 +42,23 @@ archival interest)
 
 `releasedate.py` - plots release dates using matplotlib
 
-`glogger.py`, `atutils.py` - module files for shared functions
+`glogger.py`, `atutils.py`, `svnutils.py`- module files for shared functions
+
+`aogt.author.metadata` - JSON file with all ATLAS SVN authors identified 
+(particularly including those who have left ATLAS and are no longer in
+CERN's phonebook)
+
+`apache2.txt` - Apache 2 license file with copyright attribution to CERN
+
+`uncrustify-import.cfg` - Uncrustify configuration file used to reformat
+C++ sources in a standard way on import from SVN
 
 
 HOWTO
 -----
 
 If you want to convert from the ATLAS Offline SVN repository into a git repo, then
-here's roughly the proceedure to follow. Note that the entire strategy here is based 
+here's roughly the procedure to follow. Note that the entire strategy here is based 
 on the idea of importing packages _at their package tag_ history points in SVN. If
 you want to do a more conventional import of a single SVN package, with each SVN
 commit reproduced as a git commit, then the built-in `git svn` module should do this
@@ -94,7 +107,7 @@ files (as generated above).
 
 The default import is performed using a separate branch for each package. This is a clean import
 strategy, however it creates many branches, which gitlab does not like, so do not push these
-many import branches and tags to gitlab! It is possible to use a single branch for all imported 
+temporary import branches and tags to gitlab! It is possible to use a single branch for all imported 
 tags using the `--targetbranch` option, but this is no longer well tested ;-)
 
 Tests of the import procedure can be made using the option `--svnpath PATH` that
@@ -119,6 +132,16 @@ git tags will ensure that no duplicate imports are made. If `asvn2git.py` is
 re-run on the same set of tag content files it will
 _update_ the trunks of each imported package to the latest revision if the `--processtrunk` option
 is given (by default it is not - only tagged packages are imported).
+
+#### Optional source file manipulations
+
+`--licensefile` - License file that will be added to C++ and python code on import
+(use the `--licenseexceptions` file to exclude source files from having a license added -
+see the default `atlaslicense-exceptions.txt` for some examples of what and why).
+
+`--uncrustify` - An [uncrustify](http://uncrustify.sourceforge.net/) configuration file
+that will be used to reformat C++ sources before import. It is recommended to use the
+default `uncrustify-import.txt` for consistency in the offline code base. 
 
 ### Construct a master branch
 
@@ -164,11 +187,11 @@ are processed.) As each of the base releases is processed a release tag is made,
 
 #### Construct patch release branches
 
-If it's desired to recreate a series of patch releases use, e.g., this command
+If it is desired to recreate a series of patch releases use, e.g., this command
 
 `branchbuilder.py aogt 20.11.0 $(ls -v tagdir/20.11.0.*) --parentbranch 20.11:release/20.11.0`
 
-Note that this time we branch from an exisiting release tag, not from a release timestamp.
+Note that this time we branch from an existing release tag, not from a release timestamp.
 
 ### Updating and nighty builds
 
