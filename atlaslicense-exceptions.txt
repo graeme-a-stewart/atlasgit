@@ -1,0 +1,66 @@
+# Exceptions for license file addition
+# + file   : always add license
+# - file   : never add license
+# N.B. Match to accept will win over a match to reject
+
+# Not our code:
+- External/*
+- graphics/Qat/*
+
+# Misc GPL
+- Tools/PyUtils/python/smem.py
+
+# GCC GPL, backported into our packages
+- Control/CxxUtils/CxxUtils/urldecode.h
+- Control/CxxUtils/CxxUtils/unordered_set.h
+- Control/CxxUtils/CxxUtils/unordered_map.h
+- Control/CxxUtils/CxxUtils/hashtable.h
+- Control/CxxUtils/test/hashtable_test.cxx
+
+# Other misc GPLed code (Bit Powder libraries)
+- Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/extension.h
+- Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/iterators.h
+- Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/stack.h
+- Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/type_hash.h
+
+# Code put under GPL by ATLAS authors
+- Trigger/TrigT1/TrigT1CaloCalibToolInterfaces/TrigT1CaloCalibToolInterfaces/*.h
+- Trigger/TrigT1/TrigT1CaloCalibTools/TrigT1CaloCalibTools/L1CaloFcal23Cells2RxMappingTool.h
+- Trigger/TrigT1/TrigT1CaloCalibTools/TrigT1CaloCalibTools/L1CaloOfflineTriggerTowerTools.h
+- Trigger/TrigT1/TrigT1CaloCalibTools/TrigT1CaloCalibTools/L1CaloxAODOfflineTriggerTowerTools.h
+- Trigger/TrigT1/TrigT1CaloCalibTools/TrigT1CaloCalibTools/TriggerTowerThinningAlg.h
+- Trigger/TrigT1/TrigT1CaloCalibTools/src/L1CaloFcal23Cells2RxMappingTool.cxx
+- Trigger/TrigT1/TrigT1CaloCalibTools/src/L1CaloOfflineTriggerTowerTools.cxx
+- Trigger/TrigT1/TrigT1CaloCalibTools/src/L1CaloxAODOfflineTriggerTowerTools.cxx
+- Trigger/TrigT1/TrigT1CaloCalibTools/src/TriggerTowerThinningAlg.cxx
+- Trigger/TrigT1/TrigT1CaloEvent/TrigT1CaloEvent/*.h
+- Trigger/TrigT1/TrigT1CaloEvent/src/*.cxx
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/CPCMX.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/CPMSim.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/JEMJetSim.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/JetCMX.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/ReprocessTriggerTowers.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/RoIROD.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/Tester.h
+- Trigger/TrigT1/TrigT1CaloSim/src/EnergyCMX.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/Tester.cxx
+- Trigger/TrigT1/TrigT1CaloToolInterfaces/TrigT1CaloToolInterfaces/IL1CPMTools.h
+- Trigger/TrigT1/TrigT1CaloToolInterfaces/TrigT1CaloToolInterfaces/IL1DynamicPedestalProvider.h
+- Trigger/TrigT1/TrigT1CaloToolInterfaces/TrigT1CaloToolInterfaces/IL1TriggerTowerTool.h
+- Trigger/TrigT1/TrigT1CaloTools/TrigT1CaloTools/*.h
+- Trigger/TrigT1/TrigT1CaloUtils/TrigT1CaloUtils/*.h
+- Trigger/TrigT1/TrigT1CaloUtils/src/*.cxx
+- Trigger/TrigT1/TrigT1EventTPCnv/TrigT1EventTPCnv/*.h
+- Trigger/TrigT1/TrigT1Interfaces/src/*.cxx
+
+# Copied code with an MIT license
+- DataQuality/DQUtils/python/ext/table_printer.py
+- Tools/PyUtils/python/reimport.py
+
+# Copied code with a BSD license
+- Control/AthenaMP/src/memory-monitor/rapidjson/*
+- Tools/RunTimeTester/testsuite/run/coverage.py
+- Trigger/TrigValidation/TrigEgammaValidation/share/prettytable.py
+
+# Code that was Apache licensed by ATLAS authors
+- Simulation/G4Sim/FADS/FadsXMLParser/FadsXMLParser/DOMTreeErrorReporter.h

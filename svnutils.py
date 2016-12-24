@@ -125,7 +125,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
                           svn_path_accept=[], svn_path_reject=[], commit=True,
-                          license_text=None, license_exclude=[]):
+                          license_text=None, license_path_accept=[], license_path_reject=[]):
     # # @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     #  @param svnroot Base path to SVN repository
     #  @param gitrepo Path to git repository to import to
@@ -139,7 +139,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param commit Boolean flag to manage commit (can be set to @c False to only checkout and process)
     #  @param license_text List of strings containing the license text to add (if @c False, then no
     #  license file is added)
-    #  @param license_exclude Paths to exclude from license file addition
+    #  @param license_path_accept Paths to force include in license file addition
+    #  @param license_path_reject Paths to exclude from license file addition
     msg = "Importing SVN path {0}/{1} to {0}".format(package, tag)
     if svn_metadata and tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])
@@ -163,7 +164,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     
     # If desired, inject a licence into the source code
     if license_text:
-        svn_license_injector(full_svn_path, svn_co_root=tempdir, license_text=license_text, license_exclude=[])
+        svn_license_injector(full_svn_path, svn_co_root=tempdir, license_text=license_text,
+                             license_path_accept=license_path_accept, license_path_reject=license_path_reject)
 
     # Copy to git
     full_git_path = os.path.join(gitrepo, package)
@@ -245,29 +247,35 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
 
 
-def svn_license_injector(svn_path, svn_co_root, license_text, license_exclude=[]):
+def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accept=[], license_path_reject=[]):
     ## @brief Add license statements to code before import
     #  @param svn_path Filesystem path to cleaned up SVN checkout
     #  @param svn_co_root Base directory of SVN checkout
     #  @param license_text List of strings that comprise the license to apply
-    #  @param license_exclude List of glob path matches to exclude from
+    #  @param license_path_accept Paths to force include in license file addition (NOT IMPLEMENTED YET)
+    #  @param license_path_reject Paths to exclude from license file addition
     #   license file addition
     for root, dirs, files in os.walk(svn_path):
         for name in files:
             filename = os.path.join(root, name)
             svn_filename = filename[len(svn_co_root) + 1:]
             path_veto = False
-            for filter in license_exclude:
+            for filter in license_path_reject:
                 if fnmatch.fnmatch(svn_filename, filter):
                     logger.info("File {0} will not have a license file applied".format(svn_filename, filter))
                     path_veto = True
                     break
+            for filter in license_path_accept:
+                if fnmatch.fnmatch(svn_filename, filter):
+                    logger.info("File {0} will have a license file applied".format(svn_filename, filter))
+                    path_veto = False
+                    break
             if path_veto:
-                contune
+                continue
             extension = svn_filename.rsplit(".", 1)[1] if "." in svn_filename else ""
             if extension in ("cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh"):
                 inject_c_license(filename, license_text)
-            elif extension == "py":
+            elif extension in ("py", "cmake"):
                 inject_py_license(filename, license_text)
                 
 
@@ -307,23 +315,23 @@ def inject_py_license(filename, license_text):
     os.rename(target_filename, filename)
 
 
-def load_svn_path_exceptions(filename):
-    ## @brief Parse and return SVN import exceptions file
+def load_exceptions_file(filename):
+    ## @brief Parse and return path globbing exceptions file
     #  @param filename File containing exceptions
-    #  @return Tuple of path globs to always accept and globs to always reject
-    svn_path_accept = []
-    svn_path_reject = []
+    #  @return Tuple of path globs to accept and globs to reject
+    path_accept = []
+    path_reject = []
     if filename != "NONE":
-        with open(filename) as svnfilt:
+        with open(filename) as filter_file:
             logger.info("Loaded import exceptions from {0}".format(filename))
-            for line in svnfilt:
+            for line in filter_file:
                 line = line.strip()
                 if line.startswith("#") or line == "":
                     continue
                 if line.startswith("-"):
-                    svn_path_reject.append(line.lstrip("- "))
+                    path_reject.append(line.lstrip("- "))
                 else:
-                    svn_path_accept.append(line.lstrip("+ "))
-    logger.debug("Glob accept: {0}".format(svn_path_accept))
-    logger.debug("Glob reject: {0}".format(svn_path_reject))
-    return svn_path_accept, svn_path_reject
+                    path_accept.append(line.lstrip("+ "))
+    logger.debug("Glob accept: {0}".format(path_accept))
+    logger.debug("Glob reject: {0}".format(path_reject))
+    return path_accept, path_reject

@@ -69,7 +69,7 @@ from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, switch_to_branch
 from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata
 from svnutils import scan_svn_tags_and_get_metadata, svn_co_tag_and_commit
-from svnutils import load_svn_path_exceptions
+from svnutils import load_exceptions_file
 
 
 def svn_cache_revision_dict_init(svn_metadata_cache):
@@ -167,8 +167,9 @@ def main():
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlasoffline-exceptions.txt"))
     parser.add_argument('--licensefile', metavar="FILE", help="License file to add to source code files (default "
                         "is not to add a license file)")
-    parser.add_argument('--licenseexceptions', metavar="FILE", help="List of glob matches which will exclude files "
-                        "from having the license file attached")
+    parser.add_argument('--licenseexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
+                        "always apply license file to (same format as --svnfilterexceptions)",
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaslicense-exceptions.txt"))
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
 
@@ -193,7 +194,7 @@ def main():
     logger.debug("Set SVN root to {0} and git repo to {1}".format(svnroot, gitrepo))
     
     # Load exception globs
-    svn_path_accept, svn_path_reject = load_svn_path_exceptions(args.svnfilterexceptions)
+    svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions)
 
     # License file loading
     if args.licensefile:
@@ -201,6 +202,12 @@ def main():
             license_text = [ line.rstrip() for line in lfh.readlines() ]
     else:
         license_text = None
+    if args.licenseexceptions:
+        license_path_accept, license_path_reject = load_exceptions_file(args.licenseexceptions)
+    else:
+        license_path_accept = license_path_reject = []
+    print license_path_accept, license_path_reject
+
 
     ### Main actions start here
     # Setup the git repository
@@ -261,7 +268,9 @@ def main():
                                   author_metadata_cache,
                                   svn_path_accept=svn_path_accept,
                                   svn_path_reject=svn_path_reject,
-                                  license_text=license_text)
+                                  license_text=license_text,
+                                  license_path_accept=license_path_accept,
+                                  license_path_reject=license_path_reject)
             processed_tags += 1
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))
