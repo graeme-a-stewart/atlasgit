@@ -119,7 +119,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     cmd = ["svn", "log", os.path.join(svnroot, package, package_path), "-r", info["revision"], "--xml"]
     svn_log = check_output_with_retry(cmd)
     tree = eltree.fromstring(svn_log)
-    info["msg"] = tree.find(".//msg").text.strip()
+    info["msg"] = tree.find(".//msg").text.strip().encode('ascii', 'ignore')
     return info
 
 
@@ -324,12 +324,23 @@ def inject_py_license(filename, license_text):
 def uncrustify_sources(svn_path, uncrustify_config):
     for root, dirs, files in os.walk(svn_path):
         for name in files:
+            # mainpage.h are doxygen top level package docs
+            if name == "mainpage.h":
+                continue
+            # But also force exempt the doc directory
+            if root.endswith("/doc"):
+                continue
             filename = os.path.join(root, name)
             extension = filename.rsplit(".", 1)[1] if "." in filename else ""
             if extension in ("cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh"):
                 logger.debug("Uncrustifying {0}".format(filename))
                 cmd = ("/afs/cern.ch/atlas/offline/external/uncrustify/bin/uncrustify", "-c", uncrustify_config, "--no-backup", filename)
-                check_output_with_retry(cmd, retries=0)
+                # We do not consider uncrustify errors as fatal for the import... usually this is actually
+                # a problem in the source file
+                try:
+                    check_output_with_retry(cmd, retries=0)
+                except RuntimeError:
+                    logger.warning("Uncrustify failed on {0}".format(filename))
 
 
 def load_exceptions_file(filename):
