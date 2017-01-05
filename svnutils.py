@@ -232,7 +232,7 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
             if path_accept_match:
                 continue
             try:
-                if os.stat(filename).st_size > 100 * 1024:
+                if os.lstat(filename).st_size > 100 * 1024:
                     if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "cpp",
                                                                   "hpp", "hh", "f", "F"):
                         logger.info("Source file {0} is too large, but importing anyway (source files always imported)".format(filename))
