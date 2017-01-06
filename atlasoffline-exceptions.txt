@@ -4,6 +4,7 @@
 
 # hwaf files
 - */hscript.yml
+- */wscript
 
 # VP1 graphics
 + graphics/VP1/VP1Gui/src/images/*.png
