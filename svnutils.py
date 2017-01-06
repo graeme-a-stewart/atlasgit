@@ -119,7 +119,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
     cmd = ["svn", "log", os.path.join(svnroot, package, package_path), "-r", info["revision"], "--xml"]
     svn_log = check_output_with_retry(cmd)
     tree = eltree.fromstring(svn_log)
-    info["msg"] = tree.find(".//msg").text.strip().encode('ascii', 'ignore')
+    info["msg"] = tree.find(".//msg").text.strip().decode('ascii', 'ignore')
     return info
 
 

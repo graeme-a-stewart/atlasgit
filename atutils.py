@@ -117,7 +117,7 @@ def changelog_diff(package, staged=False):
                 cmd.append("--staged")
             cmd.append(cl_file)
             o_lines = check_output_with_retry(cmd, retries=1).split("\n")
-            o_lines = [ line.lstrip("+") for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
+            o_lines = [ line.lstrip("+").decode('ascii', 'ignore') for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
             if len(o_lines) > truncate_lines:
                 o_lines = o_lines[:truncate_lines]
                 o_lines.append("...")
