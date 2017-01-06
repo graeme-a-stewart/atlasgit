@@ -101,32 +101,34 @@ def get_flattened_git_tag(package, svntag, revision, branch=None):
     return git_tag
 
 
-def changelog_diff(package, staged=False):
-    ## @brief Return a cleaned up ChangeLog diff - this is only as useful as what the developer wrote!
+def changelog_diff(package, from_tag=None, to_tag=None):
+    ## @brief Return a cleaned up ChangeLog diff - this is only as useful as what the developer wrote.
+    #  If @c from_tag and @c to_tag are given then the diff is done with these references, otherwise
+    #  a diff in place is done
     #  @param package Path to package
-    #  @param staged Diff for staged files, instead of unstaged changes
+    #  @param from_tag Import tag to use as the original ChangeLog version
+    #  @param to_tag Import tag to use as the updated ChangeLog version
     #  @return ChangeLog diff (truncated if needed) 
     truncate_lines = 20
     o_lines = []
+    logger.debug("Finding ChangeLog diff for {0} (from {1} to {2})".format(package, from_tag, to_tag))
     cl_file = os.path.join(package, 'ChangeLog')
-    if os.path.isfile(cl_file):
-        exists = check_output_with_retry(("git", "ls-tree", "HEAD", cl_file), ignore_fail=True, retries=0)
-        if exists:
-            cmd = ["git", "diff", "-U0"]
-            if staged:
-                cmd.append("--staged")
-            cmd.append(cl_file)
-            o_lines = check_output_with_retry(cmd, retries=1).split("\n")
-            o_lines = [ line.lstrip("+").decode('ascii', 'ignore') for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
-            if len(o_lines) > truncate_lines:
-                o_lines = o_lines[:truncate_lines]
-                o_lines.append("...")
-                o_lines.append("(Long ChangeLog diff - truncated)")
-            logger.debug("Found {0} line ChangeLog diff".format(len(o_lines)))
-        else:
-            logger.debug("First package commit - not diffing ChangeLog")
-    else:
-        logger.debug("ChangeLog file {0} not found".format(cl_file))
+    cmd = ["git", "diff", "-U0"]
+    if from_tag and to_tag:
+        cmd.extend((from_tag + ".." + to_tag,))
+    elif to_tag:
+        cmd.extend((to_tag,))
+    cmd.extend(("--", cl_file))
+    try:
+        o_lines = check_output_with_retry(cmd, retries=1).split("\n")
+        o_lines = [ line.lstrip("+").decode('ascii', 'ignore') for line in o_lines[6:] if line.startswith("+") and not re.search(r"(\s[MADR]\s+[\w\/\.]+)|(@@)", line) ]
+        if len(o_lines) > truncate_lines:
+            o_lines = o_lines[:truncate_lines]
+            o_lines.append("...")
+            o_lines.append("(Long ChangeLog diff - truncated)")
+    except RuntimeError:
+        o_lines = ["No ChangeLog diff available"]
+    logger.debug("Found {0} line ChangeLog diff".format(len(o_lines)))
     return o_lines
 
 

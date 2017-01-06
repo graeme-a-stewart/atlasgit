@@ -208,6 +208,11 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
     if not dryrun:
         recursive_delete(pkg_import["package"])
     check_output_with_retry(("git", "checkout", pkg_import["git_import_tag"], pkg_import["package"]), dryrun=dryrun)
+    # Splat Changelog file - we do not want these on the production branches
+    try:
+        os.remove(os.path.join(pkg_import["package"], "ChangeLog"))
+    except OSError:
+        pass
     # Done - now commit and tag
     if logger.level <= logging.DEBUG:
         cmd = ["git", "status"]
@@ -228,7 +233,9 @@ def do_package_import(pkg_import, svn_metadata_cache, author_metadata_cache, rel
         msg += " (trunk r{0})".format(rev_meta["revision"])
     else:
         msg += " ({0})".format(pkg_import["svn_tag"])
-    cl_diff = changelog_diff(pkg_import["package"], staged=True)
+    cl_diff = changelog_diff(pkg_import["package"],
+                             from_tag="/".join(pkg_import["current_branch_import_tag"].split("/")[1:]) if pkg_import["current_branch_import_tag"] else None,
+                             to_tag=pkg_import["git_import_tag"])
     if cl_diff:
         msg += "\n\n" + "\n".join(cl_diff)
     cmd = ["git", "commit", "-m", msg]
