@@ -42,6 +42,9 @@
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
 
+# Pixel Bischel model files (maybe should go to group data: ATLASSIM-3202)
++ InnerDetector/InDetDigitization/PixelDigitization/share/*
+
 # Detector descriptions
 + Calorimeter/CaloIdentifier/share/*.txt
 + MuonSpectrometer/MuonCablings/MuonTGC_Cabling/share/*.db
