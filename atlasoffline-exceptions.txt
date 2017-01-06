@@ -39,8 +39,9 @@
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
 
-# Calo detector description
+# Detector descriptions
 + Calorimeter/CaloIdentifier/share/*.txt
++ MuonSpectrometer/MuonCablings/MuonTGC_Cabling/share/*.db
 
 # Unit test reference files (text and pool.root.ref)
 + */share/*.ref
