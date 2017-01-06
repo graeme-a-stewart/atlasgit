@@ -334,9 +334,10 @@ def uncrustify_sources(svn_path, uncrustify_config):
             extension = filename.rsplit(".", 1)[1] if "." in filename else ""
             if extension in ("cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh"):
                 logger.debug("Uncrustifying {0}".format(filename))
-                cmd = ("/afs/cern.ch/atlas/offline/external/uncrustify/bin/uncrustify", "-c", uncrustify_config, "--no-backup", filename)
-                # We do not consider uncrustify errors as fatal for the import... usually this is actually
-                # a problem in the source file
+                cmd = ("/afs/cern.ch/atlas/offline/external/uncrustify/bin/uncrustify", "-c", uncrustify_config,
+                       "--no-backup", "-l", "CPP", filename)
+                # We do not consider uncrustify errors as fatal for the import... this can
+                # happen because of a source file issue or picking the wrong language
                 try:
                     check_output_with_retry(cmd, retries=0)
                 except RuntimeError:
