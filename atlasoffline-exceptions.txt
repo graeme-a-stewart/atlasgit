@@ -31,10 +31,11 @@
 # TriggerPanel jar file
 + HLT/Trigger/TrigConfiguration/TriggerPanel/external/l1ct-06-01-01/L1CTISData.jar
 
-# Obsolete/moved trigger packages (ATR-13307, ATR-15431)
+# Obsolete/moved trigger packages (ATR-13307, ATR-15431, ATR-15556)
 - Trigger/TrigConfiguration/TriggerMenuCompiler/*
 - Trigger/TrigAnalysis/TriggerMenuAnalysis/*
 - Trigger/TrigAnalysis/TriggerMenuNtuple/*
+- Trigger/TrigValidation/TrigBjetValidation/*
 
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
