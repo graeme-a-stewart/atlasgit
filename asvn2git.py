@@ -208,7 +208,6 @@ def main():
         license_path_accept, license_path_reject = load_exceptions_file(args.licenseexceptions)
     else:
         license_path_accept = license_path_reject = []
-    print license_path_accept, license_path_reject
 
 
     ### Main actions start here
