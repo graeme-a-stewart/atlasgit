@@ -289,10 +289,21 @@ def inject_c_license(filename, license_text):
     ## @brief Add a license file, C style commented
     target_filename = filename + ".license"
     with open(filename) as ifh, open(target_filename, "w") as ofh:
-        print >> ofh, "/*"
-        for line in license_text:
-            print >> ofh, " ", line
-        print >> ofh, "*/\n"
+        first_line = ifh.readline()
+        # If the first line is a -*- C++ -*- then it has to stay the
+        # first line
+        if re.search(r"-\*-\s+[cC]\+\+\s+-\*\-", first_line):
+            ofh.write(first_line)
+            print >> ofh, "\n/*"
+            for line in license_text:
+                print >> ofh, " ", line
+            print >> ofh, "*/\n"
+        else:
+            print >> ofh, "/*"
+            for line in license_text:
+                print >> ofh, " ", line
+            print >> ofh, "*/\n"
+            ofh.write(first_line)
         for line in ifh:
             ofh.write(line)
     os.rename(target_filename, filename)
