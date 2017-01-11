@@ -37,7 +37,8 @@
 - Trigger/TrigConfiguration/TriggerMenuCompiler/*
 - Trigger/TrigAnalysis/TriggerMenuAnalysis/*
 - Trigger/TrigAnalysis/TriggerMenuNtuple/*
-- Trigger/TrigValidation/TrigBjetValidation/*
+- HLT/Testing/TrigConfTesting/*
+- Trigger/TriggerCommon/TrigMenuRulebook/share/Run1/*
 
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
