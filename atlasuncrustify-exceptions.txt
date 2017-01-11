@@ -1,0 +1,13 @@
+# Exceptions for uncrustify parsing
+# + file   : always uncrustify
+# - file   : never uncrustify
+# N.B. Match to accept will win over a match to reject
+
+# Doxygen files
+- */mainpage.h
+
+# Highly nested single line blocks confuses parser
+- Tools/LWHists/src/tests/validation/main_validation.cxx
+
+# Comments get messed up, making them close early and breaking the code
+- Trigger/TrigT1/TrigT1CaloCalibConditions/TrigT1CaloCalibConditions/*.h

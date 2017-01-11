@@ -172,6 +172,9 @@ def main():
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaslicense-exceptions.txt"))
     parser.add_argument('--uncrustify', metavar="FILE", help="Uncrustify configuration file to use to process C++ "
                         "sources through before git import (by default uncrustify will not be used)")
+    parser.add_argument('--uncrustifyexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
+                        "always apply uncrustify to (same format as --svnfilterexceptions)",
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlasuncrustify-exceptions.txt"))
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode")
 
@@ -209,6 +212,11 @@ def main():
     else:
         license_path_accept = license_path_reject = []
 
+    # Uncrustify exceptions file
+    if args.uncrustify:
+        uncrustify_path_accept, uncrustify_path_reject = load_exceptions_file(args.uncrustifyexceptions)
+    else:
+        uncrustify_path_accept = uncrustify_path_reject = []
 
     ### Main actions start here
     # Setup the git repository
@@ -272,7 +280,9 @@ def main():
                                   license_text=license_text,
                                   license_path_accept=license_path_accept,
                                   license_path_reject=license_path_reject,
-                                  uncrustify_config=args.uncrustify)
+                                  uncrustify_config=args.uncrustify,
+                                  uncrustify_path_accept=uncrustify_path_accept,
+                                  uncrustify_path_reject=uncrustify_path_reject)
             processed_tags += 1
         elapsed = time.time()-start
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))

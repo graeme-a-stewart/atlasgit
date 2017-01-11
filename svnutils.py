@@ -126,7 +126,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
                           svn_path_accept=[], svn_path_reject=[], commit=True,
                           license_text=None, license_path_accept=[], license_path_reject=[],
-                          uncrustify_config=None):
+                          uncrustify_config=None, uncrustify_path_accept=[], uncrustify_path_reject=[]):
     # # @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     #  @param svnroot Base path to SVN repository
     #  @param gitrepo Path to git repository to import to
@@ -143,6 +143,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param license_path_accept Paths to force include in license file addition
     #  @param license_path_reject Paths to exclude from license file addition
     #  @param uncrustify_config Uncrustify configuration file
+    #  @param uncrustify_path_accept Paths to force uncrustify to run on
+    #  @param uncrustify_path_reject Paths to exclude from uncrustify
     msg = "Importing SVN path {0}/{1} to {0}".format(package, tag)
     if svn_metadata and tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])
@@ -171,7 +173,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
 
     # Pass C++ sources through uncrustify
     if uncrustify_config:
-        uncrustify_sources(full_svn_path, uncrustify_config)
+        uncrustify_sources(full_svn_path, svn_co_root=tempdir, uncrustify_config=uncrustify_config,
+                           uncrustify_path_accept=uncrustify_path_accept, uncrustify_path_reject=uncrustify_path_reject)
 
     # Copy to git
     full_git_path = os.path.join(gitrepo, package)
@@ -332,21 +335,35 @@ def inject_py_license(filename, license_text):
     os.rename(target_filename, filename)
 
 
-def uncrustify_sources(svn_path, uncrustify_config):
+def uncrustify_sources(svn_path, svn_co_root, uncrustify_config, uncrustify_path_accept, uncrustify_path_reject):
+    ## @brief Uncrustify code before import
+    #  @param svn_path Filesystem path to parsed up SVN checkout
+    #  @param svn_co_root Base directory of SVN checkout
+    #  @param uncrustify_config Config file for uncrustify pass
+    #  @param uncrustify_path_accept Paths to force
+    #  @param uncrustify_path_reject Paths to exclude
+
     for root, dirs, files in os.walk(svn_path):
         for name in files:
-            # mainpage.h are doxygen top level package docs
-            if name == "mainpage.h":
-                continue
-            # But also force exempt the doc directory
-            if root.endswith("/doc"):
-                continue
             filename = os.path.join(root, name)
+            svn_filename = filename[len(svn_co_root) + 1:]
+            path_veto = False
+            for filter in uncrustify_path_reject:
+                if fnmatch.fnmatch(svn_filename, filter):
+                    logger.debug("File {0} will not go through uncrustify".format(svn_filename, filter))
+                    path_veto = True
+                    break
+            for filter in uncrustify_path_accept:
+                if fnmatch.fnmatch(svn_filename, filter):
+                    logger.debug("File {0} will be passed to uncrustify".format(svn_filename, filter))
+                    path_veto = False
+                    break
+            if path_veto:
+                continue
             extension = filename.rsplit(".", 1)[1] if "." in filename else ""
             if extension in ("cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh"):
                 logger.debug("Uncrustifying {0}".format(filename))
-                cmd = ("/afs/cern.ch/atlas/offline/external/uncrustify/bin/uncrustify", "-c", uncrustify_config,
-                       "--no-backup", "-l", "CPP", filename)
+                cmd = ("uncrustify", "-c", uncrustify_config, "--no-backup", "-l", "CPP", filename)
                 # We do not consider uncrustify errors as fatal for the import... this can
                 # happen because of a source file issue or picking the wrong language
                 try:
