@@ -53,8 +53,12 @@
 # Unit test reference files (text and pool.root.ref)
 + */share/*.ref
 
-# Changelogs...
+# Changelogs... Note that these are kept in the import branches, but
+# excluded from production branches 
 + */ChangeLog
+
+# Clean out CMT...
+- */cmt/*
 
 # Broken softlinks - just ignore
 - InnerDetector/InDetExample/InDetAlignExample/ErrorScaling/InDetRec_all.py
