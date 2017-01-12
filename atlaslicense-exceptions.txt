@@ -6,6 +6,7 @@
 # Not our code:
 - External/*
 - graphics/Qat/*
+- Generators/Prophecy4fContol/*
 
 # Misc GPL
 - Tools/PyUtils/python/smem.py
@@ -22,6 +23,14 @@
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/iterators.h
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/stack.h
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/type_hash.h
+
+# KDE code, GPLed
+- graphics/VP1/VP1Base/VP1Base/VP1TabBar.h
+- graphics/VP1/VP1Base/VP1Base/VP1TabWidget.h
+- graphics/VP1/VP1Base/src/VP1TabBar.cxx
+- graphics/VP1/VP1Base/src/VP1TabWidget.cxx
+- graphics/VP1/VP1HEPVis/VP1HEPVis/gl2ps.h
+- graphics/VP1/VP1HEPVis/src/gl2ps.cxx
 
 # Code put under GPL by ATLAS authors
 - Trigger/TrigT1/TrigT1CaloCalibToolInterfaces/TrigT1CaloCalibToolInterfaces/*.h
@@ -52,6 +61,8 @@
 - Trigger/TrigT1/TrigT1CaloUtils/src/*.cxx
 - Trigger/TrigT1/TrigT1EventTPCnv/TrigT1EventTPCnv/*.h
 - Trigger/TrigT1/TrigT1Interfaces/src/*.cxx
+- InnerDetector/InDetRecTools/TRT_TrackHoleSearch/python/print_hole_log.py
+
 
 # Copied code with an MIT license
 - DataQuality/DQUtils/python/ext/table_printer.py
