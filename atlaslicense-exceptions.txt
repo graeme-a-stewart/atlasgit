@@ -9,15 +9,13 @@
 - Generators/Prophecy4fContol/*
 - Build/AtlasCMake/cmt2cmake/pyparsing.py
 
-# Misc GPL
-- Tools/PyUtils/python/smem.py
-
 # GCC GPL, backported into our packages
 - Control/CxxUtils/CxxUtils/urldecode.h
 - Control/CxxUtils/CxxUtils/unordered_set.h
 - Control/CxxUtils/CxxUtils/unordered_map.h
 - Control/CxxUtils/CxxUtils/hashtable.h
 - Control/CxxUtils/test/hashtable_test.cxx
+- Control/Hephaestus/src/GenericBacktrace.c
 
 # Other GPLed code
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/extension.h
@@ -26,6 +24,7 @@
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/type_hash.h
 - Database/AthenaPOOL/AtlasCollectionTools/src/urldecode.h
 - LumiBlock/LumiBlockComps/src/urldecode.h
+- Tools/PyUtils/python/smem.py
 
 # KDE code, GPLed
 - graphics/VP1/VP1Base/VP1Base/VP1TabBar.h
@@ -47,6 +46,7 @@
 - Control/AthenaMP/src/memory-monitor/rapidjson/*
 - Tools/RunTimeTester/testsuite/run/coverage.py
 - Trigger/TrigValidation/TrigEgammaValidation/share/prettytable.py
+- Trigger/TrigAnalysis/TrigBunchCrossingTool/Root/json/*
 
 # Geant4 license
 - DetectorDescription/GeoModel/GeoModelKernel/GeoModelKernel/GeoPolyhedron.h
@@ -71,6 +71,9 @@
 
 # MadGraph5_aMC@NLO license
 - Generators/MadGraphModels/*
+
+# RSA Data Security
+- Control/CxxUtils/CxxUtils/MD5.h
 
 # Very weird anachronistic code from STFC Numerical Algorithms group (c 1980s)
 - Tracking/TrkAlignment/TrkAlgebraUtils/MA27
@@ -109,6 +112,10 @@
 
 # Boost licensed by ATLAS Author
 - PhysicsAnalysis//D3PDTools/RootCoreUtils/*
+- Control/AthToolSupport/AsgExampleTools/*
+- Control/AthToolSupport/AsgTools/*
+- PhysicsAnalysis/AnalysisCommon/PATInterfaces/*
+
 
 # Code that was Apache licensed by ATLAS authors
 - Simulation/G4Sim/FADS/FadsXMLParser/FadsXMLParser/DOMTreeErrorReporter.h
