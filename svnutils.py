@@ -296,11 +296,18 @@ def inject_c_license(filename, license_text):
         # If the first line is a -*- C++ -*- then it has to stay the
         # first line
         if re.search(r"-\*-\s+[cC]\+\+\s+-\*\-", first_line):
+            multi_line_c_comment = False
+            # Beware of breaking a multi-line C style comment
+            if first_line.startswith("/*") and ("*/" not in first_line[2:]):
+                first_line = first_line[:-1] + " */\n"
+                multi_line_c_comment = True
             ofh.write(first_line)
             print >> ofh, "\n/*"
             for line in license_text:
                 print >> ofh, " ", line
             print >> ofh, "*/\n"
+            if multi_line_c_comment:
+                print >> ofh, "/*"
         else:
             print >> ofh, "/*"
             for line in license_text:
