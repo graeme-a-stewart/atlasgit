@@ -9,5 +9,16 @@
 # Highly nested single line blocks confuses parser
 - Tools/LWHists/src/tests/validation/main_validation.cxx
 
-# Comments get messed up, making them close early and breaking the code
+# Comments get messed up, making them close early and breaking the code (can be avoided by unsetting cmt_width)
 - Trigger/TrigT1/TrigT1CaloCalibConditions/TrigT1CaloCalibConditions/*.h
+# Less harmful, but still messed up, comments (ditto)
+- Simulation/G4Atlas/G4AtlasTools/src/DetectorGeometryBase.cxx
+
+# Problem with extra braces appearing
+- Calorimeter/CaloG4Sim/src/SimulationEnergies.cc
+
+# Messes up >> operator (seems fixed in 0.64) 
+- LArCalorimeter/LArCafJobs/LArCafJobs/CellInfo.h
+
+# Messed up braces with #ifdef (might be fixed if one-liners untouched now)
+- LArCalorimeter/LArG4/LArG4ShowerLib/src/FCALDistEtaEnergyShowerLib.cxx
