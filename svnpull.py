@@ -27,7 +27,7 @@ import re
 import textwrap
 
 from glogger import logger
-from svnutils import svn_co_tag_and_commit, load_svn_path_exceptions
+from svnutils import svn_co_tag_and_commit, load_exceptions_file
 
 
 def map_package_names_to_paths():
@@ -119,7 +119,7 @@ def main():
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    svn_path_accept, svn_path_reject = load_svn_path_exceptions(args.svnfilterexceptions)
+    svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions)
 
     # Check that we do seem to be in a git repository
     try:
