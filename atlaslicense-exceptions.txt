@@ -3,10 +3,11 @@
 # - file   : never add license
 # N.B. Match to accept will win over a match to reject
 
-# Not our code:
+## Not our code:
 - External/*
 - graphics/Qat/*
 - Generators/Prophecy4fContol/*
+- Build/AtlasCMake/cmt2cmake/pyparsing.py
 
 # Misc GPL
 - Tools/PyUtils/python/smem.py
@@ -18,11 +19,13 @@
 - Control/CxxUtils/CxxUtils/hashtable.h
 - Control/CxxUtils/test/hashtable_test.cxx
 
-# Other misc GPLed code (Bit Powder libraries)
+# Other GPLed code
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/extension.h
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/iterators.h
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/stack.h
 - Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauEmulation/TrigTauEmulation/type_hash.h
+- Database/AthenaPOOL/AtlasCollectionTools/src/urldecode.h
+- LumiBlock/LumiBlockComps/src/urldecode.h
 
 # KDE code, GPLed
 - graphics/VP1/VP1Base/VP1Base/VP1TabBar.h
@@ -32,6 +35,47 @@
 - graphics/VP1/VP1HEPVis/VP1HEPVis/gl2ps.h
 - graphics/VP1/VP1HEPVis/src/gl2ps.cxx
 
+# MIT license
+- DataQuality/DQUtils/python/ext/table_printer.py
+- Tools/PyUtils/python/reimport.py
+- Tools/PyUtils/bin/pep8.py
+- Tools/PyUtils/python/pshell.py
+- DetectorDescription/GeoModel/GeoModelKernel/src/PolygonTriangulator.cxx
+- Trigger/TrigFTK/TrigFTKSim/standalone_scripts/threadpool.py
+
+# BSD license
+- Control/AthenaMP/src/memory-monitor/rapidjson/*
+- Tools/RunTimeTester/testsuite/run/coverage.py
+- Trigger/TrigValidation/TrigEgammaValidation/share/prettytable.py
+
+# Geant4 license
+- DetectorDescription/GeoModel/GeoModelKernel/GeoModelKernel/GeoPolyhedron.h
+- DetectorDescription/GeoModel/GeoModelKernel/src/GeoPolyhedron.cxx
+- Simulation/G4Atlas/G4AtlasTools/G4AtlasTools/G4MultiSensitiveDetector.hh
+- Simulation/G4Atlas/G4AtlasTools/src/G4MultiSensitiveDetector.cc
+- Simulation/G4Extensions/Monopole/src/G4mpl*
+- Simulation/G4Extensions/Quirks/src/QuirkTransportation.cxx
+- Simulation/G4Extensions/Quirks/src/QuirkTransportation.h
+- Simulation/G4Extensions/Quirks/src/QuirkTransportation.icc
+- Simulation/G4Extensions/Quirks/standalone/Quirks/ExN03PhysicsList.hh
+- Simulation/G4Extensions/Quirks/standalone/src/ExN03PhysicsList.cc
+- Simulation/G4Extensions/RHadrons/src/FullModelReactionDynamics.cxx
+- Simulation/G4Extensions/RHadrons/src/FullModelReactionDynamics.hh
+- Simulation/G4Utilities/G4PhysicsLists/src/*
+
+# Fermilab BSD
+- Trigger/TrigConfiguration/TrigConfDBConnection/src/exe/TriggerFrontierClientTest.cxx
+
+# X11 license
+- Trigger/TrigCost/TrigCostPython/data/sorttable.js
+
+# MadGraph5_aMC@NLO license
+- Generators/MadGraphModels/*
+
+# Very weird anachronistic code from STFC Numerical Algorithms group (c 1980s)
+- Tracking/TrkAlignment/TrkAlgebraUtils/MA27
+
+## ATLAS code, but in some way licensed already
 # Code put under GPL by ATLAS authors
 - Trigger/TrigT1/TrigT1CaloCalibToolInterfaces/TrigT1CaloCalibToolInterfaces/*.h
 - Trigger/TrigT1/TrigT1CaloCalibTools/TrigT1CaloCalibTools/L1CaloFcal23Cells2RxMappingTool.h
@@ -63,15 +107,13 @@
 - Trigger/TrigT1/TrigT1Interfaces/src/*.cxx
 - InnerDetector/InDetRecTools/TRT_TrackHoleSearch/python/print_hole_log.py
 
-
-# Copied code with an MIT license
-- DataQuality/DQUtils/python/ext/table_printer.py
-- Tools/PyUtils/python/reimport.py
-
-# Copied code with a BSD license
-- Control/AthenaMP/src/memory-monitor/rapidjson/*
-- Tools/RunTimeTester/testsuite/run/coverage.py
-- Trigger/TrigValidation/TrigEgammaValidation/share/prettytable.py
+# Boost licensed by ATLAS Author
+- PhysicsAnalysis//D3PDTools/RootCoreUtils/*
 
 # Code that was Apache licensed by ATLAS authors
 - Simulation/G4Sim/FADS/FadsXMLParser/FadsXMLParser/DOMTreeErrorReporter.h
+
+# Code with copyright and no clear license as all
+- Trigger/TrigAlgorithms/TrigEgammaRec/python/TrigEgammaFlags.py
+- Trigger/TrigAnalysis/TrigAnalysisExamples/src/TriggerAnalysisHelper.cxx
+- Trigger/TrigAnalysis/TrigAnalysisExamples/src/TriggerAnalysisHelper.h
