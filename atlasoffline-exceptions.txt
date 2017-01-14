@@ -35,8 +35,8 @@
 
 # Obsolete/moved trigger packages (ATR-13307, ATR-15431, ATR-15556)
 - Trigger/TrigConfiguration/TriggerMenuCompiler/*
-- Trigger/TrigAnalysis/TriggerMenuAnalysis/*
-- Trigger/TrigAnalysis/TriggerMenuNtuple/*
+#- Trigger/TrigAnalysis/TriggerMenuAnalysis/*
+#- Trigger/TrigAnalysis/TriggerMenuNtuple/*
 - HLT/Testing/TrigConfTesting/*
 - Trigger/TriggerCommon/TrigMenuRulebook/share/Run1/*
 
@@ -58,7 +58,7 @@
 + */ChangeLog
 
 # Clean out CMT...
-- */cmt/*
+#- */cmt/*
 
 # Broken softlinks - just ignore
 - InnerDetector/InDetExample/InDetAlignExample/ErrorScaling/InDetRec_all.py
