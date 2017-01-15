@@ -228,8 +228,8 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
             svn_filename = filename[len(svn_co_root) + 1:]
             path_accept_match = False
             for filter in svn_path_accept:
-                if fnmatch.fnmatch(svn_filename, filter):
-                    logger.info("{0} imported from globbed exception {1}".format(svn_filename, filter))
+                if re.match(filter, svn_filename):
+                    logger.info("{0} imported from globbed exception {1}".format(svn_filename, filter.pattern))
                     path_accept_match = True
                     break
             if path_accept_match:
@@ -248,8 +248,8 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
 
                 # Rejection always overrides the above
                 for filter in svn_path_reject:
-                    if fnmatch.fnmatch(svn_filename, filter):
-                        logger.info("{0} not imported due to {1} filter".format(svn_filename, filter))
+                    if re.match(filter, svn_filename):
+                        logger.info("{0} not imported due to {1} filter".format(svn_filename, filter.pattern))
                         os.remove(filename)
 
             except OSError, e:
@@ -270,13 +270,13 @@ def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accep
             svn_filename = filename[len(svn_co_root) + 1:]
             path_veto = False
             for filter in license_path_reject:
-                if fnmatch.fnmatch(svn_filename, filter):
-                    logger.info("File {0} will not have a license file applied".format(svn_filename, filter))
+                if re.match(filter, svn_filename):
+                    logger.info("File {0} will not have a license file applied".format(svn_filename, filter.pattern))
                     path_veto = True
                     break
             for filter in license_path_accept:
-                if fnmatch.fnmatch(svn_filename, filter):
-                    logger.info("File {0} will have a license file applied".format(svn_filename, filter))
+                if re.match(filter, svn_filename):
+                    logger.info("File {0} will have a license file applied".format(svn_filename, filter.pattern))
                     path_veto = False
                     break
             if path_veto:
@@ -356,13 +356,13 @@ def uncrustify_sources(svn_path, svn_co_root, uncrustify_config, uncrustify_path
             svn_filename = filename[len(svn_co_root) + 1:]
             path_veto = False
             for filter in uncrustify_path_reject:
-                if fnmatch.fnmatch(svn_filename, filter):
-                    logger.debug("File {0} will not go through uncrustify".format(svn_filename, filter))
+                if re.match(filter, svn_filename):
+                    logger.debug("File {0} will not go through uncrustify".format(svn_filename, filter.pattern))
                     path_veto = True
                     break
             for filter in uncrustify_path_accept:
-                if fnmatch.fnmatch(svn_filename, filter):
-                    logger.debug("File {0} will be passed to uncrustify".format(svn_filename, filter))
+                if re.match(filter, svn_filename):
+                    logger.debug("File {0} will be passed to uncrustify".format(svn_filename, filter.pattern))
                     path_veto = False
                     break
             if path_veto:
@@ -382,7 +382,7 @@ def uncrustify_sources(svn_path, svn_co_root, uncrustify_config, uncrustify_path
 def load_exceptions_file(filename):
     ## @brief Parse and return path globbing exceptions file
     #  @param filename File containing exceptions
-    #  @return Tuple of path globs to accept and globs to reject
+    #  @return Tuple of path globs to accept and globs to reject, converted to regexps
     path_accept = []
     path_reject = []
     if filename != "NONE":
@@ -393,9 +393,9 @@ def load_exceptions_file(filename):
                 if line.startswith("#") or line == "":
                     continue
                 if line.startswith("-"):
-                    path_reject.append(line.lstrip("- "))
+                    path_reject.append(re.compile(fnmatch.translate(line.lstrip("- "))))
                 else:
-                    path_accept.append(line.lstrip("+ "))
-    logger.debug("Glob accept: {0}".format(path_accept))
-    logger.debug("Glob reject: {0}".format(path_reject))
+                    path_accept.append(re.compile(fnmatch.translate(line.lstrip("+ "))))
+    logger.debug("Glob accept: {0}".format([ m.pattern for m in path_accept ]))
+    logger.debug("Glob reject: {0}".format([ m.pattern for m in path_reject ]))
     return path_accept, path_reject

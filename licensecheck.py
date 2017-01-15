@@ -19,7 +19,6 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-import fnmatch
 import logging
 import os
 import os.path
@@ -106,12 +105,12 @@ def main():
             git_filename = filename[len(check_path) + 1:]
             path_veto = False
             for filter in license_path_reject:
-                if fnmatch.fnmatch(git_filename, filter):
+                if re.match(filter, git_filename):
                     logger.debug("File {0} was license file vetoed".format(git_filename))
                     path_veto = True
                     break
             for filter in license_path_accept:
-                if fnmatch.fnmatch(svn_filename, filter):
+                if re.match(filter, svn_filename):
                     logger.debug("File {0} was license file forced".format(git_filename))
                     path_veto = False
                     break
