@@ -14,7 +14,7 @@ done
 rm tagdir/21.0.56  # What was that?
 
 # Copy definitive author list...
-cp ~/bin/$gitrepo.author.metadata .
+cp ~/bin/aogt.author.metadata ${gitrepo}.author.metadata
 
 # Import all tags
 (time asvn2git.py file:///data/graemes/atlasoff/ao-mirror $gitrepo $(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/') --licensefile ~/bin/apache2.txt) |& tee o.agot.a2s
