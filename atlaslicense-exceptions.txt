@@ -3,11 +3,17 @@
 # - file   : never add license
 # N.B. Match to accept will win over a match to reject
 
+## Things we don't want to bother with
+- */components/*
+
 ## Not our code:
 - External/*
 - graphics/Qat/*
-- Generators/Prophecy4fContol/*
+- Generators/Prophecy4fControl/*
+- Generators/Photos_i/src/*
+- Generators/Tauola_i/src/*
 - Build/AtlasCMake/cmt2cmake/pyparsing.py
+
 
 # GCC GPL, backported into our packages
 - Control/CxxUtils/CxxUtils/urldecode.h
@@ -41,6 +47,9 @@
 - Tools/PyUtils/python/pshell.py
 - DetectorDescription/GeoModel/GeoModelKernel/src/PolygonTriangulator.cxx
 - Trigger/TrigFTK/TrigFTKSim/standalone_scripts/threadpool.py
+- Control/CxxUtils/src/libcalg/*
+- Control/CxxUtils/CxxUtils/libcalg/*
+- Tools/PyCmt/python/decorator.py
 
 # BSD license
 - Control/AthenaMP/src/memory-monitor/rapidjson/*
@@ -62,6 +71,8 @@
 - Simulation/G4Extensions/RHadrons/src/FullModelReactionDynamics.cxx
 - Simulation/G4Extensions/RHadrons/src/FullModelReactionDynamics.hh
 - Simulation/G4Utilities/G4PhysicsLists/src/*
+- graphics/VP1/VP1HEPVis/src/SbPolyhedron.cxx
+- graphics/VP1/VP1HEPVis/VP1HEPVis/SbPolyhedron.h
 
 # Fermilab BSD
 - Trigger/TrigConfiguration/TrigConfDBConnection/src/exe/TriggerFrontierClientTest.cxx
@@ -77,6 +88,19 @@
 
 # Very weird anachronistic code from STFC Numerical Algorithms group (c 1980s)
 - Tracking/TrkAlignment/TrkAlgebraUtils/MA27
+
+# U Warwick Copyright
+- Generators/EvtGen_i/EvtGen_i/EvtGenExternal/*
+- Generators/EvtGen_i/src/*
+
+# CERN PH - with all rights reserved?
+- MuonSpectrometer/MuonValidation/MuonPRDTest/macros/NSWHitsTree.c
+
+# Generic permissive license
+- Tools/PyUtils/python/coverage.py
+- graphics/VP1/VP1HEPVis/src/PolygonTriangulator.*
+- Database/APR/FileCatalog/FileCatalog/CommandLine.h
+- Database/APR/FileCatalog/src/CommandLine.cpp
 
 ## ATLAS code, but in some way licensed already
 # Code put under GPL by ATLAS authors
@@ -109,18 +133,143 @@
 - Trigger/TrigT1/TrigT1EventTPCnv/TrigT1EventTPCnv/*.h
 - Trigger/TrigT1/TrigT1Interfaces/src/*.cxx
 - InnerDetector/InDetRecTools/TRT_TrackHoleSearch/python/print_hole_log.py
+- Trigger/TrigT1/TrigT1Interfaces/TrigT1Interfaces/*
 
 # Boost licensed by ATLAS Author
-- PhysicsAnalysis//D3PDTools/RootCoreUtils/*
 - Control/AthToolSupport/AsgExampleTools/*
 - Control/AthToolSupport/AsgTools/*
 - PhysicsAnalysis/AnalysisCommon/PATInterfaces/*
+- PhysicsAnalysis/D3PDTools/RootCoreUtils/*
 
 
 # Code that was Apache licensed by ATLAS authors
 - Simulation/G4Sim/FADS/FadsXMLParser/FadsXMLParser/DOMTreeErrorReporter.h
 
-# Code with copyright and no clear license as all
+# Code with copyright (ATLAS authors) and no clear license as all
 - Trigger/TrigAlgorithms/TrigEgammaRec/python/TrigEgammaFlags.py
 - Trigger/TrigAnalysis/TrigAnalysisExamples/src/TriggerAnalysisHelper.cxx
 - Trigger/TrigAnalysis/TrigAnalysisExamples/src/TriggerAnalysisHelper.h
+- MuonSpectrometer/MuonValidation/MuonDQA/MuonTrkPhysMonitoring/scripts/RootRunBuster.c
+- MuonSpectrometer/MuonDetDescr/MuonRegionSelector/src/*
+- MuonSpectrometer/MuonDetDescr/MuonRegionSelector/MuonRegionSelector/*
+- Tools/PyJobTransformsCore/test/testErrorPattern.py
+- Tools/PyJobTransformsCore/python/extraMetadata.py
+- Tracking/TrkDetDescr/TrkDetDescrExample/root/python/TTreeHelper.py
+- Tracking/TrkValidation/TrkValTools/root/TrackProperties/*
+- Tracking/TrkEvent/TrkTrackSummary/src/TrackSummary.cxx
+- Tracking/TrkEvent/TrkTrackSummary/TrkTrackSummary/TrackSummary.h
+- Tracking/TrkEvent/TrkTrack/TrkTrack/TrackStateOnSurface.h
+- DataQuality/HanConfigGenerator/src/*
+- DetectorDescription/RegSelLUT/RegSelLUT/RegSelEtaPhiLUT.h
+- DetectorDescription/RegSelLUT/RegSelLUT/RegSelEtaPhiLUT.h
+- DetectorDescription/RegSelLUT/RegSelLUT/RegSelROB.h
+- DetectorDescription/RegSelLUT/RegSelLUT/RegSelEtaPhiModule.h
+- DetectorDescription/RegSelLUT/src/RegSelEtaPhiLUT.cxx
+- DetectorDescription/RegSelLUT/src/RegSelROB.cxx
+- DetectorDescription/IRegionSelector/IRegionSelector/RoiUtil.h
+- DetectorDescription/IRegionSelector/IRegionSelector/IRoiDescriptor.h
+- DetectorDescription/IRegionSelector/IRegionSelector/IRegSelSvc.h
+- DetectorDescription/GeoModel/GeoModelKernel/src/PolygonTriangulator.h
+- DetectorDescription/RoiDescriptor/RoiDescriptor/RoiDescriptor.h
+- DetectorDescription/RoiDescriptor/Root/RoiUtil.cxx
+- ForwardDetectors/ALFA/ALFA_Geometry/ALFA_Geometry/ALFA_SvdCalc.h
+- ForwardDetectors/ALFA/ALFA_Geometry/ALFA_Geometry/ALFA_SvdCalc.h
+- Event/xAOD/xAODTrigger/xAODTrigger/RoiDescriptorStoreAuxInfo.h
+- Event/xAOD/xAODTrigger/xAODTrigger/RoiDescriptorStore.h
+- Event/xAOD/xAODTrigger/xAODTrigger/versions/RoiDescriptorStoreAuxInfo_v1.h
+- Event/xAOD/xAODTrigger/xAODTrigger/versions/RoiDescriptorStore_v1.h
+- Event/xAOD/xAODTrigger/Root/RoiDescriptorStoreAuxInfo_v1.cxx
+- Event/xAOD/xAODTrigger/Root/RoiDescriptorStore_v1.cxx
+- Trigger/TrigAnalysis/TrigInDetAnalysisUser/*
+- Trigger/TrigT1/L1Topo/L1TopoCoreSim/*
+- Trigger/TrigT1/TrigT1Interfaces/*
+- Trigger/TrigT1/L1Topo/L1TopoCoreSim/*
+- Trigger/TrigTools/IDScanHitFilter/src/FilterBin.cxx
+- Trigger/TrigConfiguration/TrigConfOffline/*
+- Trigger/TrigAnalysis/TrigInDetAnalysis*
+- Trigger/TriggerSimulation/L1TopoCoreSimulation/*
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/EnergyCMX.h
+- Trigger/TrigT1/TrigT1CaloSim/TrigT1CaloSim/JEMEnergySim.h
+- Trigger/TrigT1/TrigT1CaloSim/src/CPCMX.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/ReprocessTriggerTowers.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/RoIROD.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/JEMJetSim.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/JEMEnergySim.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/JetCMX.cxx
+- Trigger/TrigT1/TrigT1CaloSim/src/CPMSim.cxx
+- Trigger/TrigT1/TrigT1CaloTools/*
+- Trigger/TrigT1/L1Topo/L1TopoSimulationUtils/L1TopoSimulationUtils/L1TopoDataTypes.h
+- Trigger/TrigT1/L1Topo/L1TopoSimulationUtils/L1TopoSimulationUtils/Trigo.h
+- Trigger/TrigT1/L1Topo/L1TopoSimulationUtils/L1TopoSimulationUtils/Hyperbolic.h
+- Trigger/TrigT1/L1Topo/L1TopoSimulationUtils/Root/Hyperbolic.cxx
+- Trigger/TrigT1/L1Topo/L1TopoSimulationUtils/Root/Trigo.cxx
+- Trigger/TrigT1/L1Topo/L1TopoSimulationUtils/Root/L1TopoDataTypes.cxx
+- Trigger/TrigT1/L1Topo/L1TopoCommon/L1TopoCommon/Types.h
+- Trigger/TrigT1/L1Topo/L1TopoCommon/L1TopoCommon/StatusCode.h
+- Trigger/TrigT1/L1Topo/L1TopoCommon/L1TopoCommon/Exception.h
+- Trigger/TrigT1/L1Topo/L1TopoCommon/Root/StatusCode.cxx
+- Trigger/TrigT1/L1Topo/L1TopoCommon/Root/Exception.cxx
+- Trigger/TrigT1/L1Topo/L1TopoAlgorithms/*
+- Trigger/TrigT1/L1Topo/L1TopoEvent/*
+- Trigger/TrigT1/L1Topo/L1TopoInterfaces/*
+- Trigger/TrigT1/L1Topo/L1TopoCoreSim/*
+- Trigger/TrigT1/TrigT1Interfaces/*
+- Trigger/TrigCost/TrigCostRootAnalysis/TrigCostRootAnalysis/TrigCostAtlasStyle.h
+- Trigger/TrigAlgorithms/TrigT2CaloCommon/TrigT2CaloCommon/phiutils.h
+- Trigger/TrigAlgorithms/TrigEgammaRec/python/TrigEgammaToolFactories.py
+- Trigger/TrigMonitoring/TrigIDtrkMonitoring/utils/hanconfig.cxx
+- Trigger/TrigMonitoring/TrigIDtrkMonitoring/utils/simpletimer.h
+- Trigger/TrigMonitoring/TrigIDJpsiMonitoring/src/TrigJpsiMonTool.cxx
+- Trigger/TrigMonitoring/TrigIDJpsiMonitoring/TrigIDJpsiMonitoring/JpsiAnalysis.h
+- Trigger/TrigMonitoring/TrigIDJpsiMonitoring/TrigIDJpsiMonitoring/JpsiEfficiency.h
+- Trigger/TrigHypothesis/TrigBjetHypo/src/TrigJetSplitterAllTE.cxx
+- Trigger/TrigHypothesis/TrigBjetHypo/TrigBjetHypo/TrigSuperRoiBuilderAllTE.h
+- Trigger/TrigHypothesis/TrigBjetHypo/TrigBjetHypo/TrigJetSplitterAllTE.h
+- Trigger/TrigEvent/TrigRoiConversion/src/RoiWriter.cxx
+- Trigger/TrigEvent/TrigRoiConversion/TrigRoiConversion/RoiSerialise.h
+- Trigger/TrigEvent/TrigRoiConversion/TrigRoiConversion/RoiWriter.h
+- Trigger/TrigEvent/TrigRoiConversion/TrigRoiConversion/IRoiReader.h
+- Trigger/TrigEvent/TrigRoiConversion/TrigRoiConversion/RoiReader.h
+- Trigger/TrigEvent/TrigRoiConversion/Root/RoiReader.cxx
+- Trigger/TrigEvent/TrigRoiConversion/Root/RoiSerialise.cxx
+- Trigger/TrigEvent/TrigSteeringEvent/src/TrigSuperRoi.cxx
+- Trigger/TrigEvent/TrigSteeringEvent/Root/TrigRoiDescriptor.cxx
+- Trigger/TrigEvent/TrigSteeringEvent/TrigSteeringEvent/TrigSuperRoi.h
+- Trigger/TrigEvent/TrigSteeringEvent/TrigSteeringEvent/TrigRoiDescriptor.h
+- Trigger/TrigEvent/TrigSteeringEvent/TrigSteeringEvent/PhiHelper.h
+
+# Shaun Roe
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/IReadHistoDef.h
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/ReadFromXml.h
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/ReadFromXmlDom.h
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/ReadFromXml.cxx
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/xmlUtilities.h
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/SingleHistogramDefinition.cxx
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/ReadFromText.h
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/ReadFromXmlDom.cxx
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/ErrorHandler.h
+- InnerDetector/InDetValidation/InDetPhysValMonitoring/src/XmlContentHandlers.h
+- InnerDetector/InDetCalibAlgs/SCT_CalibAlgs/src/IElementStreamer.h
+- InnerDetector/InDetCalibAlgs/SCT_CalibAlgs/src/XmlStreamer.h
+- InnerDetector/InDetCalibAlgs/SCT_CalibAlgs/src/IElementStreamer.cxx
+- InnerDetector/InDetCalibAlgs/SCT_CalibAlgs/src/XmlStreamer.cxx
+- InnerDetector/InDetCalibAlgs/TRT_CalibAlgs/share/AtlasStyle.h
+- InnerDetector/InDetConditions/SCT_ConditionsServices/src/SCT_SimpleHisto.h
+- InnerDetector/InDetMonitoring/SCT_Monitoring/SCT_Monitoring/SCT_ClusterStruct.h
+- InnerDetector/InDetDetDescr/SCT_Cabling/src/SCT_CablingUtilities.cxx
+- InnerDetector/InDetDetDescr/SCT_Cabling/src/SCT_OnlineId.cxx
+- InnerDetector/InDetDetDescr/SCT_Cabling/src/SCT_SerialNumber.cxx
+
+# Mark Sutton
+- InnerDetector/InDetCalibAlgs/InDetBeamSpotFinder/rootScripts/BeamspotCutEvaluation/AtlasStyle.h
+- InnerDetector/InDetCalibAlgs/InDetBeamSpotFinder/rootScripts/BeamspotCutEvaluation/AtlasUtils.h
+- InnerDetector/InDetDetDescr/InDetRegionSelector/InDetRegionSelector/FTK_RegionSelectorTable.h
+- InnerDetector/InDetDetDescr/InDetRegionSelector/InDetRegionSelector/SiRegionSelectorTable.h 
+
+# Joerg Seltzer
+- Trigger/TrigT1/L1Topo/L1TopoConfig/L1TopoConfig/LayoutConstraints.h
+- Trigger/TrigT1/L1Topo/L1TopoConfig/Root/LayoutConstraints.cxx
+
+# Code put into the public domain
+- LumiBlock/LumiCalc/src/cmdline.cxx
+
