@@ -281,12 +281,15 @@ def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accep
                     break
             if path_veto:
                 continue
+            # Get the file's mode here to then restore it
+            fmode = os.stat(filename).st_mode
             extension = svn_filename.rsplit(".", 1)[1] if "." in svn_filename else ""
             if extension in ("cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh"):
                 inject_c_license(filename, license_text)
+                os.chmod(filename, fmode)
             elif extension in ("py", "cmake"):
                 inject_py_license(filename, license_text)
-                
+                os.chmod(filename, fmode)
 
 def inject_c_license(filename, license_text):
     ## @brief Add a license file, C style commented
