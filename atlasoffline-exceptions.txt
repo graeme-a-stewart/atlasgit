@@ -12,33 +12,30 @@
 # RTT/ATN test configuration
 + */test/*_TestConfiguration.xml
 
-# TriggerTool files (ATR-13306)
-+ Trigger/TrigConfiguration/TrigDb/share/*.sql
-+ Trigger/TrigConfiguration/TrigDb/external/*.jar
-+ Trigger/TrigConfiguration/TriggerTool/external/*.jar
-+ Trigger/TrigConfiguration/TriggerTool/external/doc/*.jar
-+ Trigger/TrigConfiguration/TriggerTool/external/doc/*.zip
+# Trigger java apps moved to tdaq release (ATR-13306)
+- Trigger/TrigConfiguration/TrigDb/*
+- Trigger/TrigConfiguration/TriggerTool/*
+- HLT/Trigger/TrigConfiguration/BunchGroupUpdate/*
+- HLT/Trigger/TrigConfiguration/TriggerPanel/*
+- HLT/Trigger/TrigConfiguration/AutoPrescaleEditor/*
+
 # Streamer info for trigger BS decoding
 + Trigger/TrigDataAccess/TrigSerializeResult/share/bs-streamerinfos.root
 # L1 trigger menu XML files
 + Trigger/TriggerCommon/TriggerMenuXML/data/*.xml
 # FTK configuration (ATR-15552)
 + Trigger/TrigFTK/TrigFTKSim/config/map_file/*
-# Tau BDT tunes
-+ Trigger/TrigAlgorithms/TrigTauDiscriminant/share/*.bin
 # L2 muon LUTs
 + Trigger/TrigAlgorithms/TrigL2MuonSA/share/*.lut
-# TriggerPanel jar file
-+ HLT/Trigger/TrigConfiguration/TriggerPanel/external/l1ct-06-01-01/L1CTISData.jar
 # Trigger tower mapping (ATR-15557)
 + Trigger/TrigT1/TrigT1CaloCalibUtils/share/COOLIdDump.txt
 
 # Obsolete/moved trigger packages (ATR-13307, ATR-15431, ATR-15556)
 - Trigger/TrigConfiguration/TriggerMenuCompiler/*
-#- Trigger/TrigAnalysis/TriggerMenuAnalysis/*
-#- Trigger/TrigAnalysis/TriggerMenuNtuple/*
 - HLT/Testing/TrigConfTesting/*
+- HLT/AtlasHLTPolicy/*
 - Trigger/TriggerCommon/TrigMenuRulebook/share/Run1/*
+- Trigger/TrigConfiguration/AutoPrescaleTool/*
 
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
