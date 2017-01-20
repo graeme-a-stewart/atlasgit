@@ -145,6 +145,9 @@ def parse_tag_file(release_file_path, analysis_filter=False):
             # we ignore them for git 
             if package.endswith("Release") or package.endswith("RunTime"):
                 continue
+            # Fake packages made by tag collector
+            if "/" not in package and "22-00-00" in tag:
+                continue
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
             if analysis_filter and package not in analysis_packages:
                 continue
@@ -209,8 +212,6 @@ def main():
                         "a simple way, without worrying about the details of the NICOS tag files and paths (N.B. "
                         "in the rare cases when there is more than one tag file for a release, the last one will "
                         "be used).")
-    parser.add_argument('--debug', '--verbose', "-v", action="store_true",
-                        help="switch logging into DEBUG mode")
     parser.add_argument('--tagdir', default="tagdir",
                         help="output directory for tag files, each release will generate an entry here (default \"tagdir\")")
     parser.add_argument('--prefix',
@@ -220,6 +221,10 @@ def main():
     parser.add_argument('--analysispkgfilter', action="store_true",
                         help="Special post processing for the (Ath)AnalysisBase-2.6.X release series, which "
                         "filters tags to be only those which are missing from standard Athena releases")
+    parser.add_argument('--overwrite', action="store_true", default=False,
+                        help="Overwrite any exisitng configuration files (otherwise, just skip over)")
+    parser.add_argument('--debug', '--verbose', "-v", action="store_true",
+                        help="switch logging into DEBUG mode")
 
     args = parser.parse_args()
     if args.debug:
@@ -243,8 +248,13 @@ def main():
         release_description = parse_release_data(release, args.prefix)
         release_tags = parse_tag_file(release, args.analysispkgfilter)
         logger.info("Processing tags for release {0}".format(release_description["name"]))
-        with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
-            json.dump({"release": release_description, "tags": release_tags}, tag_output, indent=2)
+        output_file = os.path.join(args.tagdir, release_description["name"])
+        if args.overwrite or not os.path.exists(output_file):
+            with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
+                json.dump({"release": release_description, "tags": release_tags}, tag_output, indent=2)
+        else:
+            logger.debug("Skipped writing to {0} - overwrite is false".format(output_file))
+
 
 
 if __name__ == '__main__':

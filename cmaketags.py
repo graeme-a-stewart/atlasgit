@@ -219,7 +219,7 @@ def main():
                 json.dump(my_release_data, tag_output, indent=2)
                 logger.info("Wrote {0}".format(output_file))
         else:
-            logger.info("Skipped writing to {0} - overwrite is false".format(output_file))
+            logger.debug("Skipped writing to {0} - overwrite is false".format(output_file))
 
 if __name__ == '__main__':
     main()
