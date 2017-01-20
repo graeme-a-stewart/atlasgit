@@ -53,12 +53,16 @@ def get_release_name(release_file_path):
         raise RuntimeError("Failed to find release name")
 
 
-def parse_release_data(release_file_path):
+def parse_release_data(release_file_path, name_prefix=None):
     ## @brief Parse release data from the NICOS tag file
     #  @param release_file_path Path to file with NICOS tags for the release of interest
     #  @return Dictionary of values for the different release properties
     timestamp = os.stat(release_file_path).st_mtime
     release_name, nightly_flag = get_release_name(release_file_path)
+    if name_prefix:
+        full_name = name_prefix + "-" + release_name
+    else:
+        full_name = release_name
     release_elements = release_name.split(".")
     if len(release_elements) < 3:
         raise RuntimeError("Weird release: {0}".format(release_name))
@@ -74,7 +78,7 @@ def parse_release_data(release_file_path):
     major = release_elements[0]
     minor = release_elements[1]
     patch = release_elements[2]
-    release_desc = {"name": release_name,
+    release_desc = {"name": full_name,
                     "series": release_elements[0],
                     "flavour": release_elements[1],
                     "major": release_elements[2],
@@ -179,6 +183,8 @@ def main():
                         help="switch logging into DEBUG mode")
     parser.add_argument('--tagdir', default="tagdir",
                         help="output directory for tag files, each release will generate an entry here (default \"tagdir\")")
+    parser.add_argument('--prefix',
+                        help="Prefix for the name of the release, when the NICOS information is insufficient")
     parser.add_argument('--nicospath', default="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/",
                         help="path to NICOS tag files (defaults to usual CERN AFS location)")
 
@@ -201,7 +207,7 @@ def main():
                 sys.exit(1)
     
     for release in nicos_paths:
-        release_description = parse_release_data(release)
+        release_description = parse_release_data(release, args.prefix)
         release_tags = parse_tag_file(release)
         logger.info("Processing tags for release {0}".format(release_description["name"]))
         with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
