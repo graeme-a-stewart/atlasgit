@@ -21,6 +21,7 @@
 import argparse
 import json
 import logging
+import time
 
 from glogger import logger
 
@@ -42,6 +43,11 @@ def main():
         release_list.append((release, release_data))
 
     release_list.sort(cmp=lambda x, y: cmp(x[1]["release"]["timestamp"], y[1]["release"]["timestamp"]))
+
+    if logger.isEnabledFor(logging.DEBUG):
+        for release_tuple in release_list:
+            logger.debug("Release {0} built {1}".format(release_tuple[1]["release"]["name"],
+                                                        time.asctime(time.localtime(release_tuple[1]["release"]["timestamp"]))))
 
     for release_tuple in release_list:
         print release_tuple[0],
