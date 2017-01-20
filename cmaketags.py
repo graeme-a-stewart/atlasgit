@@ -109,7 +109,7 @@ def get_cmake_release_data(base_path, base_release, release, project_path, night
         subminor = None
         
     sample_project = find_cmake_sample_project(base_path, release)
-    timestamp = os.stat(os.path.join(base_path, sample_project, release)).st_mtime
+    timestamp = os.stat(os.path.join(base_path, sample_project, release, "InstallArea")).st_mtime
 
     release_desc = {"name": release,
                     "series": series,
