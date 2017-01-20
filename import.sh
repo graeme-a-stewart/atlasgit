@@ -29,6 +29,7 @@ nicostags.py --prefix AnalysisBase --analysispkgfilter /afs/cern.ch/atlas/softwa
 done
 
 base_prod_releases=$(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/')
+master_prod_releases=$(ls -v tagdir/19.2.* tagdir/20.1.* tagdir/20.7.* tagdir/21.0.* | perl -ne 'print if /\/\d+\.\d+\.\d+$/')
 dev_releases=$(orderreleases.py tagdir/22* tagdir/*AnalysisBase*)
 
 # Copy definitive author list...
@@ -38,7 +39,7 @@ cp ~/bin/aogt.author.metadata ${gitrepo}.author.metadata
 (time asvn2git.py file:///data/graemes/atlasoff/ao-mirror $gitrepo $base_prod_releases $dev_releases --licensefile ~/bin/apache2.txt) |& tee o.${gitrepo}.a2s
 
 # Build master branch
-(time branchbuilder.py $gitrepo master $base_prod_releases $dev_releases --skipreleasetag --onlyforward) |& tee o.${gitrepo}.master
+(time branchbuilder.py $gitrepo master $master_prod_releases $dev_releases --skipreleasetag --onlyforward) |& tee o.${gitrepo}.master
 
 # Build release branches
 for r in 19.2 20.1 20.7 20.8 21.0; do
