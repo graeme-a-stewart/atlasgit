@@ -9,18 +9,36 @@ for r in 20.8 21.0; do
     cmaketags.py $r
 done
 for r in 19.2 20.1 20.7 20.8 20.11; do
-    cmttags.py $r
+    nicostags.py $r
 done
 rm tagdir/20.1.56  # What was that?
+
+# Now we select a few nightlies that are used for the last stages
+# of building the master branch with r22 tags and some tags
+# from AnalysisBase and AthAnalysisBase
+for r22 in tags_2017_01_01_H3 tags_2017_01_10_H22 tags_2017_01_20_H3; do 
+	nicostags.py /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/22.0.X/x86_64-slc6-gcc49-opt/$r22
+done
+
+for aab in tags_2017_01_01_H21 tags_2017_01_10_H21 tags_2017_01_19_H21; do
+nicostags.py --prefix AthAnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AthAnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$aab 
+done
+
+for ab in tags_2017_01_01_H3 tags_2017_01_11_H3 tags_2017_01_20_H3; do
+nicostags.py --prefix AnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$ab 
+done
+
+base_prod_releases=$(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/')
+dev_releases=$(orderreleases.py tagdir/22* tagdir/*AnalysisBase*)
 
 # Copy definitive author list...
 cp ~/bin/aogt.author.metadata ${gitrepo}.author.metadata
 
 # Import all tags
-(time asvn2git.py file:///data/graemes/atlasoff/ao-mirror $gitrepo $(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/') --licensefile ~/bin/apache2.txt) |& tee o.${gitrepo}.a2s
+(time asvn2git.py file:///data/graemes/atlasoff/ao-mirror $gitrepo $base_prod_releases $dev_releases --licensefile ~/bin/apache2.txt) |& tee o.${gitrepo}.a2s
 
 # Build master branch
-(time branchbuilder.py $gitrepo master $(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/') --skipreleasetag --onlyforward) |& tee o.${gitrepo}.master
+(time branchbuilder.py $gitrepo master $base_prod_releases $dev_releases --skipreleasetag --onlyforward) |& tee o.${gitrepo}.master
 
 # Build release branches
 for r in 19.2 20.1 20.7 20.8 21.0; do
