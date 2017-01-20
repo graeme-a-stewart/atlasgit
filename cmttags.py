@@ -95,15 +95,43 @@ def parse_release_data(release_file_path, name_prefix=None):
     return release_desc
 
 
-def parse_tag_file(release_file_path):
+def parse_tag_file(release_file_path, analysis_filter=False):
     ## @brief Open a NICOS tag file and extract the package tags
     #  @param release_file_path Path to file with NICOS tags for the release of interest
+    #  @param analysis_filter Apply a filter to take only packages that are in the analysis
+    #         release, but are missing from Athena releases
     #  @return Dictionary keyed by package, with each value a dictionary with @c tag and @project
     #  information for the package
+    analysis_packages = ["AsgExternal/Asg_Test",
+                         "PhysicsAnalysis/AnalysisCommon/AssociationUtils",
+                         "PhysicsAnalysis/AnalysisCommon/CPAnalysisExamples",
+                         "PhysicsAnalysis/AnalysisCommon/PMGTools",
+                         "PhysicsAnalysis/D3PDTools/EventLoop",
+                         "PhysicsAnalysis/D3PDTools/EventLoopAlgs",
+                         "PhysicsAnalysis/D3PDTools/EventLoopGrid",
+                         "PhysicsAnalysis/D3PDTools/MultiDraw",
+                         "PhysicsAnalysis/D3PDTools/SampleHandler",
+                         "PhysicsAnalysis/ElectronPhotonID/PhotonEfficiencyCorrection",
+                         "PhysicsAnalysis/ElectronPhotonID/PhotonVertexSelection",
+                         "PhysicsAnalysis/HiggsPhys/Run2/HZZ/Tools/ZMassConstraint",
+                         "PhysicsAnalysis/Interfaces/AsgAnalysisInterfaces",
+                         "PhysicsAnalysis/JetPhys/SemileptonicCorr",
+                         "PhysicsAnalysis/SUSYPhys/SUSYTools",
+                         "PhysicsAnalysis/TauID/DiTauMassTools",
+                         "PhysicsAnalysis/TauID/TauCorrUncert",
+                         "PhysicsAnalysis/TopPhys/QuickAna",
+                         "PhysicsAnalysis/TrackingID/InDetTrackSystematicsTools",
+                         "Reconstruction/Jet/JetAnalysisTools/JetTileCorrection",
+                         "Reconstruction/Jet/JetJvtEfficiency",
+                         "Reconstruction/Jet/JetReclustering",
+                         "Trigger/TrigAnalysis/TrigMuonEfficiency",
+                         "Trigger/TrigAnalysis/TrigTauAnalysis/TrigTauMatching",
+                         ]
     release_package_dict = {}
     with open(release_file_path) as tag_file:
         for line in tag_file:
             line = line.strip()
+            logger.debug(line)
             if len(line) == 0 or line.startswith("#"):
                 continue
             try:
@@ -118,6 +146,8 @@ def parse_tag_file(release_file_path):
             if package.endswith("Release") or package.endswith("RunTime"):
                 continue
             logger.debug("Found package {0}, tag {1} in project {2}".format(package, tag, project))
+            if analysis_filter and package not in analysis_packages:
+                continue
             release_package_dict[package] = {"svn_tag": tag, 
                                              "project": project, "package_name": os.path.basename(package)}
     return release_package_dict
@@ -187,6 +217,9 @@ def main():
                         help="Prefix for the name of the release, when the NICOS information is insufficient")
     parser.add_argument('--nicospath', default="/afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/",
                         help="path to NICOS tag files (defaults to usual CERN AFS location)")
+    parser.add_argument('--analysispkgfilter', action="store_true",
+                        help="Special post processing for the (Ath)AnalysisBase-2.6.X release series, which "
+                        "filters tags to be only those which are missing from standard Athena releases")
 
     args = parser.parse_args()
     if args.debug:
@@ -208,7 +241,7 @@ def main():
     
     for release in nicos_paths:
         release_description = parse_release_data(release, args.prefix)
-        release_tags = parse_tag_file(release)
+        release_tags = parse_tag_file(release, args.analysispkgfilter)
         logger.info("Processing tags for release {0}".format(release_description["name"]))
         with open(os.path.join(args.tagdir, release_description["name"]), "w") as tag_output:
             json.dump({"release": release_description, "tags": release_tags}, tag_output, indent=2)
