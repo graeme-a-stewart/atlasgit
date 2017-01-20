@@ -59,3 +59,4 @@
 
 # Broken softlinks - just ignore
 - InnerDetector/InDetExample/InDetAlignExample/ErrorScaling/InDetRec_all.py
+- PhysicsAnalysis/SUSYPhys/SUSYTools/data/mc15_13TeV/Backgrounds.txt
