@@ -369,19 +369,16 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
                                   branch=branch, dryrun=dryrun, commit_date=commit_date)
 
         logger.info("{0} packages have been removed from the release".format(len(packages_to_remove)))
-        if only_forward:
-            logger.info("No removals will be done for as only_forward is set for {0}".format(branch))
-        else:
-            for package in packages_to_remove:
-                logger.info("Removing {0} from {1}".format(package, branch))
-                if not dryrun:
-                    package_path = os.path.join(svn_metadata_cache[package]["path"], package)
-                    recursive_delete(package_path)
-                check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
-                cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package_path, branch)]
-                check_output_with_retry(cmd, dryrun=dryrun)
-                check_output_with_retry(("git", "tag", "-d", current_release_tags[package]["git_tag"]), retries=1, dryrun=dryrun)
-                pkg_processed += 1
+        for package in packages_to_remove:
+            logger.info("Removing {0} from {1}".format(package, branch))
+            if not dryrun:
+                package_path = os.path.join(svn_metadata_cache[package]["path"], package)
+                recursive_delete(package_path)
+            check_output_with_retry(("git", "add", "-A"), dryrun=dryrun)
+            cmd = ["git", "commit", "--allow-empty", "-m", "{0} deleted from {1}".format(package_path, branch)]
+            check_output_with_retry(cmd, dryrun=dryrun)
+            check_output_with_retry(("git", "tag", "-d", current_release_tags[package]["git_tag"]), retries=1, dryrun=dryrun)
+            pkg_processed += 1
 
         ## Now, finally, tag the release as done
         if not skipreleasetag:

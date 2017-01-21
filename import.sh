@@ -28,9 +28,16 @@ for ab in tags_2017_01_01_H3 tags_2017_01_11_H3 tags_2017_01_20_H3; do
 nicostags.py --prefix AnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$ab 
 done
 
+# We then merge the analysis releases into the main dev release to make
+# a super dev release
+mergereleases.py tagdir/22.0.0-2017-01-01 tagdir/AthAnalysisBase-2.6.0-2017-01-01 tagdir/AnalysisBase-2.6.0-2017-01-01
+mergereleases.py tagdir/22.0.0-2017-01-10 tagdir/AthAnalysisBase-2.6.0-2017-01-10 tagdir/AnalysisBase-2.6.0-2017-01-11
+mergereleases.py tagdir/22.0.0-2017-01-20 tagdir/AthAnalysisBase-2.6.0-2017-01-19 tagdir/AnalysisBase-2.6.0-2017-01-20
+
+
 base_prod_releases=$(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/')
 master_prod_releases=$(ls -v tagdir/19.2.* tagdir/20.1.* tagdir/20.7.* tagdir/21.0.* | perl -ne 'print if /\/\d+\.\d+\.\d+$/')
-dev_releases=$(orderreleases.py tagdir/22* tagdir/*AnalysisBase*)
+dev_releases=$(ls tagdir/22.0.0-2017-??-??)
 
 # Copy definitive author list...
 cp ~/bin/aogt.author.metadata ${gitrepo}.author.metadata
