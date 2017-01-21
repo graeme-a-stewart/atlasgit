@@ -15,11 +15,11 @@ Main scripts:
 `cmaketags.py` - Parses a CMake release to obtain the SVN tag content
 for importing into git. 
 
-`cmttags.py` - Parses NICOS tag files to obtain the SVN tag content
-of CMT built releases to import into git
+`nicostags.py` - Parses NICOS tag archive files to obtain the SVN tag content
+of releases to import into git (works 
 
 `asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on  
-special import branch(es)
+special import branches
 
 `branchbuilder.py` - Reconstruct from release tag content files the state 
 of an offline release on a git branch
@@ -30,7 +30,7 @@ details)
 
 ---
 
-Auxiliary files:
+Auxiliary scripts:
 
 `tjson2txt.py` - simple script to convert JSON timing file (from asvn2git.py) into
 a text file that can be imported and plotted into a spreadsheet
@@ -40,9 +40,21 @@ which at some point in their SVN history changed case, causing problems on
 case insensitive file systems (it's not proposed to use this, but it's kept for
 archival interest)
 
+`licensecheck.py` - script that can be used to check for suspicious license or
+copyright statements in imported code (Apache license text is ignored)
+
+`orderreleases.py` - takes a set of release tag files and orders them 
+chronologically (useful for constructing the master branch)
+
+`pkgdiff.py` - compare two different package tag files
+
 `releasedate.py` - plots release dates using matplotlib
 
 `glogger.py`, `atutils.py`, `svnutils.py`- module files for shared functions
+
+---
+
+Other files:
 
 `aogt.author.metadata` - JSON file with all ATLAS SVN authors identified 
 (particularly including those who have left ATLAS and are no longer in
@@ -52,6 +64,25 @@ CERN's phonebook)
 
 `uncrustify-import.cfg` - Uncrustify configuration file used to reformat
 C++ sources in a standard way on import from SVN
+
+`atlasoffline-exceptions.txt` - List of glob matches for files that will
+either not be added to git from SVN or be forced to be added to git
+
+`atlaslicense-exceptions.txt` - List of glob matches for files that will
+not have any license added to them during a standard ATLAS import
+(when using the `--licensefile` option of `asvn2git.py`)
+
+`atlasuncrustify-exceptions.txt` - List of glob matches for files that will
+not have uncrustify added to them during a standard ATLAS import
+(when using the `--uncrustify` option of `asvn2git.py`) *NB* It was decided
+not to pass code through uncrustify during the bulk ATLAS import due
+to some errors made when rewriting the code.
+
+`import.sh` - Script containing the final sequence of commands used to
+perform the SVN to git migration of the atlasoff repository (very useful to
+see the use of more advanced options as well)
+
+`license.txt` - License for this code (GPL)
 
 
 HOWTO
@@ -81,19 +112,22 @@ is available via
 
 ### Preparing tagdiff files from known releases
 
-Use the `cmttags.py` and/or `cmaketags.py` script the SVN tag content of interesting
+Use the `nicostags.py` and/or `cmaketags.py` script the SVN tag content of interesting
 releases and write a JSON files containing the (SVN) tag content of the releases of
 interest.
 
 By far the easiest way to do this is just to give a base release:
 
-`cmaketags.py 21.0` or `cmttags.py 20.7`
+`cmaketags.py 21.0` or `nicostags.py 20.7`
 
 This takes the base content of release series 21.0 (or 20.7), then finds and parses all the 
 base releases and caches and produces a file with the package tag evolution. The default
 tag content files are placed in the `tagdir` directory.
 
 Note that CMake and CMT releases can, of course, be combined in any import to git.
+
+To get the tag content of a CMake nightly that is no longer available the
+`nicostags.py` script can be used.
 
 ### Import SVN tags into git
 
@@ -106,8 +140,8 @@ files (as generated above).
  `asvn2git.py file:///data/graemes/atlasoff/ao-mirror aogt tagdir/{19,20,21}.?.?`
 
 The default import is performed using a separate branch for each package. This is a clean import
-strategy, however it creates many branches, which gitlab does not like, so do not push these
-temporary import branches and tags to gitlab! It is possible to use a single branch for all imported 
+strategy, however it creates many branches, which makes for an unwieldy repository
+It is possible to use a single branch for all imported 
 tags using the `--targetbranch` option, but this is no longer well tested ;-)
 
 Tests of the import procedure can be made using the option `--svnpath PATH` that
@@ -125,7 +159,8 @@ tag for every package imported. These are:
 
 It is better that tag content files are processed in roughly historical order,
 which gives a more reasonable import history (although branch tags may appear muddled,
-but this is not that important).
+but this is not that important). The `orderreleases.py` script can be used
+to help with this, or filtering to only base releases.
 
 It is possible to re-run `asvn2git.py` with new or updated tag content files. The bookkeeping
 git tags will ensure that no duplicate imports are made. If `asvn2git.py` is 
@@ -141,7 +176,10 @@ see the default `atlaslicense-exceptions.txt` for some examples of what and why)
 
 `--uncrustify` - An [uncrustify](http://uncrustify.sourceforge.net/) configuration file
 that will be used to reformat C++ sources before import. It is recommended to use the
-default `uncrustify-import.txt` for consistency in the offline code base. 
+default `uncrustify-import.txt` for consistency in the offline code base. *N.B.* it
+was noticed that uncrustify can make mistakes when processing code, so unless you
+can validate all of the changes this is probably too risky (it was decided not to
+use it for the main `atlasoff` import).
 
 ### Construct a master branch
 
@@ -164,6 +202,8 @@ Use `ls -v` to make sure the releases are given to the script in _release_ order
 alphabetically. Note also that cache releases should not be imported into master (tune your
 `ls` command to ensure this!).
 
+See `import.sh` for an example of how to create a development superset of packages
+from the offline `dev` releases, but with `(Ath)AnalysisBase` packages included.
 
 ### Construct git branches for base releases
 
@@ -240,3 +280,7 @@ doing so will cause problems in gitlab (which baulks at more than ~1000 branches
 
 Tags you care about usually means `git tag -l release/* nightly/*`.
 
+1. Backup import repository:
+
+If there is a desire to keep importing SVN tags over some time period then 
+backing up the entire import repository to gitlab may be desirable as well.
