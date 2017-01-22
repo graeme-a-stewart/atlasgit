@@ -291,3 +291,39 @@ def git_release_tag(release_desc, branch=None):
     else:
         tag = os.path.join("release", release_desc["name"])
     return tag
+
+def git_repo_ok(path="."):
+    ## @brief Check if a directory seems to contain a valid git repository
+    #  @param path Path to check
+    #  @return Boolean, @c True if the repo seems valid
+    entries = os.listdir(path)
+    try:
+        if (os.path.isfile(os.path.join(path, "HEAD")) and 
+            os.path.isdir(os.path.join(path, "objects")) and 
+            os.path.isdir(os.path.join(path, "refs"))):
+            return True
+    except OSError:
+        return False
+    return False
+
+def find_git_root():
+    ## @brief Search for a git repository root from cwd
+    found_git = False
+    start = searching = os.getcwd()
+    while True:
+        if os.path.isdir(".git"):
+            found_git = True
+            break
+        else:
+            os.chdir("..")
+            if os.getcwd() == searching:  # Hit filesystem root
+                break
+            searching = os.getcwd()
+
+    os.chdir(start)
+    if found_git and git_repo_ok(os.path.join(searching, ".git")):
+        logger.debug("Found .git for repository root here: {0}".format(searching))
+        return searching
+
+    logger.debug("No valid .git found descending from {0}".format(start))
+    return None

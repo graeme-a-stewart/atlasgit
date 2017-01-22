@@ -124,10 +124,10 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
 
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
-                          svn_path_accept=[], svn_path_reject=[], commit=True,
+                          svn_path_accept=[], svn_path_reject=[], commit=True, revision=None,
                           license_text=None, license_path_accept=[], license_path_reject=[],
                           uncrustify_config=None, uncrustify_path_accept=[], uncrustify_path_reject=[]):
-    # # @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
+    ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
     #  @param svnroot Base path to SVN repository
     #  @param gitrepo Path to git repository to import to
     #  @param package Path to package root (in git and svn)
@@ -140,6 +140,8 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param commit Boolean flag to manage commit (can be set to @c False to only checkout and process)
     #  @param license_text List of strings containing the license text to add (if @c False, then no
     #  license file is added)
+    #  @param revision Force SVN revision number (useful for svnpull.py, where
+    #  no svn metadata is available)
     #  @param license_path_accept Paths to force include in license file addition
     #  @param license_path_reject Paths to exclude from license file addition
     #  @param uncrustify_config Uncrustify configuration file
@@ -157,7 +159,9 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     tempdir = tempfile.mkdtemp()
     full_svn_path = os.path.join(tempdir, package)
     cmd = ["svn", "checkout"]
-    if svn_metadata:
+    if revision:
+        cmd.extend(["-r", str(revision)])
+    elif svn_metadata:
         cmd.extend(["-r", svn_metadata["revision"]])
     cmd.extend([os.path.join(svnroot, package, tag), os.path.join(tempdir, package)])
     check_output_with_retry(cmd, retries=1, wait=3)
@@ -386,9 +390,13 @@ def uncrustify_sources(svn_path, svn_co_root, uncrustify_config, uncrustify_path
                     logger.warning("Uncrustify failed on {0}".format(filename))
 
 
-def load_exceptions_file(filename):
+def load_exceptions_file(filename, reject_changelog=False):
     ## @brief Parse and return path globbing exceptions file
     #  @param filename File containing exceptions
+    #  @param reject_changelog Special flag used by svnpull to ensure that
+    #  ChangeLog files are rejected (in a normal svn2git they are accepted,
+    #  onto the import branches, but then excluded specially from the
+    #  release branches)
     #  @return Tuple of path globs to accept and globs to reject, converted to regexps
     path_accept = []
     path_reject = []
@@ -397,6 +405,8 @@ def load_exceptions_file(filename):
             logger.info("Loaded import exceptions from {0}".format(filename))
             for line in filter_file:
                 line = line.strip()
+                if reject_changelog and line == "+ */ChangeLog":
+                    line = "- */ChangeLog"
                 if line.startswith("#") or line == "":
                     continue
                 if line.startswith("-"):
