@@ -2,7 +2,7 @@
 #
 # Top to bottom import of ATLAS SVN to git
 
-gitrepo=${1:-aogt}
+gitrepo=${1:-athena-import}
 
 # Get package tags
 for r in 20.8 21.0; do
@@ -43,7 +43,7 @@ dev_releases=$(ls tagdir/22.0.0-2017-??-??)
 cp ~/bin/aogt.author.metadata ${gitrepo}.author.metadata
 
 # Import all tags
-(time asvn2git.py file:///data/graemes/atlasoff/ao-mirror $gitrepo $base_prod_releases $dev_releases --licensefile ~/bin/apache2.txt) |& tee o.${gitrepo}.a2s
+(time asvn2git.py file:///atlas/scratch0/graemes/ao-mirror $gitrepo $base_prod_releases $dev_releases --licensefile ~/bin/apache2.txt) |& tee o.${gitrepo}.a2s
 
 # Build master branch
 (time branchbuilder.py $gitrepo master $master_prod_releases $dev_releases --skipreleasetag --onlyforward) |& tee o.${gitrepo}.master

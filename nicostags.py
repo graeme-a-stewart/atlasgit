@@ -103,7 +103,7 @@ def parse_tag_file(release_file_path, analysis_filter=False):
     #  @return Dictionary keyed by package, with each value a dictionary with @c tag and @project
     #  information for the package
     analysis_packages = ["AsgExternal/Asg_Test",
-                         "PhysicsAnalysis/AnalysisCommon/AssociationUtils",
+                         #"PhysicsAnalysis/AnalysisCommon/AssociationUtils",    # Have to remove this for now because of the name clash with PhysicsAnalysis/AssociationBuilder/AssociationUtils
                          "PhysicsAnalysis/AnalysisCommon/CPAnalysisExamples",
                          "PhysicsAnalysis/AnalysisCommon/PMGTools",
                          "PhysicsAnalysis/D3PDTools/EventLoop",
