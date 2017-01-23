@@ -265,14 +265,14 @@ ATLAS this should of course always be CERN GitLab!).
 
 1. Add the upload repository to your local repository, e.g., like this:
 
-```git remote add origin https://:@gitlab.cern.ch:8443/graemes/aogt.git```
+```git remote add origin https://:@gitlab.cern.ch:8443/graemes/athena.git```
 
 1. Push your _release_ branches to the new upstream origin:
 
 ```git push -u origin MY_BRANCH```
 
-There is no need to push the special per-package import branches and, in fact,
-doing so will cause problems in gitlab (which baulks at more than ~1000 branches).
+There is no need to push the special per-package import branches to the production
+repository. In fact, doing so will will make the repository quite unweildy.
 
 1. Push up tags that you care about
 
