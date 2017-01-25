@@ -96,7 +96,7 @@ def main():
                                       PACKAGEPATH is the path to the package root in SVN and git and
                                       SVNSUBPATH is the path to the SVN version to import; e.g.,
                                       Reconstruction/RecJobTransforms+devbranches/RecJobTransforms_RAWtoALL
-                                      will import the SVN path
+                                      (note the plus sign!) will import the SVN path
                                       Reconstruction/RecJobTransforms/devbranches/RecJobTransforms_RAWtoALL
                                       to Reconstruction/RecJobTransforms
 
@@ -107,7 +107,7 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('svnpackage', nargs="+",
                         help="SVN package to import, usually a plain package name or tag (see above)")
-    parser.add_argument('--packagefiles', nargs="+",
+    parser.add_argument('--files', nargs="+",
                         help="Only package files matching the values specified here are imported (globs allowed). "
                         "This can be used to import only some files from the SVN package and will "
                         "disable the normal --svnfilterexceptions matching.")
@@ -139,7 +139,7 @@ def main():
     args = parser.parse_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
-    svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions)
+    svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions, reject_changelog=True)
 
     if len(args.svnpackage) > 1 and len(args.paths) > 0:
         logger.warning("You have specified multiple SVN packages and to filter on package files "
@@ -160,7 +160,7 @@ def main():
     else:
         license_text = None
     if args.licenseexceptions:
-        license_path_accept, license_path_reject = load_exceptions_file(args.licenseexceptions, reject_changelog=True)
+        license_path_accept, license_path_reject = load_exceptions_file(args.licenseexceptions)
     else:
         license_path_accept = license_path_reject = []
 
@@ -171,15 +171,16 @@ def main():
     try:
         for svn_package in args.svnpackage:
             package_name, package, svn_package_path = get_svn_path_from_tag_name(svn_package, package_path_dict)
-            # If we have a --packagefiles option then redo the accept/reject paths here
+            # If we have a --files option then redo the accept/reject paths here
             # (as the package path needs to be prepended it needs to happen in this loop)
-            if args.packagefiles:
+            if args.files:
                 svn_path_reject = [re.compile(fnmatch.translate("*"))]
                 svn_path_accept = []
-                for glob in args.packagefiles:
+                for glob in args.files:
                     package_glob = os.path.join(package_path_dict[package_name], glob)
                     logger.debug("Will accept files matching {0}".format(package_glob))
                     svn_path_accept.append(re.compile(fnmatch.translate(package_glob)))
+                logger.debug("{0}".format([ m.pattern for m in svn_path_accept ]))
             logger.debug("Will import {0} to {1}, SVN revision {2}".format(os.path.join(package, svn_package_path),
                                                                            package_path_dict[package_name],
                                                                            "HEAD" if args.revision == 0 else args.revision))

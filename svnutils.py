@@ -233,7 +233,7 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
             path_accept_match = False
             for filter in svn_path_accept:
                 if re.match(filter, svn_filename):
-                    logger.info("{0} imported from globbed exception {1}".format(svn_filename, filter.pattern))
+                    logger.debug("{0} imported from globbed exception {1}".format(svn_filename, filter.pattern))
                     path_accept_match = True
                     break
             if path_accept_match:
@@ -242,22 +242,27 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
                 if os.lstat(filename).st_size > 100 * 1024:
                     if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "cpp",
                                                                   "hpp", "hh", "f", "F"):
-                        logger.info("Source file {0} is too large, but importing anyway (source files always imported)".format(filename))
+                        logger.debug("Source file {0} is too large, but importing anyway (source files always imported)".format(filename))
                     else:
-                        logger.warning("File {0} is too large - not importing".format(filename))
+                        logger.debug("File {0} is too large - not importing".format(filename))
                         os.remove(filename)
                 if name.startswith("."):
-                    logger.warning("File {0} starts with a '.' - not importing".format(filename))
+                    logger.debug("File {0} starts with a '.' - not importing".format(filename))
                     os.remove(filename)
 
                 # Rejection always overrides the above
                 for filter in svn_path_reject:
                     if re.match(filter, svn_filename):
-                        logger.info("{0} not imported due to {1} filter".format(svn_filename, filter.pattern))
+                        logger.debug("{0} not imported due to {1} filter".format(svn_filename, filter.pattern))
                         os.remove(filename)
 
             except OSError, e:
                 logger.warning("Got OSError treating {0}: {1}".format(filename, e))
+    
+    # Clean up all empty directories...
+    for root, dirs, files in os.walk(svn_path, topdown=False):
+        if len(os.listdir(root)) == 0:
+            os.rmdir(root)
 
 
 def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accept=[], license_path_reject=[]):
@@ -402,10 +407,11 @@ def load_exceptions_file(filename, reject_changelog=False):
     path_reject = []
     if filename != "NONE":
         with open(filename) as filter_file:
-            logger.info("Loaded import exceptions from {0}".format(filename))
+            logger.debug("Loaded import exceptions from {0}".format(filename))
             for line in filter_file:
                 line = line.strip()
-                if reject_changelog and line == "+ */ChangeLog":
+                if reject_changelog and ("ChangeLog" in line):
+                    logger.debug("Found ChangeLog line, which will be forced to reject: {0}".format(line))
                     line = "- */ChangeLog"
                 if line.startswith("#") or line == "":
                     continue
