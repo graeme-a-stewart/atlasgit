@@ -310,17 +310,17 @@ def inject_c_license(filename, license_text):
                 first_line = first_line[:-1] + " */\n"
                 multi_line_c_comment = True
             ofh.write(first_line)
-            print >> ofh, "\n/*"
+            ofh.write("\n/*\n")
             for line in license_text:
-                print >> ofh, " ", line
-            print >> ofh, "*/\n"
+                ofh.write("  {0}\n".format(line)) if line != "" else ofh.write("\n")
+            ofh.write("*/\n\n")
             if multi_line_c_comment:
-                print >> ofh, "/*"
+                ofh.write("/*\n")
         else:
-            print >> ofh, "/*"
+            ofh.write("/*\n")
             for line in license_text:
-                print >> ofh, " ", line
-            print >> ofh, "*/\n"
+                ofh.write("  {0}\n".format(line)) if line != "" else ofh.write("\n")
+            ofh.write("*/\n\n")
             ofh.write(first_line)
         for line in ifh:
             ofh.write(line)
@@ -336,14 +336,13 @@ def inject_py_license(filename, license_text):
         # first line
         if first_line.startswith("#!"):
             ofh.write(first_line)
-            print >> ofh, ""
+            ofh.write("\n")
             for line in license_text:
-                print >> ofh, "#", line
-            print >> ofh, ""
+                ofh.write("# {0}\n".format(line)) if line != "" else ofh.write("#\n")
         else:
             for line in license_text:
-                print >> ofh, "#", line
-            print >> ofh, ""
+                ofh.write("# {0}\n".format(line)) if line != "" else ofh.write("#\n")
+            ofh.write("\n")
             ofh.write(first_line)
         for line in ifh:
             ofh.write(line)

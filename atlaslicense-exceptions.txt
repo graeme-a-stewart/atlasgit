@@ -5,6 +5,8 @@
 
 ## Things we don't want to bother with
 - */components/*
+- */skeleton*.py
+- */share/*
 
 ## Not our code:
 - External/*
