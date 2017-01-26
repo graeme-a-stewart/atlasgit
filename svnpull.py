@@ -28,6 +28,7 @@ import re
 import textwrap
 
 from glogger import logger
+logger.setLevel(logging.WARNING)
 from svnutils import svn_co_tag_and_commit, load_exceptions_file
 from atutils import find_git_root
 
@@ -133,10 +134,14 @@ def main():
                         "with the official ATLAS migration.",
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaslicense-exceptions.txt"))
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
-                        help="Switch logging into DEBUG mode")
+                        help="Switch logging into DEBUG mode (default is WARNING)")
+    parser.add_argument('--info', action="store_true",
+                        help="Switch logging into INFO mode (default is WARNING)")
 
     # Parse and handle initial arguments
     args = parser.parse_args()
+    if args.info:
+        logger.setLevel(logging.INFO)
     if args.debug:
         logger.setLevel(logging.DEBUG)
     svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions, reject_changelog=True)
