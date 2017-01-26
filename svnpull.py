@@ -104,6 +104,14 @@ def main():
                                     The final specifier is only needed if the package to be imported is
                                     not in your current git checkout or if you want to import an unusual
                                     SVN revision, such as a development branch.
+
+                                    The --files specifier can be used to import only some files or paths
+                                    to git, with globs supported, e.g.,
+
+                                      --files src/* MyPackage/*.h share/important_file.py
+
+                                    For consistency all options applied during the primary ATLAS SVN to
+                                    git migration are re-applied by default.
                                     '''),
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('svnpackage', nargs="+",
