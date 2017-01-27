@@ -327,3 +327,15 @@ def find_git_root():
 
     logger.debug("No valid .git found descending from {0}".format(start))
     return None
+
+def load_package_veto(filename):
+    ## @brief Load a list of packages to veto from file
+    veto = []
+    with open(filename) as veto_fh:
+        for line in veto_fh:
+            line = line.strip()
+            if line == "" or line.startswith("#"):
+                continue
+            veto.append(line)
+
+    return veto

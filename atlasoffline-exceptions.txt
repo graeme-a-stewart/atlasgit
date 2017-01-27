@@ -1,6 +1,12 @@
 # Exceptions for atlasoff git migration
 # + file   : always import even if file exceeds size limit
 # - file   : never import
+#
+# Due to the logical order in which comparisons are made
+# a "+" will beat a "-".
+#
+# *** If it is desired to completely veto a package add it to *** 
+# *** the atlaspackage-exceptions.txt file instead            ***
 
 # hwaf files
 - */hscript.yml
@@ -11,13 +17,6 @@
 
 # RTT/ATN test configuration
 + */test/*_TestConfiguration.xml
-
-# Trigger java apps moved to tdaq release (ATR-13306)
-- Trigger/TrigConfiguration/TrigDb/*
-- Trigger/TrigConfiguration/TriggerTool/*
-- HLT/Trigger/TrigConfiguration/BunchGroupUpdate/*
-- HLT/Trigger/TrigConfiguration/TriggerPanel/*
-- HLT/Trigger/TrigConfiguration/AutoPrescaleEditor/*
 
 # Streamer info for trigger BS decoding
 + Trigger/TrigDataAccess/TrigSerializeResult/share/bs-streamerinfos.root
@@ -30,12 +29,8 @@
 # Trigger tower mapping (ATR-15557)
 + Trigger/TrigT1/TrigT1CaloCalibUtils/share/COOLIdDump.txt
 
-# Obsolete/moved trigger packages (ATR-13307, ATR-15431, ATR-15556)
-- Trigger/TrigConfiguration/TriggerMenuCompiler/*
-- HLT/Testing/TrigConfTesting/*
-- HLT/AtlasHLTPolicy/*
-- Trigger/TriggerCommon/TrigMenuRulebook/share/Run1/*
-- Trigger/TrigConfiguration/AutoPrescaleTool/*
+# Obsolete trigger files (ATR-15518)
+- Trigger/TriggerCommon/TrigMenuRulebook/share/Run1
 
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml

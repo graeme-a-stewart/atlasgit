@@ -49,13 +49,15 @@ def svn_tag_cmp(tag_x, tag_y):
     return cmp(tag_x, tag_y)
 
 
-def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, all_package_tags=False):
+def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache,
+                                   all_package_tags=False, package_veto=[]):
     # # @brief Get SVN metadata for each of the package tags we're interested in
     #  @param svnroot URL of SVN repository
     #  @param svn_packages Dictionary of packages and tags to process
     #  @param svn_metadata_cache SVN metadata cache
     #  @param author_metadata_cache author metadata cache with name and email for commits
     #  @param all_package_tags Boolean flag triggering import of all package tags in SVN
+    #  @param package_veto List of packages to just plain refuse to handle
 
     # First we establish the list of tags which we need to deal with.
     for package, package_tags in svn_packages.iteritems():
@@ -75,6 +77,9 @@ def scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, au
 
     # Now iterate over the required tags and ensure we have the necessary metadata
     for package, package_tags in svn_packages.iteritems():
+        if package in package_veto:
+            logger.info("Package {0} is vetoed - skipping SVN metadata import".format(package))
+            continue
         package_name = os.path.basename(package)
         package_path = os.path.dirname(package)
         for tag in package_tags:
@@ -124,7 +129,7 @@ def svn_get_path_metadata(svnroot, package, package_path, revision=None):
 
 
 def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, author_metadata_cache=None, branch=None,
-                          svn_path_accept=[], svn_path_reject=[], commit=True, revision=None,
+                          svn_path_accept=[], svn_path_reject=[], package_veto=[], commit=True, revision=None,
                           license_text=None, license_path_accept=[], license_path_reject=[],
                           uncrustify_config=None, uncrustify_path_accept=[], uncrustify_path_reject=[]):
     ## @brief Make a temporary space, check out from svn, clean-up, copy and then git commit and tag
@@ -137,6 +142,7 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param branch Git branch to switch to before import
     #  @param svn_path_accept Paths to force import to git
     #  @param svn_path_reject Paths to force reject from the import
+    #  @param package_veto List of packages to just plain refuse to handle
     #  @param commit Boolean flag to manage commit (can be set to @c False to only checkout and process)
     #  @param license_text List of strings containing the license text to add (if @c False, then no
     #  license file is added)
@@ -147,6 +153,10 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, svn_metadata=None, aut
     #  @param uncrustify_config Uncrustify configuration file
     #  @param uncrustify_path_accept Paths to force uncrustify to run on
     #  @param uncrustify_path_reject Paths to exclude from uncrustify
+    if package in package_veto:
+        logger.info("Package {0} is vetoed - skipping import".format(package))
+        return
+
     msg = "Importing SVN path {0}/{1} to {0}".format(package, tag)
     if svn_metadata and tag == "trunk":
         msg += " (r{0})".format(svn_metadata["revision"])

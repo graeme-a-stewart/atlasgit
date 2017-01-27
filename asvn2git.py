@@ -67,7 +67,7 @@ import time
 
 from glogger import logger
 from atutils import check_output_with_retry, get_current_git_tags, switch_to_branch
-from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata
+from atutils import get_flattened_git_tag, initialise_metadata, backup_metadata, load_package_veto
 from svnutils import scan_svn_tags_and_get_metadata, svn_co_tag_and_commit
 from svnutils import load_exceptions_file
 
@@ -165,6 +165,9 @@ def main():
                         help="File listing path globs to exempt from SVN import filter (lines with '+PATH') or "
                         "to always reject (lines with '-PATH'); default %(default)s. Use NONE to have no exceptions.",
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlasoffline-exceptions.txt"))
+    parser.add_argument('--packageveto', metavar="FILE",
+                        help="File listing packages that will be skipped completely on import.",
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaspackage-exceptions.txt"))
     parser.add_argument('--licensefile', metavar="FILE", help="License file to add to source code files (default "
                         "is not to add a license file)")
     parser.add_argument('--licenseexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
@@ -200,6 +203,12 @@ def main():
     
     # Load exception globs
     svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions)
+
+    # Load package vetos
+    if args.packageveto:
+        package_veto = load_package_veto(args.packageveto)
+    else:
+        package_veto = []
 
     # License file loading
     if args.licensefile:
@@ -243,7 +252,8 @@ def main():
     author_metadata_cache = initialise_metadata(args.authorcachefile)
 
     # Prepare package import
-    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, args.intermediatetags)
+    scan_svn_tags_and_get_metadata(svnroot, svn_packages, svn_metadata_cache, author_metadata_cache, args.intermediatetags,
+                                   package_veto=package_veto)
 
     # Now presistify metadata cache
     backup_metadata(svn_metadata_cache, start_cwd, args.svncachefile, start_timestamp_string)
@@ -277,6 +287,7 @@ def main():
                                   author_metadata_cache,
                                   svn_path_accept=svn_path_accept,
                                   svn_path_reject=svn_path_reject,
+                                  package_veto=package_veto,
                                   license_text=license_text,
                                   license_path_accept=license_path_accept,
                                   license_path_reject=license_path_reject,
@@ -288,13 +299,14 @@ def main():
         logger.info("{0} processed in {1}s ({2} packages really processed)".format(counter, elapsed, processed_tags))
         timing.append(elapsed)
         
+    # Last task, clean all empty directories (git does not track these, but they are clutter)
+    check_output_with_retry(("git", "clean", "-f", "-d"))
+
     if args.importtimingfile:
         os.chdir(start_cwd)
         with open(args.importtimingfile, "w") as time_file:
             json.dump(timing, time_file)
             
-    # Last task, clean all empty directories (git does not track these, but they are clutter)
-    check_output_with_retry(("git", "clean", "-f", "-d"))
 
 if __name__ == '__main__':
     main()
