@@ -294,7 +294,7 @@ def main():
             json.dump(timing, time_file)
             
     # Last task, clean all empty directories (git does not track these, but they are clutter)
-    check_output_with_retry(("find", gitrepo, "-type", "d", "-empty", "-delete"))
+    check_output_with_retry(("git", "clean", "-f", "-d"))
 
 if __name__ == '__main__':
     main()

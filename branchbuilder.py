@@ -277,7 +277,6 @@ def branch_builder(gitrepo, branch, tag_files, svn_metadata_cache, author_metada
     prepare_branch_point(branch, parentbranch)            
 
     # Main loop starts here, with one pass for each tag file we are processing
-    print tag_files
     for tag_file in tag_files:
         with open(tag_file) as tag_file_fh:
             release_data = json.load(tag_file_fh)
