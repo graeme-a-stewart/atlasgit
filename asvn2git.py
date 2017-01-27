@@ -169,7 +169,8 @@ def main():
                         help="File listing packages that will be skipped completely on import.",
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaspackage-exceptions.txt"))
     parser.add_argument('--licensefile', metavar="FILE", help="License file to add to source code files (default "
-                        "is not to add a license file)")
+                        "is to add %(default)s license file)",
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "apache2.txt"))
     parser.add_argument('--licenseexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
                         "always apply license file to (same format as --svnfilterexceptions)",
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaslicense-exceptions.txt"))

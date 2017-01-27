@@ -4,6 +4,7 @@
 
 gitrepo=${1:-athena-import}
 
+(
 # Get package tags
 for r in 20.8 21.0; do
     cmaketags.py $r
@@ -33,7 +34,8 @@ done
 mergereleases.py tagdir/22.0.0-2017-01-01 tagdir/AthAnalysisBase-2.6.0-2017-01-01 tagdir/AnalysisBase-2.6.0-2017-01-01
 mergereleases.py tagdir/22.0.0-2017-01-10 tagdir/AthAnalysisBase-2.6.0-2017-01-10 tagdir/AnalysisBase-2.6.0-2017-01-11
 mergereleases.py tagdir/22.0.0-2017-01-20 tagdir/AthAnalysisBase-2.6.0-2017-01-19 tagdir/AnalysisBase-2.6.0-2017-01-20
-mergereleases.py tagdir/22.0.0-2017-01-27 tagdir/AthAnalysisBase-2.6.0-2017-01-26 tagdir/AnalysisBase-2.6.0-2017-01-27
+mergereleases.py tagdir/22.0.0-2017-01-27 tagdir/AthAnalysisBase-2.6.1-2017-01-26 tagdir/AnalysisBase-2.6.1-2017-01-27
+) |& tee o.${gitrepo}.tags
 
 
 base_prod_releases=$(ls -v tagdir/* | perl -ne 'print if /\/\d+\.\d+\.\d+$/')
@@ -45,7 +47,7 @@ dev_releases=$(ls tagdir/22.0.0-2017-??-??)
 cp ~/bin/aogt.author.metadata ${gitrepo}.author.metadata
 
 # Import all tags
-(time asvn2git.py file:///atlas/scratch0/graemes/ao-mirror $gitrepo $base_prod_releases $dev_releases --licensefile ~/bin/apache2.txt) |& tee o.${gitrepo}.a2s
+(time asvn2git.py file:///atlas/scratch0/graemes/ao-mirror $gitrepo $base_prod_releases $dev_releases) |& tee o.${gitrepo}.a2s
 
 # Build master branch
 (time branchbuilder.py $gitrepo master $master_prod_releases $dev_releases --skipreleasetag --onlyforward) |& tee o.${gitrepo}.master
@@ -76,5 +78,5 @@ done
 # asvn2git.py file:///atlas/scratch0/graemes/ao-mirror aogt tagdir/22.0.X-2017-01-08-rel_1 --licensefile ~/bin/apache2.txt --uncrustify ~/bin/uncrustify-import.cfg
 # 
 
-# TODO - tag nightly buils on master branch...
+# TODO - tag nightlies on master branch...
 
