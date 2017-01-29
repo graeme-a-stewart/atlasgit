@@ -249,6 +249,13 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
             if path_accept_match:
                 continue
             try:
+                # Rejection always takes precedence
+                for filter in svn_path_reject:
+                    if re.match(filter, svn_filename):
+                        logger.info("{0} not imported due to {1} filter".format(svn_filename, filter.pattern))
+                        os.remove(filename)
+                        continue
+
                 if os.lstat(filename).st_size > 100 * 1024:
                     if "." in name and name.rsplit(".", 1)[1] in ("cxx", "py", "h", "java", "cc", "c", "icc", "cpp",
                                                                   "hpp", "hh", "f", "F"):
@@ -256,18 +263,14 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
                     else:
                         logger.info("File {0} is too large - not importing".format(filename))
                         os.remove(filename)
+                        continue
                 if name.startswith("."):
                     logger.info("File {0} starts with a '.' - not importing".format(filename))
                     os.remove(filename)
-
-                # Rejection always overrides the above
-                for filter in svn_path_reject:
-                    if re.match(filter, svn_filename):
-                        logger.info("{0} not imported due to {1} filter".format(svn_filename, filter.pattern))
-                        os.remove(filename)
+                    continue
 
             except OSError, e:
-                logger.warning("Got OSError treating {0}: {1}".format(filename, e))
+                logger.debug("Got OSError (usually harmless) treating {0}: {1}".format(filename, e))
     
     # Clean up all empty directories...
     for root, dirs, files in os.walk(svn_path, topdown=False):
