@@ -424,7 +424,7 @@ def load_exceptions_file(filename, reject_changelog=False):
             for line in filter_file:
                 line = line.strip()
                 if reject_changelog and ("ChangeLog" in line):
-                    logger.info("Found ChangeLog line, which will be forced to reject: {0}".format(line))
+                    logger.debug("Found ChangeLog line, which will be forced to reject: {0}".format(line))
                     line = "- */ChangeLog"
                 if line.startswith("#") or line == "":
                     continue
