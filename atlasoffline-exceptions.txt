@@ -32,6 +32,10 @@
 # Obsolete trigger files (ATR-15518)
 - Trigger/TriggerCommon/TrigMenuRulebook/share/Run1
 
+# MuCtpi config moved to GroupData area (ATR-15657)
+- Trigger/TrigConfiguration/TrigConfMuctpi/data/*.dat
+- Trigger/TrigConfiguration/TrigConfMuctpi/data/*.xml
+
 # ID dictionaries
 + DetectorDescription/IdDictParser/data/*.xml
 
@@ -44,9 +48,6 @@
 # Detector descriptions
 + Calorimeter/CaloIdentifier/share/*.txt
 + MuonSpectrometer/MuonCablings/MuonTGC_Cabling/share/*.db
-
-# Unit test reference files (text and pool.root.ref)
-+ */share/*.ref
 
 # Changelogs... Note that these are kept in the import branches, but
 # excluded from production branches 
