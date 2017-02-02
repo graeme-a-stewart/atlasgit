@@ -91,6 +91,10 @@
 # Very weird anachronistic code from STFC Numerical Algorithms group (c 1980s)
 - Tracking/TrkAlignment/TrkAlgebraUtils/MA27
 
+# Taken from NR in C?
+- Control/SGTools/SGTools/crc64.h
+- Control/SGTools/src/crc64.cxx
+
 # U Warwick Copyright
 - Generators/EvtGen_i/EvtGen_i/EvtGenExternal/*
 - Generators/EvtGen_i/src/*

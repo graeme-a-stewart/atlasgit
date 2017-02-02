@@ -17,15 +17,15 @@ rm tagdir/20.1.56  # What was that?
 # Now we select a few nightlies that are used for the last stages
 # of building the master branch with r22 tags and some tags
 # from AnalysisBase and AthAnalysisBase
-for r22 in tags_2017_01_01_H3 tags_2017_01_10_H22 tags_2017_01_20_H3 tags_2017_01_27_H3; do 
+for r22 in tags_2017_01_01_H3 tags_2017_01_10_H22 tags_2017_01_20_H3 tags_2017_01_27_H3 tags_2017_02_02_H3; do 
 	nicostags.py /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/22.0.X/x86_64-slc6-gcc49-opt/$r22
 done
 
-for aab in tags_2017_01_01_H21 tags_2017_01_10_H21 tags_2017_01_19_H21 tags_2017_01_26_H21; do
+for aab in tags_2017_01_01_H21 tags_2017_01_10_H21 tags_2017_01_19_H21 tags_2017_01_26_H21 tags_2017_02_01_H21; do
 nicostags.py --prefix AthAnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AthAnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$aab 
 done
 
-for ab in tags_2017_01_01_H3 tags_2017_01_11_H3 tags_2017_01_20_H3 tags_2017_01_27_H3; do
+for ab in tags_2017_01_01_H3 tags_2017_01_11_H3 tags_2017_01_20_H3 tags_2017_01_27_H3 tags_2017_02_02_H3; do
 nicostags.py --prefix AnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$ab 
 done
 
@@ -35,6 +35,7 @@ mergereleases.py tagdir/22.0.0-2017-01-01 tagdir/AthAnalysisBase-2.6.0-2017-01-0
 mergereleases.py tagdir/22.0.0-2017-01-10 tagdir/AthAnalysisBase-2.6.0-2017-01-10 tagdir/AnalysisBase-2.6.0-2017-01-11
 mergereleases.py tagdir/22.0.0-2017-01-20 tagdir/AthAnalysisBase-2.6.0-2017-01-19 tagdir/AnalysisBase-2.6.0-2017-01-20
 mergereleases.py tagdir/22.0.0-2017-01-27 tagdir/AthAnalysisBase-2.6.1-2017-01-26 tagdir/AnalysisBase-2.6.1-2017-01-27
+mergereleases.py tagdir/22.0.0-2017-02-02 tagdir/AthAnalysisBase-2.6.1-2017-02-01 tagdir/AnalysisBase-2.6.1-2017-02-02
 ) |& tee o.${gitrepo}.tags
 
 
@@ -62,7 +63,8 @@ done
 (time branchbuilder.py $gitrepo 20.20 $(ls -v tagdir/20.20.?) --parentbranch 20.7:@$(pwd)/tagdir/20.20.0 ) |& tee o.$gitrepo.bb.20.20
 
 # Build cache branches
-for series in 19.2 20.1 20.7 20.11 20.20; do
+# Ignore 20.11 for now as NICOS doesn't seem to have all the tags for caches...
+for series in 19.2 20.1 20.7 20.20; do
 for base in $(ls -v tagdir/${series}.* | perl -ne 'print "$1\n" if /\/(\d+\.\d+\.\d+$)/'); do
 cache=$(ls -v tagdir/${base}.* 2>/dev/null)
 if [ -z "$cache" ]; then
