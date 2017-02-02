@@ -14,6 +14,17 @@ for r in 19.2 20.1 20.7 20.8 20.11 20.20; do
 done
 rm tagdir/20.1.56  # What was that?
 
+# Oddly, NICOS does not know about all of the P1HLT caches for 2016
+for r in $(seq 1 26); do
+cmttags.py --overwrite /afs/cern.ch/atlas/software/releases/20.11.0/AtlasP1HLT/20.11.0.${r}/AtlasP1HLTRelease/cmt/requirements
+done
+for r in $(seq 1 10); do
+cmttags.py /afs/cern.ch/atlas/software/releases/20.11.1/AtlasP1HLT/20.11.1.${r}/AtlasP1HLTRelease/cmt/requirements
+done
+for r in $(seq 1 6); do
+cmttags.py /afs/cern.ch/atlas/software/releases/20.11.2/AtlasP1HLT/20.11.2.${r}/AtlasP1HLTRelease/cmt/requirements
+done
+
 # Now we select a few nightlies that are used for the last stages
 # of building the master branch with r22 tags and some tags
 # from AnalysisBase and AthAnalysisBase
@@ -63,8 +74,7 @@ done
 (time branchbuilder.py $gitrepo 20.20 $(ls -v tagdir/20.20.?) --parentbranch 20.7:@$(pwd)/tagdir/20.20.0 ) |& tee o.$gitrepo.bb.20.20
 
 # Build cache branches
-# Ignore 20.11 for now as NICOS doesn't seem to have all the tags for caches...
-for series in 19.2 20.1 20.7 20.20; do
+for series in 19.2 20.1 20.7 20.11 20.20; do
 for base in $(ls -v tagdir/${series}.* | perl -ne 'print "$1\n" if /\/(\d+\.\d+\.\d+$)/'); do
 cache=$(ls -v tagdir/${base}.* 2>/dev/null)
 if [ -z "$cache" ]; then
