@@ -142,8 +142,9 @@ def parse_tag_file(release_file_path, analysis_filter=False):
             if project == "GAUDI":
                 continue
             # "Release" and "RunTime" packages live inside the Release path, but in fact
-            # we ignore them for git 
-            if package.endswith("Release") or package.endswith("RunTime"):
+            # we ignore them for git . Except for TriggerRelease, which is a real package!
+            if package != "Trigger/TriggerRelease" and (package.endswith("Release") or package.endswith("RunTime")):
+                logger.debug("Vetoing package auto-generated package {0}".format(package))
                 continue
             # Fake packages made by tag collector
             if "/" not in package and "22-00-00" in tag:
