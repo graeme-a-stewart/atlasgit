@@ -135,7 +135,7 @@ def main():
                         "files (default %(default)s). "
                         "It is strongly recommended to keep the default value to ensure consistency "
                         "with the official ATLAS migration. Use NONE to disable if it is really necessary.",
-                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "apache2.txt"))
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "cerncopy.txt"))
     parser.add_argument('--licenseexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
                         "always apply license file to (same format as --svnfilterexceptions). "
                         "It is strongly recommended to keep the default value to ensure consistency "
