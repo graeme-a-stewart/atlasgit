@@ -53,6 +53,9 @@
 # excluded from production branches 
 + */ChangeLog
 
+# Doxygen - never allow mainpage.h to come back from the dead
+- */doc/mainpage.h
+
 # Clean out CMT...
 #- */cmt/*
 
