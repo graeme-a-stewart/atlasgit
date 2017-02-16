@@ -446,7 +446,7 @@ def main():
     parser.add_argument('--files', nargs="+",
                         help="Only package files matching the values specified here are imported (globs allowed). "
                         "This can be used to import only some files from the SVN package and will "
-                        "disable the normal --svnfilterexceptions matching.")
+                        "disable the normal --svnfilterexceptions matching.", default=[])
     parser.add_argument('--revision', type=int, default=0,
                         help="Work at specific SVN revision number instead of HEAD")
     parser.add_argument('--svnroot', metavar='SVNDIR',
@@ -481,10 +481,10 @@ def main():
         logger.setLevel(logging.DEBUG)
     svn_path_accept, svn_path_reject = load_exceptions_file(args.svnfilterexceptions, reject_changelog=True)
 
-    if len(args.svnpackage) > 1 and len(args.paths) > 0:
-        logger.warning("You have specified multiple SVN packages and to filter on package files "
-                       "to import. Make sure your --packagefiles options import the correct "
-                       "files in all packages.")
+    if len(args.svnpackage) > 1 and args.files:
+        logger.error("You have specified multiple SVN packages and to filter on package files "
+                       "to import, which almost certainly will not work - aborting")
+        sys.exit(1)
 
     # Check that we do seem to be in a git repository
     gitrepo = find_git_root()
