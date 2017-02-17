@@ -32,7 +32,12 @@ import textwrap
 import tempfile
 import time
 
-from glogger import logger
+# Ripped out logger configuration
+logger = logging.getLogger()
+hdlr = logging.StreamHandler(sys.stdout)
+frmt = logging.Formatter("%(name)s.%(funcName)s %(levelname)s %(message)s")
+hdlr.setFormatter(frmt)
+logger.addHandler(hdlr)
 logger.setLevel(logging.WARNING)
 
 
@@ -416,28 +421,29 @@ def main():
                                       imports Event/xAOD/xAODMuon/tags/xAODMuon-00-18-01
 
                                     Some more advanced specifiers can be used for special cases:
-                                    - A tag name + "-branch" will import the corresponding development
+                                    - A tag name ending "-branch" will import the corresponding development
                                       branch, e.g., xAODMuon-00-11-04-branch will import
                                       Event/xAOD/xAODMuon/branches/xAODMuon-00-11-04-branch
 
-                                    - A package path + SVN sub path, PACKAGEPATH+SVNSUBPATH, where
-                                      PACKAGEPATH is the path to the package root in SVN and git and
-                                      SVNSUBPATH is the path to the SVN version to import; e.g.,
+                                    - A package path + SVN sub path, PACKAGEPATH+SVNSUBPATH, (NOTE THE
+                                      USE OF '+') where PACKAGEPATH is the path to the package root in
+                                      SVN and git and SVNSUBPATH is the path to the SVN version to import; e.g.,
                                       Reconstruction/RecJobTransforms+devbranches/RecJobTransforms_RAWtoALL
-                                      (note the plus sign!) will import the SVN path
+                                      (again, ***note the plus sign***) will import the SVN path
                                       Reconstruction/RecJobTransforms/devbranches/RecJobTransforms_RAWtoALL
                                       to Reconstruction/RecJobTransforms
 
                                     The final specifier is only needed if the package to be imported is
-                                    not in your current git checkout or if you want to import an unusual
-                                    SVN revision, such as a development branch.
+                                    not in your current git checkout, is missing a CMakeLists.txt file
+                                    or if you want to import an unusual SVN revision, such as a
+                                    development branch.
 
                                     The --files specifier can be used to import only some files or paths
                                     to git, with globs supported, e.g.,
 
                                       --files src/* MyPackage/*.h share/important_file.py
 
-                                    For consistency all options applied during the primary ATLAS SVN to
+                                    For consistency options applied during the primary ATLAS SVN to
                                     git migration are re-applied by default.
                                     '''),
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -452,7 +458,7 @@ def main():
     parser.add_argument('--svnroot', metavar='SVNDIR',
                         help="Location of the SVN repository (defaults to %(default)s)",
                         default="svn+ssh://svn.cern.ch/reps/atlasoff")
-    parser.add_argument('--svnfilterexceptions', '--sfe', metavar="FILE",
+    parser.add_argument('--svnfilterexceptions', metavar="FILE",
                         help="File listing path globs to exempt from SVN import filter (lines with '+PATH') or "
                         "to always reject (lines with '-PATH'); default %(default)s. "
                         "It is strongly recommended to keep the default value to ensure consistency "
@@ -461,7 +467,8 @@ def main():
     parser.add_argument('--licensefile', metavar="FILE", help="License file to add to C++ and python source code "
                         "files (default %(default)s). "
                         "It is strongly recommended to keep the default value to ensure consistency "
-                        "with the official ATLAS migration. Use NONE to disable if it is really necessary.",
+                        "with the official ATLAS migration, which attributed copyright to CERN. "
+                        "Use NONE to disable if it is really necessary.",
                         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "cerncopy.txt"))
     parser.add_argument('--licenseexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
                         "always apply license file to (same format as --svnfilterexceptions). "
