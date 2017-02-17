@@ -457,17 +457,17 @@ def main():
                         "to always reject (lines with '-PATH'); default %(default)s. "
                         "It is strongly recommended to keep the default value to ensure consistency "
                         "with the official ATLAS migration.",
-                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlasoffline-exceptions.txt"))
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "atlasoffline-exceptions.txt"))
     parser.add_argument('--licensefile', metavar="FILE", help="License file to add to C++ and python source code "
                         "files (default %(default)s). "
                         "It is strongly recommended to keep the default value to ensure consistency "
                         "with the official ATLAS migration. Use NONE to disable if it is really necessary.",
-                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "cerncopy.txt"))
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "cerncopy.txt"))
     parser.add_argument('--licenseexceptions', metavar="FILE", help="File listing path globs to exempt from or  "
                         "always apply license file to (same format as --svnfilterexceptions). "
                         "It is strongly recommended to keep the default value to ensure consistency "
                         "with the official ATLAS migration.",
-                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "atlaslicense-exceptions.txt"))
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "atlaslicense-exceptions.txt"))
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="Switch logging into DEBUG mode (default is WARNING)")
     parser.add_argument('--info', action="store_true",
