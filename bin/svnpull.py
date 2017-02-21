@@ -57,24 +57,21 @@ def check_output_with_retry(cmd, retries=2, wait=10, ignore_fail=False, dryrun=F
     start = time.time()
     while not success and not failure:
         tries += 1
-        try:
-            logger.debug("Calling {0}".format(cmd))
-            output = subprocess.check_output(cmd)
+        logger.debug("Calling {0}".format(cmd))
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.communicate()[0]
+        if p.returncode == 0 or ignore_fail:
             success = True
-        except subprocess.CalledProcessError:
-            if ignore_fail:
-                success = True
-                output = ""
-                continue
-            logger.warning("Attempt {0} to execute {1} failed".format(tries, cmd))
-            if tries > retries:
-                failure = True
-            else:
-                time.sleep(wait)
+            continue
+        logger.warning("Attempt {0} to execute {1} failed".format(tries, cmd))
+        if tries > retries:
+            failure = True
+        else:
+            time.sleep(wait)
     if failure:
         raise RuntimeError("Repeated failures to execute {0}".format(cmd))
     logger.debug("Executed in {0}s".format(time.time() - start))
-    return output
+    return ""
 
 
 def find_git_root():
@@ -355,53 +352,55 @@ def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accep
 def inject_c_license(filename, license_text):
     ## @brief Add a license file, C style commented
     target_filename = filename + ".license"
-    with open(filename) as ifh, open(target_filename, "w") as ofh:
-        first_line = ifh.readline()
-        # If the first line is a -*- C++ -*- then it has to stay the
-        # first line
-        if re.search(r"-\*-\s+[cC]\+\+\s+-\*\-", first_line):
-            multi_line_c_comment = False
-            # Beware of breaking a multi-line C style comment
-            if first_line.startswith("/*") and ("*/" not in first_line[2:]):
-                first_line = first_line[:-1] + " */\n"
-                multi_line_c_comment = True
-            ofh.write(first_line)
-            ofh.write("\n/*\n")
-            for line in license_text:
-                ofh.write("  {0}\n".format(line)) if line != "" else ofh.write("\n")
-            ofh.write("*/\n\n")
-            if multi_line_c_comment:
+    with open(filename) as ifh:
+        with open(target_filename, "w") as ofh:
+            first_line = ifh.readline()
+            # If the first line is a -*- C++ -*- then it has to stay the
+            # first line
+            if re.search(r"-\*-\s+[cC]\+\+\s+-\*\-", first_line):
+                multi_line_c_comment = False
+                # Beware of breaking a multi-line C style comment
+                if first_line.startswith("/*") and ("*/" not in first_line[2:]):
+                    first_line = first_line[:-1] + " */\n"
+                    multi_line_c_comment = True
+                ofh.write(first_line)
+                ofh.write("\n/*\n")
+                for line in license_text:
+                    ofh.write("  {0}\n".format(line)) if line != "" else ofh.write("\n")
+                ofh.write("*/\n\n")
+                if multi_line_c_comment:
+                    ofh.write("/*\n")
+            else:
                 ofh.write("/*\n")
-        else:
-            ofh.write("/*\n")
-            for line in license_text:
-                ofh.write("  {0}\n".format(line)) if line != "" else ofh.write("\n")
-            ofh.write("*/\n\n")
-            ofh.write(first_line)
-        for line in ifh:
-            ofh.write(line)
+                for line in license_text:
+                    ofh.write("  {0}\n".format(line)) if line != "" else ofh.write("\n")
+                ofh.write("*/\n\n")
+                ofh.write(first_line)
+            for line in ifh:
+                ofh.write(line)
     os.rename(target_filename, filename)
 
 
 def inject_py_license(filename, license_text):
     ## @brief Add a license file, python style commented
     target_filename = filename + ".license"
-    with open(filename) as ifh, open(target_filename, "w") as ofh:
-        first_line = ifh.readline()
-        # If the first line is a #! then it has to stay the
-        # first line
-        if first_line.startswith("#!"):
-            ofh.write(first_line)
-            ofh.write("\n")
-            for line in license_text:
-                ofh.write("# {0}\n".format(line)) if line != "" else ofh.write("#\n")
-        else:
-            for line in license_text:
-                ofh.write("# {0}\n".format(line)) if line != "" else ofh.write("#\n")
-            ofh.write("\n")
-            ofh.write(first_line)
-        for line in ifh:
-            ofh.write(line)
+    with open(filename) as ifh:
+        with open(target_filename, "w") as ofh:
+            first_line = ifh.readline()
+            # If the first line is a #! then it has to stay the
+            # first line
+            if first_line.startswith("#!"):
+                ofh.write(first_line)
+                ofh.write("\n")
+                for line in license_text:
+                    ofh.write("# {0}\n".format(line)) if line != "" else ofh.write("#\n")
+            else:
+                for line in license_text:
+                    ofh.write("# {0}\n".format(line)) if line != "" else ofh.write("#\n")
+                ofh.write("\n")
+                ofh.write(first_line)
+            for line in ifh:
+                ofh.write(line)
     os.rename(target_filename, filename)
 
 
