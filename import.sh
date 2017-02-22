@@ -28,15 +28,15 @@ done
 # Now we select a few nightlies that are used for the last stages
 # of building the master branch with r22 tags and some tags
 # from AnalysisBase and AthAnalysisBase
-for r22 in tags_2017_01_01_H3 tags_2017_01_10_H22 tags_2017_01_20_H3 tags_2017_01_27_H3 tags_2017_02_02_H3 tags_2017_02_06_H3 tags_2017_02_15_H3; do 
+for r22 in tags_2017_01_01_H3 tags_2017_01_10_H22 tags_2017_01_20_H3 tags_2017_01_27_H3 tags_2017_02_02_H3 tags_2017_02_06_H3 tags_2017_02_15_H3 tags_2017_02_21_H3 tags_2017_02_22_H3; do 
 	nicostags.py /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/22.0.X/x86_64-slc6-gcc49-opt/$r22
 done
 
-for aab in tags_2017_01_01_H21 tags_2017_01_10_H21 tags_2017_01_19_H21 tags_2017_01_26_H21 tags_2017_02_01_H21 tags_2017_02_05_H21 tags_2017_02_14_H21; do
+for aab in tags_2017_01_01_H21 tags_2017_01_10_H21 tags_2017_01_19_H21 tags_2017_01_26_H21 tags_2017_02_01_H21 tags_2017_02_05_H21 tags_2017_02_14_H21 tags_2017_02_20_H21 tags_2017_02_21_H21; do
 nicostags.py --prefix AthAnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AthAnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$aab 
 done
 
-for ab in tags_2017_01_01_H3 tags_2017_01_11_H3 tags_2017_01_20_H3 tags_2017_01_27_H3 tags_2017_02_02_H3 tags_2017_02_06_H3 tags_2017_02_15_H3; do
+for ab in tags_2017_01_01_H3 tags_2017_01_11_H3 tags_2017_01_20_H3 tags_2017_01_27_H3 tags_2017_02_02_H3 tags_2017_02_06_H3 tags_2017_02_15_H3 tags_2017_02_21_H3 tags_2017_02_22_H3; do
 nicostags.py --prefix AnalysisBase --analysispkgfilter /afs/cern.ch/atlas/software/dist/nightlies/nicos_work/tags/AnalysisBase-2.6.X/x86_64-slc6-gcc49-opt/$ab 
 done
 
@@ -49,6 +49,8 @@ mergereleases.py tagdir/22.0.0-2017-01-27 tagdir/AthAnalysisBase-2.6.1-2017-01-2
 mergereleases.py tagdir/22.0.0-2017-02-02 tagdir/AthAnalysisBase-2.6.1-2017-02-01 tagdir/AnalysisBase-2.6.1-2017-02-02
 mergereleases.py tagdir/22.0.0-2017-02-06 tagdir/AthAnalysisBase-2.6.1-2017-02-05 tagdir/AnalysisBase-2.6.1-2017-02-06
 mergereleases.py tagdir/22.0.0-2017-02-15 tagdir/AthAnalysisBase-2.6.2-2017-02-14 tagdir/AnalysisBase-2.6.2-2017-02-15
+mergereleases.py tagdir/22.0.0-2017-02-21 tagdir/AthAnalysisBase-2.6.2-2017-02-20 tagdir/AnalysisBase-2.6.2-2017-02-21
+mergereleases.py tagdir/22.0.0-2017-02-22 tagdir/AthAnalysisBase-2.6.2-2017-02-21 tagdir/AnalysisBase-2.6.2-2017-02-22
 ) |& tee o.${gitrepo}.tags
 
 
