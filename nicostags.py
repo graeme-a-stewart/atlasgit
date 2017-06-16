@@ -146,6 +146,11 @@ def parse_tag_file(release_file_path, analysis_filter=False):
             if package != "Trigger/TriggerRelease" and (package.endswith("Release") or package.endswith("RunTime")):
                 logger.debug("Vetoing package auto-generated package {0}".format(package))
                 continue
+            if package in ["AtlasEvent", "AtlasAnalysis", "AtlasCore", "AtlasTrigger", "AtlasProduction",
+                           "AtlasOffline", "DetCommon", "AtlasReconstruction", "AtlasConditions",
+                           "AtlasExternals", "AtlasSimulation", "AtlasHLT"]:
+                logger.debug("Vetoing fake 'project' package {0}".format(package))
+                continue
             # Fake packages made by tag collector
             if "/" not in package and "22-00-00" in tag:
                 continue

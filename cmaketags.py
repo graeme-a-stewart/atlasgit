@@ -28,11 +28,12 @@ import time
 from glogger import logger
 from atutils import find_best_arch
 
-def find_cmake_releases(install_path, release, nightly=None):
+def find_cmake_releases(install_path, release, nightly=None, arch=None):
     ## @brief Find the base path and project sub-path for a CMake release
     #  @param install_path Base release area for CMake installed releases
     #  @param release Athena release series + release flavour number (e.g., 21.0)
     #  @param nightly Nightly series to search (otherwise look for installed release)
+    #  @param arch Manually specify architecture
     #  @return Tuple with full base release path, all matching releases and project sub-path
     base_path = os.path.join(install_path, release)
     if not os.path.isdir(base_path):
@@ -61,13 +62,16 @@ def find_cmake_releases(install_path, release, nightly=None):
             sys.exit(1)
     logger.debug("Found releases: {0}".format(releases))
     
-    if os.path.isdir(os.path.join(base_path, sample_project, releases[0], "InstallArea")):
-        best_arch = find_best_arch(os.path.join(base_path, sample_project, releases[0], "InstallArea"))
-        project_path = os.path.join("InstallArea", best_arch)
+    if arch:
+        project_path = os.path.join("InstallArea", arch)
     else:
-        best_arch = find_best_arch(os.path.join(base_path, sample_project, releases[0]))
-        project_path = best_arch
-    logger.debug("Using build architecture {0}".format(best_arch))
+        if os.path.isdir(os.path.join(base_path, sample_project, releases[0], "InstallArea")):
+            arch = find_best_arch(os.path.join(base_path, sample_project, releases[0], "InstallArea"))
+            project_path = os.path.join("InstallArea", arch)
+        else:
+            arch = find_best_arch(os.path.join(base_path, sample_project, releases[0]))
+            project_path = arch
+    logger.debug("Using build architecture {0}".format(arch))
     
     return base_path, releases, project_path
 
@@ -187,6 +191,7 @@ def main():
                         "release series")
     parser.add_argument('--overwrite', action="store_true", default=False,
                         help="Overwrite any exisitng configuration files (otherwise, just skip over)")
+    parser.add_argument('--arch', help='Force architecture to this value')
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",
                         help="switch logging into DEBUG mode")
 
@@ -207,7 +212,7 @@ def main():
             logger.error("Failed to make directory {0}: {1}".format(args.tagdir, e))
             sys.exit(1)
     
-    base_path, releases, project_path = find_cmake_releases(args.installpath, args.release, nightly=args.nightly)
+    base_path, releases, project_path = find_cmake_releases(args.installpath, args.release, nightly=args.nightly, arch=args.arch)
     for release in releases:
         release_description = get_cmake_release_data(base_path, args.release, release, project_path, nightly=args.nightly)
         logger.debug("Release {0} parsed as {1}/PROJECT/{2}".format(base_path, release, project_path))
