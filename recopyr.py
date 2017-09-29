@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--nolicense', action="store_true",
                         help="If the standard CERN (C) should not be added to the file. This is only "
                         "applied to C, C++ and python files (default apply license)")
-    parser.add_argument('--rename', type=bool, default=False,
+    parser.add_argument('--rename', action="store_true",
                         help="If the new file should overwrite the old one (original file renamed .bak) or "
                         "be left as .relicense (default %(default)s)")
     parser.add_argument('--debug', '--verbose', "-v", action="store_true",

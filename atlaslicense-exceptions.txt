@@ -4,11 +4,14 @@
 # N.B. Match to accept will win over a match to reject
 
 ## Things we don't want to bother with
+# We consider these to be configuration files that don't need any 
+# copyright attribution
 - */components/*
 - */skeleton*.py
 - */share/*
 
 ## Not our code:
+# External - 
 - External/*
 - graphics/Qat/*
 - Generators/Prophecy4fControl/*
@@ -146,6 +149,22 @@
 - Control/AthToolSupport/AsgTools/*
 - PhysicsAnalysis/AnalysisCommon/PATInterfaces/*
 - PhysicsAnalysis/D3PDTools/RootCoreUtils/*
+- PhysicsAnalysis/D3PDTools/EventLoop/*
+- PhysicsAnalysis/D3PDTools/EventLoopAlgs/*
+- PhysicsAnalysis/D3PDTools/MultiDraw/*
+- PhysicsAnalysis/D3PDTools/SampleHandler/*
+- PhysicsAnalysis/TopPhys/QuickAna/*
+
+# Creative Commons License (which is not recommended: https://creativecommons.org/faq/#can-i-apply-a-creative-commons-license-to-software
+# Author: Fabian Wilk and (c) to same
+- PhysicsAnalysis/TopPhys/xAOD/TopConfiguration/TopConfiguration/Tokenize.h
+- PhysicsAnalysis/TopPhys/xAOD/TopEventSelectionTools/Root/ParticleLevelSelector.cxx
+- PhysicsAnalysis/TopPhys/xAOD/TopEventSelectionTools/Root/RecoLevelSelector.cxx
+- PhysicsAnalysis/TopPhys/xAOD/TopEventSelectionTools/TopEventSelectionTools/ParticleLevelSelector.h
+- PhysicsAnalysis/TopPhys/xAOD/TopEventSelectionTools/TopEventSelectionTools/RecoLevelSelector.h
+- PhysicsAnalysis/TopPhys/xAOD/TopParticleLevel/Root/ParticleLevelPhotonObjectSelector.cxx
+- PhysicsAnalysis/TopPhys/xAOD/TopParticleLevel/TopParticleLevel/ParticleLevelPhotonObjectSelector.h
+- PhysicsAnalysis/TopPhys/xAOD/TopSystematicObjectMaker/Root/GhostTrackSystematicsMaker.cxx
 
 
 # Code that was Apache licensed by ATLAS authors
