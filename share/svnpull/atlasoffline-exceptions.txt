@@ -57,8 +57,7 @@
 - */doc/mainpage.h
 
 # Clean out CMT...
-- */cmt/*
-- */cmt
+#- */cmt/*
 
 # Broken softlinks - just ignore
 - InnerDetector/InDetExample/InDetAlignExample/ErrorScaling/InDetRec_all.py
