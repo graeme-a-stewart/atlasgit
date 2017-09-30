@@ -16,7 +16,7 @@ Main scripts:
 for importing into git. 
 
 `nicostags.py` - Parses NICOS tag archive files to obtain the SVN tag content
-of releases to import into git (works 
+of releases to import into git
 
 `asvn2git.py` - Imports a set of SVN tags into a git repository, placing them on  
 special import branches
@@ -108,7 +108,7 @@ Using an up to date git client will certainly _do no harm_ and specifically help
 when files have undergone case changes in their history. An up to date git client
 is available via
 
-`atlasSetup; lsetup git`
+`setupATLAS; lsetup git`
 
 ### Preparing tagdiff files from known releases
 
