@@ -60,8 +60,6 @@ Other files:
 (particularly including those who have left ATLAS and are no longer in
 CERN's phonebook)
 
-`apache2.txt` - Apache 2 license file with copyright attribution to CERN
-
 `uncrustify-import.cfg` - Uncrustify configuration file used to reformat
 C++ sources in a standard way on import from SVN
 
@@ -81,8 +79,6 @@ to some errors made when rewriting the code.
 `import.sh` - Script containing the final sequence of commands used to
 perform the SVN to git migration of the atlasoff repository (very useful to
 see the use of more advanced options as well)
-
-`license.txt` - License for this code (GPL)
 
 
 HOWTO
@@ -284,3 +280,7 @@ Tags you care about usually means `git tag -l release/* nightly/*`.
 
 If there is a desire to keep importing SVN tags over some time period then 
 backing up the entire import repository to gitlab may be desirable as well.
+
+## Copyright and License
+
+See `license.txt`.
