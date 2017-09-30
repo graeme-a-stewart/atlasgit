@@ -18,7 +18,6 @@
 
 ## Simple script that will pull packages from SVN, clean them up,
 #  then copy them into the current git repository
-#
 
 import argparse
 import fnmatch
@@ -335,6 +334,20 @@ def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accep
                     path_veto = False
                     break
             if path_veto:
+                continue
+            # Now see if the license file is already in SVN, as this is happening sometimes
+            with open(filename) as fh:
+                lines = 0
+                licensed = False
+                while lines < 10 and not licensed:
+                    fline = fh.readline()
+                    # Checking the first line of the file should be enough
+                    if license_text[0] in fline:
+                        licensed = True
+                        break
+                    lines += 1
+            if licensed:
+                logger.debug("File {0} appears to already have a copyright/license statement in it")
                 continue
             # Get the file's mode here to then restore it
             try:
