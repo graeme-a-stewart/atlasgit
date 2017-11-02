@@ -96,9 +96,9 @@ for you.
 keeps a `.svn` only at the root of any checkout, which is far easier to import 
 from. The python version is needed for a few features used in these scripts.
 
-On SLC6 use the scl module to activate the 1.7 SVN client and python 2.7:
+On SLC6 use the scl module to activate a later SVN client and python 2.7:
 
-`/usr/bin/scl enable subversion17 python27 -- /bin/bash`
+`/usr/bin/scl enable sclo-subversion19 python27 -- /bin/bash`
 
 Using an up to date git client will certainly _do no harm_ and specifically helps
 when files have undergone case changes in their history. An up to date git client
