@@ -321,24 +321,27 @@ def svn_strip_Id(svn_path, svn_co_root):
                extension = ""
             #FIXME: what files were commented with '$Id:'?
             if svn_filename == "Makefile" or extension in ("txt", "cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh" , "py" , "cmake"):
-               target_filename = filename + ".STRIP"
                try:
                    ifh = open(filename) 
                except:
                    logger.error("can't open {0}. EXIT(1)".format(filename))
                    sys.exit(1)
-               try:
-                   ofh = open(target_filename,"w")
-               except:
-                   logger.error("can't open {0} in write mode. EXIT(1)".format(target_filename))
-                   sys.exit(1)
                first_line = ifh.readline()
                #FIXME: check if $Id: is correctly commented out, e.g. /* $Id: .... */ in .c
-               if not re.match('^.*\$Id: .*$',first_line):
-                  ofh.write(first_line)
-               for line in ifh:
-                  ofh.write(line)
-               os.rename(target_filename,filename)
+               if re.match('^.*\$Id: .*$',first_line):
+                   target_filename = filename + ".STRIP"
+                   try:
+                       ofh = open(target_filename,"w")
+                   except:
+                       logger.error("can't open {0} in write mode. EXIT(1)".format(target_filename))
+                       sys.exit(1)
+                   for line in ifh:
+                       ofh.write(line)
+                   ifh.close()
+                   ofh.close()
+                   os.rename(target_filename,filename)
+               else:
+                   ifh.close()
 
 
 def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accept=[], license_path_reject=[]):
