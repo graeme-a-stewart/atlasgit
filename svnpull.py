@@ -209,6 +209,9 @@ def svn_co_tag_and_commit(svnroot, gitrepo, package, tag, full_clobber=True,
     # Clean out directory of things we don't want to import
     svn_cleanup(full_svn_path, svn_co_root=tempdir,
                 svn_path_accept=svn_path_accept, svn_path_reject=svn_path_reject)
+
+    # Remove SVN '$Id:' lines from source files (FIXME: what files are affected, *.[Cc], *.cxx, *.h[h]*, etc.?)
+    svn_strip_Id(full_svn_path, svn_co_root=tempdir)
     
     # If desired, inject a licence into the source code
     if license_text:
@@ -305,6 +308,37 @@ def svn_cleanup(svn_path, svn_co_root, svn_path_accept=[], svn_path_reject=[]):
     for root, dirs, files in os.walk(svn_path, topdown=False):
         if len(os.listdir(root)) == 0:
             os.rmdir(root)
+
+
+def svn_strip_Id(svn_path, svn_co_root):
+    for root, dirs, files in os.walk(svn_path):
+        for name in files:
+            filename = os.path.join(root, name)
+            svn_filename = filename[len(svn_co_root) + 1:]
+            if "." in svn_filename:
+               extension = svn_filename.rsplit(".", 1)[1] 
+            else:
+               extension = ""
+            #FIXME: what files were commented with '$Id:'?
+            if svn_filename == "Makefile" or extension in ("txt", "cxx", "cpp", "icc", "cc", "c", "C", "h", "hpp", "hh" , "py" , "cmake"):
+               target_filename = filename + ".STRIP"
+               try:
+                   ifh = open(filename) 
+               except:
+                   logger.error("can't open {0}. EXIT(1)".format(filename))
+                   sys.exit(1)
+               try:
+                   ofh = open(target_filename,"w")
+               except:
+                   logger.error("can't open {0} in write mode. EXIT(1)".format(target_filename))
+                   sys.exit(1)
+               first_line = ifh.readline()
+               #FIXME: check if $Id: is correctly commented out, e.g. /* $Id: .... */ in .c
+               if not re.match('^.*\$Id: .*$',first_line):
+                  ofh.write(first_line)
+               for line in ifh:
+                  ofh.write(line)
+               os.rename(target_filename,filename)
 
 
 def svn_license_injector(svn_path, svn_co_root, license_text, license_path_accept=[], license_path_reject=[]):
